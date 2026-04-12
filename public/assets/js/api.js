@@ -17,6 +17,27 @@ export async function fetchPayload(targetDate) {
 }
 
 /**
+ * @param {{ to: string, subject: string, body: string, cc?: string }} params
+ * @returns {Promise<{ ok: boolean, error?: string }>}
+ */
+export async function sendMail(params) {
+  const res = await fetch('/api/order/send-mail', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ ...params, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Versand fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
  * @param {object} body
  * @returns {Promise<Blob>}
  */

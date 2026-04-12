@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Helpers\Csrf;
 use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
+use App\Repositories\SettingsRepository;
 
 final class OrderController
 {
@@ -40,9 +41,12 @@ final class OrderController
     public function output(): void
     {
         AuthMiddleware::requireAuth();
+        $settings = new SettingsRepository();
         View::layout('layout', 'pages/order/output', [
             'title' => 'Ausgabe',
             'csrf' => Csrf::token(),
+            'output_show_outlook' => $settings->get('ui_show_outlook_export', '1') === '1',
+            'output_show_pdf' => $settings->get('ui_show_pdf', '1') === '1',
         ]);
     }
 }

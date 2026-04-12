@@ -25,9 +25,35 @@ final class ItemController
     public function index(): void
     {
         AuthMiddleware::requireAuth();
+        $locId = isset($_GET['loc']) ? (int) $_GET['loc'] : 0;
+        if ($locId <= 0) {
+            $locId = 0;
+        }
+        $active = (string) ($_GET['active'] ?? 'all');
+        if (!in_array($active, ['all', '1', '0'], true)) {
+            $active = 'all';
+        }
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $supplierId = isset($_GET['supplier']) ? (int) $_GET['supplier'] : 0;
+        if ($supplierId <= 0) {
+            $supplierId = 0;
+        }
+
         View::layout('layout', 'pages/items/index', [
             'title' => 'Artikel',
-            'items' => $this->items->all(),
+            'items' => $this->items->allForList(
+                $locId > 0 ? $locId : null,
+                $active,
+                $q === '' ? null : $q,
+                false,
+                $supplierId > 0 ? $supplierId : null
+            ),
+            'locations' => $this->locations->all(),
+            'suppliers' => $this->suppliers->all(),
+            'filter_loc' => $locId,
+            'filter_active' => $active,
+            'filter_supplier' => $supplierId,
+            'filter_q' => $q,
             'csrf' => Csrf::token(),
         ]);
     }
@@ -95,6 +121,7 @@ final class ItemController
         }
         $this->items->setSupplierLinks($id, $pairs);
 
+        $_SESSION['flash_ok'] = 'Artikel gespeichert.';
         Response::redirect('/items');
     }
 

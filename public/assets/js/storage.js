@@ -117,6 +117,33 @@ async function getOne(store, key) {
 }
 
 /**
+ * Ob „Bestellrunde laden“ (savePreparedSnapshot) lokale Fortschritte zerstören würde.
+ * @returns {Promise<boolean>}
+ */
+export async function prepareReloadWouldEraseLocalProgress() {
+  const round = await getOrderRound();
+  if (!round) return false;
+  // Abgeschlossene Runde: bewusst beendet, nächstes „Laden“ ist eine neue Runde – kein Verlust offener Arbeit.
+  if (round.status === 'finalized') return false;
+  if (round.status !== 'prepared') return true;
+  const entries = await getOrderEntries();
+  for (const e of entries) {
+    if (e.is_free_item) {
+      if (String(e.free_label ?? '').trim() !== '' || String(e.quantity ?? '').trim() !== '') {
+        return true;
+      }
+      continue;
+    }
+    const s = String(e.quantity ?? '').trim().replace(',', '.');
+    if (!s) continue;
+    const n = Number(s);
+    if (!Number.isNaN(n) && n !== 0) return true;
+  }
+  const notes = await getAllSupplierNotes();
+  return notes.some((x) => String(x.text ?? '').trim() !== '');
+}
+
+/**
  * Replace local DB with server snapshot for a target date.
  * @param {object} payload API /api/order/payload
  */
@@ -163,6 +190,8 @@ export async function savePreparedSnapshot(payload) {
       name: it.name,
       unit: it.unit,
       location_id: it.location_id,
+      min_stock: it.min_stock ?? null,
+      max_stock: it.max_stock ?? null,
       active: it.active,
     });
   }
@@ -175,6 +204,10 @@ export async function savePreparedSnapshot(payload) {
       email: sup.email,
       email_template: sup.email_template,
       active: sup.active,
+      street: sup.street ?? null,
+      city: sup.city ?? null,
+      attach_pdf: !!sup.attach_pdf,
+      email_subject_template: sup.email_subject_template ?? null,
     });
   }
 
@@ -203,7 +236,44 @@ export async function savePreparedSnapshot(payload) {
     offline_ready_flag: true,
     settings: payload.settings || {},
     suppliers_delivering_ids: payload.suppliers_delivering_ids || [],
+    supplier_delivery_targets: payload.supplier_delivery_targets || [],
   });
+}
+
+/**
+ * Aktualisiert Lieferanten + globale Einstellungen aus dem Server, ohne die Runde zu verlieren.
+ * Wichtig für aktuelle Betreff-Vorlagen (pro Lieferant) und Firmenname nach Stammdaten-Änderungen.
+ * @param {object} payload Antwort von /api/order/payload (ok: true, …)
+ */
+export async function mergeSuppliersAndSettingsFromPayload(payload) {
+  const now = new Date().toISOString();
+  for (const sup of payload.suppliers || []) {
+    await putRow('suppliers', {
+      id: sup.id,
+      name: sup.name,
+      order_type: sup.order_type,
+      email: sup.email,
+      email_template: sup.email_template,
+      active: sup.active,
+      street: sup.street ?? null,
+      city: sup.city ?? null,
+      attach_pdf: !!sup.attach_pdf,
+      email_subject_template: sup.email_subject_template ?? null,
+    });
+  }
+  const meta = await getOne('meta', 'snapshot');
+  if (meta) {
+    const incomingSettings = payload.settings || {};
+    meta.settings = { ...meta.settings, ...incomingSettings };
+    if (Array.isArray(payload.suppliers_delivering_ids)) {
+      meta.suppliers_delivering_ids = payload.suppliers_delivering_ids;
+    }
+    if (Array.isArray(payload.supplier_delivery_targets)) {
+      meta.supplier_delivery_targets = payload.supplier_delivery_targets;
+    }
+    meta.last_sync = now;
+    await putRow('meta', meta);
+  }
 }
 
 export async function getOrderRound() {

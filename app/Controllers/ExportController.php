@@ -1,0 +1,98 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Helpers\Database;
+use App\Middleware\AuthMiddleware;
+use PDO;
+
+final class ExportController
+{
+    public function locations(): void
+    {
+        AuthMiddleware::requireAuth();
+        $rows = Database::pdo()->query(
+            'SELECT name, sort_order FROM locations ORDER BY sort_order'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->sendCsv('lagerorte.csv', ['name', 'sort_order'], $rows);
+    }
+
+    public function suppliers(): void
+    {
+        AuthMiddleware::requireAuth();
+        $rows = Database::pdo()->query(
+            'SELECT name, email, order_type AS type, active, email_subject_template FROM suppliers ORDER BY name'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->sendCsv('lieferanten.csv', ['name', 'email', 'type', 'active', 'email_subject_template'], $rows);
+    }
+
+    public function deliveryDays(): void
+    {
+        AuthMiddleware::requireAuth();
+        $rows = Database::pdo()->query(
+            'SELECT s.name AS supplier_name,
+                    GROUP_CONCAT(sdd.weekday ORDER BY sdd.weekday SEPARATOR \',\') AS delivery_days
+             FROM suppliers s
+             LEFT JOIN supplier_delivery_days sdd ON sdd.supplier_id = s.id
+             GROUP BY s.id, s.name
+             ORDER BY s.name'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->sendCsv('liefertage.csv', ['supplier_name', 'delivery_days'], $rows);
+    }
+
+    public function items(): void
+    {
+        AuthMiddleware::requireAuth();
+        $rows = Database::pdo()->query(
+            'SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, i.active
+             FROM items i
+             JOIN locations l ON l.id = i.location_id
+             ORDER BY l.sort_order, i.name'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->sendCsv('artikel.csv', ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'], $rows);
+    }
+
+    public function itemSupplier(): void
+    {
+        AuthMiddleware::requireAuth();
+        $rows = Database::pdo()->query(
+            'SELECT i.id AS item_id, i.name AS item_name, s.name AS supplier_name, isl.priority
+             FROM item_supplier isl
+             JOIN items i ON i.id = isl.item_id
+             JOIN suppliers s ON s.id = isl.supplier_id
+             ORDER BY i.name, isl.priority DESC'
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->sendCsv('artikel_lieferanten.csv', ['item_id', 'item_name', 'supplier_name', 'priority'], $rows);
+    }
+
+    /**
+     * @param list<string> $header
+     * @param list<array<string, mixed>> $rows
+     */
+    private function sendCsv(string $filename, array $header, array $rows): void
+    {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        // UTF-8 BOM for Excel compatibility
+        echo "\xEF\xBB\xBF";
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, $header, ';');
+        foreach ($rows as $row) {
+            $line = [];
+            foreach ($header as $col) {
+                $line[] = (string) ($row[$col] ?? '');
+            }
+            fputcsv($out, $line, ';');
+        }
+        fclose($out);
+        exit;
+    }
+}

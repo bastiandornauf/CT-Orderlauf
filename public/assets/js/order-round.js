@@ -34,8 +34,9 @@ export async function saveCatalogQuantity(itemId, rawQty, note = '') {
 }
 
 export async function addFreeLine(locationId, label, rawQty, freeSupplierId) {
-  const qty = parseQuantity(rawQty);
-  if (!label?.trim() || qty === null) return;
+  // Free items allow any non-empty quantity string (e.g. "2 Stück", "1 Karton")
+  const qty = String(rawQty ?? '').trim();
+  if (!label?.trim() || qty === '') return;
   const sid =
     freeSupplierId != null && freeSupplierId !== '' ? Number(freeSupplierId) : null;
   await storage.saveOrderEntry({

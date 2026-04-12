@@ -1,5 +1,5 @@
 /* global self, caches, fetch */
-const CACHE = 'ct-orderlauf-assets-v1';
+const CACHE = 'ct-orderlauf-assets-v10';
 const PRECACHE = [
   '/assets/css/app.css',
   '/assets/js/main.js',
@@ -13,6 +13,8 @@ const PRECACHE = [
   '/manifest.json',
   '/assets/icons/icon.svg',
 ];
+
+const APP_SHELL_ROUTES = ['/order/round', '/order/review', '/order/output'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,7 +39,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') {
     return;
   }
-  if (url.pathname.startsWith('/assets/')) {
+  if (url.pathname.startsWith('/assets/') || url.pathname === '/manifest.json') {
     event.respondWith(
       caches.match(req).then((cached) => {
         const net = fetch(req).then((res) => {
@@ -47,6 +49,18 @@ self.addEventListener('fetch', (event) => {
         });
         return cached || net;
       }),
+    );
+    return;
+  }
+  if (APP_SHELL_ROUTES.includes(url.pathname)) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req)),
     );
     return;
   }

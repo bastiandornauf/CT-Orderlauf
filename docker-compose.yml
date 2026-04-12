@@ -29,6 +29,14 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./database/migrations/20260412_transgourmet_ordersatz_items.sql:/docker-entrypoint-initdb.d/03-migrate-transgourmet-ordersatz.sql:ro
+      - ./database/migrations/20260413_cleanup_duplicate_items.sql:/docker-entrypoint-initdb.d/04-migrate-cleanup-duplicates.sql:ro
+      - ./database/migrations/20260413_merge_noilly_prat.sql:/docker-entrypoint-initdb.d/05-migrate-noilly-prat.sql:ro
+      - ./database/migrations/20260414_lachs_karton_grana_gehobelt.sql:/docker-entrypoint-initdb.d/06-migrate-lachs-grana.sql:ro
+      - ./database/migrations/20260414_order_email_subject_template.sql:/docker-entrypoint-initdb.d/07-migrate-order-email-subject.sql:ro
+      - ./database/migrations/20260412_suppliers_address_attach_pdf.sql:/docker-entrypoint-initdb.d/08-migrate-suppliers-address.sql:ro
+      - ./database/migrations/20260413_suppliers_email_subject_template.sql:/docker-entrypoint-initdb.d/09-migrate-suppliers-email-subject.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s

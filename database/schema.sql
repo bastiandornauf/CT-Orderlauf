@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS suppliers (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NULL,
+    phone VARCHAR(64) NULL,
+    fax VARCHAR(64) NULL,
+    mobile VARCHAR(64) NULL,
     order_type ENUM('mail', 'webshop') NOT NULL DEFAULT 'mail',
     email_template MEDIUMTEXT NULL,
     active TINYINT(1) NOT NULL DEFAULT 1,
@@ -79,5 +82,13 @@ INSERT INTO users (username, password_hash, email) VALUES (
 
 INSERT INTO settings (key_name, value) VALUES
     ('order_cc_email', ''),
-    ('app_name', 'CT-Orderlauf')
+    ('order_email_subject_template', 'Bestellung {{COMPANY}} {{TARGET_DATE}}'),
+    ('app_name', 'CT-Orderlauf'),
+    ('dev_mode', '0'),
+    ('dev_email', ''),
+    ('company_name', ''),
+    ('company_street', ''),
+    ('company_city', ''),
+    ('company_phone', ''),
+    ('company_fax', '')
 ON DUPLICATE KEY UPDATE key_name = key_name;

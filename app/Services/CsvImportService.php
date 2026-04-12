@@ -38,14 +38,20 @@ final class CsvImportService
 
     /**
      * @param list<list<string>> $rows
-     * @return array{ok: bool, errors: list<string>, preview: list<array<string, mixed>>}
+     * @return array{ok: bool, errors: list<string>, preview: list<array<string, mixed>>, items_not_in_csv: list<array{id:int,name:string}>}
      */
     public function preview(string $type, array $rows): array
     {
         $errors = [];
         $preview = [];
+        $itemsNotInCsv = [];
         if ($rows === []) {
-            return ['ok' => false, 'errors' => ['Leere Datei.'], 'preview' => []];
+            return [
+                'ok' => false,
+                'errors' => ['Leere Datei.'],
+                'preview' => [],
+                'items_not_in_csv' => [],
+            ];
         }
         $header = array_map('trim', $rows[0]);
         $dataRows = array_slice($rows, 1);
@@ -54,7 +60,7 @@ final class CsvImportService
             'locations' => $this->validateLocations($header, $dataRows, $errors, $preview),
             'suppliers' => $this->validateSuppliers($header, $dataRows, $errors, $preview),
             'delivery_days' => $this->validateDeliveryDays($header, $dataRows, $errors, $preview),
-            'items' => $this->validateItems($header, $dataRows, $errors, $preview),
+            'items' => $this->validateItems($header, $dataRows, $errors, $preview, $itemsNotInCsv),
             'item_supplier' => $this->validateItemSupplier($header, $dataRows, $errors, $preview),
             default => $errors[] = 'Unbekannter Importtyp.',
         };
@@ -63,6 +69,7 @@ final class CsvImportService
             'ok' => $errors === [],
             'errors' => $errors,
             'preview' => $preview,
+            'items_not_in_csv' => $itemsNotInCsv,
         ];
     }
 
@@ -96,8 +103,13 @@ final class CsvImportService
     /** @param list<list<string>> $dataRows */
     private function validateSuppliers(array $header, array $dataRows, array &$errors, array &$preview): void
     {
-        if ($header !== ['name', 'email', 'type', 'active']) {
-            $errors[] = 'Kopfzeile muss sein: name;email;type;active';
+        $base = ['name', 'email', 'type', 'active'];
+        $withSubject = ['name', 'email', 'type', 'active', 'email_subject_template'];
+        $hasSubjectCol = false;
+        if ($header === $withSubject) {
+            $hasSubjectCol = true;
+        } elseif ($header !== $base) {
+            $errors[] = 'Kopfzeile muss sein: name;email;type;active oder mit zusätzlicher Spalte email_subject_template';
             return;
         }
         foreach ($dataRows as $i => $cols) {
@@ -106,6 +118,15 @@ final class CsvImportService
             $email = trim($cols[1] ?? '');
             $type = trim($cols[2] ?? '');
             $active = trim($cols[3] ?? '1');
+            $subjTpl = null;
+            if ($hasSubjectCol) {
+                $raw = trim((string) ($cols[4] ?? ''));
+                if ($raw !== '' && mb_strlen($raw) > 512) {
+                    $errors[] = "Zeile {$line}: email_subject_template max. 512 Zeichen.";
+                    continue;
+                }
+                $subjTpl = $raw !== '' ? $raw : null;
+            }
             if ($name === '') {
                 $errors[] = "Zeile {$line}: name fehlt.";
                 continue;
@@ -122,12 +143,16 @@ final class CsvImportService
                 $errors[] = "Zeile {$line}: E-Mail ungültig.";
                 continue;
             }
-            $preview[] = [
+            $row = [
                 'name' => $name,
                 'email' => $email ?: null,
                 'order_type' => $type,
                 'active' => $active === '1',
             ];
+            if ($hasSubjectCol) {
+                $row['email_subject_template'] = $subjTpl;
+            }
+            $preview[] = $row;
         }
     }
 
@@ -169,21 +194,45 @@ final class CsvImportService
         }
     }
 
-    /** @param list<list<string>> $dataRows */
-    private function validateItems(array $header, array $dataRows, array &$errors, array &$preview): void
-    {
-        if ($header !== ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active']) {
-            $errors[] = 'Kopfzeile muss sein: name;location;unit;min_stock;max_stock;active';
+    /**
+     * @param list<list<string>> $dataRows
+     * @param list<array{id:int,name:string}> $itemsNotInCsv
+     */
+    private function validateItems(
+        array $header,
+        array $dataRows,
+        array &$errors,
+        array &$preview,
+        array &$itemsNotInCsv
+    ): void {
+        $withId = $header === ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $legacy = $header === ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        if (!$withId && !$legacy) {
+            $errors[] = 'Artikel: Kopfzeile mit ID: id;name;location;unit;min_stock;max_stock;active — oder ohne ID (nur nach Namen): name;location;unit;min_stock;max_stock;active';
             return;
         }
+
+        $presentIds = [];
         foreach ($dataRows as $i => $cols) {
             $line = $i + 2;
-            $name = trim($cols[0] ?? '');
-            $locName = trim($cols[1] ?? '');
-            $unit = trim($cols[2] ?? '');
-            $minS = trim($cols[3] ?? '');
-            $maxS = trim($cols[4] ?? '');
-            $active = trim($cols[5] ?? '1');
+            if ($withId) {
+                $idRaw = trim((string) ($cols[0] ?? ''));
+                $name = trim((string) ($cols[1] ?? ''));
+                $locName = trim((string) ($cols[2] ?? ''));
+                $unit = trim((string) ($cols[3] ?? ''));
+                $minS = trim((string) ($cols[4] ?? ''));
+                $maxS = trim((string) ($cols[5] ?? ''));
+                $active = trim((string) ($cols[6] ?? '1'));
+            } else {
+                $idRaw = '';
+                $name = trim((string) ($cols[0] ?? ''));
+                $locName = trim((string) ($cols[1] ?? ''));
+                $unit = trim((string) ($cols[2] ?? ''));
+                $minS = trim((string) ($cols[3] ?? ''));
+                $maxS = trim((string) ($cols[4] ?? ''));
+                $active = trim((string) ($cols[5] ?? '1'));
+            }
+
             if ($name === '' || $locName === '') {
                 $errors[] = "Zeile {$line}: name und location erforderlich.";
                 continue;
@@ -199,41 +248,111 @@ final class CsvImportService
             }
             $min = $minS === '' ? null : (int) $minS;
             $max = $maxS === '' ? null : (int) $maxS;
-            $preview[] = [
-                'name' => $name,
-                'location_id' => (int) $loc['id'],
-                'unit' => $unit,
-                'min_stock' => $min,
-                'max_stock' => $max,
-                'active' => $active === '1',
-            ];
+
+            if ($withId && $idRaw !== '') {
+                if (!ctype_digit($idRaw)) {
+                    $errors[] = "Zeile {$line}: id muss eine positive Ganzzahl sein oder leer.";
+                    continue;
+                }
+                $eid = (int) $idRaw;
+                if ($eid <= 0) {
+                    $errors[] = "Zeile {$line}: id ungültig.";
+                    continue;
+                }
+                $exist = $this->items->find($eid);
+                if ($exist === null) {
+                    $errors[] = "Zeile {$line}: Artikel-ID {$eid} nicht gefunden.";
+                    continue;
+                }
+                $presentIds[] = $eid;
+                $preview[] = [
+                    'target_id' => $eid,
+                    'name' => $name,
+                    'location_id' => (int) $loc['id'],
+                    'unit' => $unit,
+                    'min_stock' => $min,
+                    'max_stock' => $max,
+                    'active' => $active === '1',
+                ];
+            } elseif ($withId) {
+                $preview[] = [
+                    'target_id' => null,
+                    'name' => $name,
+                    'location_id' => (int) $loc['id'],
+                    'unit' => $unit,
+                    'min_stock' => $min,
+                    'max_stock' => $max,
+                    'active' => $active === '1',
+                ];
+            } else {
+                $exist = $this->items->findByName($name);
+                $preview[] = [
+                    'target_id' => $exist !== null ? (int) $exist['id'] : null,
+                    'name' => $name,
+                    'location_id' => (int) $loc['id'],
+                    'unit' => $unit,
+                    'min_stock' => $min,
+                    'max_stock' => $max,
+                    'active' => $active === '1',
+                ];
+            }
+        }
+
+        if ($errors === [] && $withId && $presentIds !== []) {
+            $itemsNotInCsv = $this->items->findActiveNotInIds($presentIds);
         }
     }
 
     /** @param list<list<string>> $dataRows */
     private function validateItemSupplier(array $header, array $dataRows, array &$errors, array &$preview): void
     {
-        if ($header !== ['item_name', 'supplier_name', 'priority']) {
-            $errors[] = 'Kopfzeile muss sein: item_name;supplier_name;priority';
+        $withId = $header === ['item_id', 'item_name', 'supplier_name', 'priority'];
+        $legacy = $header === ['item_name', 'supplier_name', 'priority'];
+        if (!$withId && !$legacy) {
+            $errors[] = 'Artikel–Lieferant: Kopfzeile mit ID: item_id;item_name;supplier_name;priority — oder item_name;supplier_name;priority';
             return;
         }
         foreach ($dataRows as $i => $cols) {
             $line = $i + 2;
-            $iname = trim($cols[0] ?? '');
-            $sname = trim($cols[1] ?? '');
-            $pr = trim($cols[2] ?? '0');
-            if ($iname === '' || $sname === '') {
-                $errors[] = "Zeile {$line}: item_name und supplier_name erforderlich.";
+            if ($withId) {
+                $itemIdRaw = trim((string) ($cols[0] ?? ''));
+                $iname = trim((string) ($cols[1] ?? ''));
+                $sname = trim((string) ($cols[2] ?? ''));
+                $pr = trim((string) ($cols[3] ?? '0'));
+            } else {
+                $itemIdRaw = '';
+                $iname = trim((string) ($cols[0] ?? ''));
+                $sname = trim((string) ($cols[1] ?? ''));
+                $pr = trim((string) ($cols[2] ?? '0'));
+            }
+            if ($sname === '') {
+                $errors[] = "Zeile {$line}: supplier_name erforderlich.";
                 continue;
             }
             if (!ctype_digit($pr) && !is_numeric($pr)) {
                 $errors[] = "Zeile {$line}: priority muss numerisch sein.";
                 continue;
             }
-            $item = $this->items->findByName($iname);
-            if ($item === null) {
-                $errors[] = "Zeile {$line}: Artikel „{$iname}“ nicht gefunden.";
-                continue;
+            if ($itemIdRaw !== '') {
+                if (!ctype_digit($itemIdRaw)) {
+                    $errors[] = "Zeile {$line}: item_id muss eine Ganzzahl sein oder leer.";
+                    continue;
+                }
+                $item = $this->items->find((int) $itemIdRaw);
+                if ($item === null) {
+                    $errors[] = "Zeile {$line}: Artikel-ID „{$itemIdRaw}“ nicht gefunden.";
+                    continue;
+                }
+            } else {
+                if ($iname === '') {
+                    $errors[] = "Zeile {$line}: item_id leer — dann item_name erforderlich.";
+                    continue;
+                }
+                $item = $this->items->findByName($iname);
+                if ($item === null) {
+                    $errors[] = "Zeile {$line}: Artikel „{$iname}“ nicht gefunden.";
+                    continue;
+                }
             }
             $sup = $this->suppliers->findByName($sname);
             if ($sup === null) {
@@ -289,21 +408,38 @@ final class CsvImportService
         foreach ($preview as $row) {
             $existing = $this->suppliers->findByName($row['name']);
             if ($existing) {
+                $subjTpl = array_key_exists('email_subject_template', $row)
+                    ? $row['email_subject_template']
+                    : ($existing['email_subject_template'] ?? null);
                 $this->suppliers->update(
                     (int) $existing['id'],
                     $row['name'],
                     $row['email'],
+                    $existing['phone'] ?? null,
+                    $existing['fax'] ?? null,
+                    $existing['mobile'] ?? null,
+                    $existing['street'] ?? null,
+                    $existing['city'] ?? null,
                     $row['order_type'],
-                    $existing['email_template'],
-                    $row['active']
+                    $existing['email_template'] ?? null,
+                    $subjTpl,
+                    $row['active'],
+                    (bool) ($existing['attach_pdf'] ?? false)
                 );
                 $updated++;
             } else {
+                $subjTpl = $row['email_subject_template'] ?? null;
                 $this->suppliers->create(
                     $row['name'],
                     $row['email'],
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
                     $row['order_type'],
                     null,
+                    $subjTpl,
                     $row['active']
                 );
                 $inserted++;
@@ -324,10 +460,10 @@ final class CsvImportService
     private function importItems(array $preview, int &$inserted, int &$updated): void
     {
         foreach ($preview as $row) {
-            $existing = $this->items->findByName($row['name']);
-            if ($existing) {
+            $tid = isset($row['target_id']) && $row['target_id'] !== null ? (int) $row['target_id'] : 0;
+            if ($tid > 0) {
                 $this->items->update(
-                    (int) $existing['id'],
+                    $tid,
                     $row['name'],
                     $row['unit'],
                     (int) $row['location_id'],
@@ -348,6 +484,12 @@ final class CsvImportService
                 $inserted++;
             }
         }
+    }
+
+    /** @param list<int> $ids */
+    public function deactivateItemsByIds(array $ids): void
+    {
+        $this->items->deactivateByIds($ids);
     }
 
     /** @param list<array<string, mixed>> $preview */

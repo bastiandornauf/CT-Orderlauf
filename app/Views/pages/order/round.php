@@ -1,7 +1,12 @@
 <section class="page-section" x-data="roundPage()">
+    <?php $order_step = 2;
+    require __DIR__ . '/../../partials/order-stepper.php'; ?>
     <div class="page-toolbar">
         <h1 class="page-title">Rundgang</h1>
-        <span class="status-badge status-badge--neutral">offline nutzbar</span>
+        <div class="toolbar-actions">
+            <span class="status-badge status-badge--neutral">offline nutzbar</span>
+            <button type="button" class="button button--primary button--small" @click="goReview()">Zur Kontrolle →</button>
+        </div>
     </div>
     <p class="text-muted">Eingaben werden lokal gespeichert. Leere Felder = keine Bestellung.</p>
 
@@ -9,21 +14,35 @@
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
-                    @click="activeLocId = loc.id" x-text="loc.name"></button>
+                    @click="activeLocId = loc.id" x-text="tabLabel(loc)"></button>
         </template>
     </div>
 
     <ul class="card-list">
         <template x-for="it in items" :key="it.id">
-            <li class="card card--pad list-item list-item--round">
+            <li class="card card--pad list-item list-item--round"
+                :class="{ 'card--has-qty': hasQty(it.id) }">
                 <div class="list-item__main">
                     <strong x-text="it.name"></strong>
-                    <span class="text-muted" x-text="it.unit"></span>
+                    <span class="text-muted order-item-meta">
+                        <span x-text="it.unit"></span><span class="order-stock-hint" x-show="stockHint(it)" x-text="' · ' + stockHint(it)"></span>
+                    </span>
+                    <div class="item-suppliers" x-show="itemSupplierNames(it.id).length > 0">
+                        <template x-for="(sup, idx) in itemSupplierNames(it.id)" :key="sup">
+                            <span class="supplier-chip"
+                                  :class="{ 'supplier-chip--primary': idx === 0 }"
+                                  x-text="sup"></span>
+                        </template>
+                    </div>
                 </div>
-                <input class="input input--qty" type="text" inputmode="decimal"
-                       :value="quantities[it.id] || ''"
-                       @blur="onQtyBlur(it.id, $event)"
-                       :aria-label="'Menge ' + it.name">
+                <div class="qty-stepper">
+                    <button type="button" class="qty-stepper__btn" @click="onQtyStep(it.id, -1)" aria-label="Minus">−</button>
+                    <input class="input input--qty" type="text" inputmode="decimal"
+                           :value="quantities[it.id] || ''"
+                           @blur="onQtyBlur(it.id, $event)"
+                           :aria-label="'Menge ' + it.name">
+                    <button type="button" class="qty-stepper__btn" @click="onQtyStep(it.id, 1)" aria-label="Plus">+</button>
+                </div>
             </li>
         </template>
     </ul>

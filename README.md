@@ -22,7 +22,15 @@ docker compose up -d
 
 ### Datenbank
 
-MySQL wird mit [database/schema.sql](database/schema.sql) initialisiert (Admin-User, Tabellen).
+Beim **ersten** Start eines leeren MySQL-Volumes läuft der Container die Skripte unter `docker-entrypoint-initdb.d` in Reihenfolge:
+
+1. [database/schema.sql](database/schema.sql) – Tabellen und Admin-User  
+2. [database/seed.sql](database/seed.sql) – Beispieldaten  
+3. [database/migrations/](database/migrations/) – nachträgliche Anpassungen (größtenteils idempotent; bei frischem Seed meist ohne Wirkung)
+
+**Hinweis:** Änderungen greifen nur, wenn das Volume neu angelegt wird. Bestehende Datenbank beibehalten und einzelne Migrationen manuell ausführen, oder Volume löschen und neu starten (geht Datenverlust):
+
+`docker compose down -v && docker compose up -d`
 
 ## Lokale Entwicklung ohne Docker
 

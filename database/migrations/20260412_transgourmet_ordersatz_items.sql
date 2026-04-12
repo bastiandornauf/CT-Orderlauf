@@ -1,0 +1,45 @@
+-- Transgourmet-Artikel: Namen und Gebinde gemäß Ordersatz (Artikeltext1, Einheit, Inhalt).
+-- Nach Import aus seed.sql oder für bestehende Datenbanken ausführen.
+SET NAMES utf8mb4;
+
+UPDATE items SET name = 'Noilly Prat Dry 18 %', unit = 'Flasche (1 l)' WHERE name = 'Noilly Prat' AND unit = 'Flasche';
+UPDATE items SET name = 'Kokosnussmilch 1 l', unit = 'Packung (1 l)' WHERE name = 'Kokosmilch' AND unit = 'Stk';
+UPDATE items SET name = 'Philadelphia Natur 68 %', unit = 'Schale (1,65 kg)' WHERE name = 'Philadelphia' AND unit = 'Stk';
+UPDATE items SET name = 'Grana Padano gerieben DOP', unit = 'Beutel (1 kg)' WHERE name = 'Grana Padano' AND unit = 'Btl';
+UPDATE items SET name = 'Eis Vanille (TK)', unit = 'Wanne (5 l)' WHERE name = 'Eis, Vanille' AND unit = 'Stk';
+UPDATE items SET name = 'Eis Schokolade (TK)', unit = 'Wanne (5 l)' WHERE name = 'Eis, Schoko' AND unit = 'Stk';
+UPDATE items SET name = 'Eis Erdbeer (TK)', unit = 'Wanne (5 l)' WHERE name = 'Eis, Erdbeer' AND unit = 'Stk';
+UPDATE items SET name = 'Sorbet Zitrone (TK)', unit = 'Wanne (5 l)' WHERE name = 'Eis, Sorbet, Zitronen' AND unit = 'Stk';
+UPDATE items SET name = 'Sorbet Passionsfrucht (TK)', unit = '2 × Wanne (2,4 l)' WHERE name = 'Eis, Sorbet, Passionsfrucht' AND unit = 'Stk';
+UPDATE items SET name = 'Sorbet Cassis (TK)', unit = '2 × Wanne (2,4 l)' WHERE name = 'Eis, Sorbet, Cassis' AND unit = 'Stk';
+UPDATE items SET name = 'Backhendl paniert gegart (TK)', unit = 'Beutel (1 kg)' WHERE name = 'Backhendl' AND unit = 'Btl';
+UPDATE items SET name = 'Lachsportion ohne Haut 150 g (TK, Gebinde ca. 5 kg)', unit = 'Karton (5 kg)' WHERE name = 'Lachs 150g Pt.' AND unit = 'Ktn';
+UPDATE items SET name = 'Guacamole Supreme (TK)', unit = 'Box (500 g)' WHERE name = 'Guacamole Supreme' AND unit = 'Ktn';
+UPDATE items SET name = 'Media Gallega (TK)', unit = 'Karton (50×125 g)' WHERE name = 'Media Gallega' AND unit = 'Ktn';
+UPDATE items SET name = 'Belgische Zuckerwaffeln (TK)', unit = 'Karton (40×90 g)' WHERE name = 'Belgische Zuckerwaffel' AND unit = 'Ktn';
+UPDATE items SET name = 'Dinkelburger (TK)', unit = 'Beutel (3×1,75 kg)' WHERE name = 'Burger, Dinkel-' AND unit = 'Btl';
+UPDATE items SET name = 'Linsen-Quinoa-Salat', unit = 'Schale (1 kg)' WHERE name = 'Linsen Quinoa Salat' AND unit = 'Stk';
+UPDATE items SET name = 'Obstsalat Buffet', unit = 'Eimer (10 kg)' WHERE name = 'Obstsalat (Standard)' AND unit = 'Eimer';
+UPDATE items SET name = 'Carpaccio Rind mariniert (TK, 20×70 g)', unit = 'Packung (20×70 g)' WHERE name = 'Carpaccio' AND unit = 'Ktn';
+UPDATE items SET name = 'Tomatenketchup Portionen', unit = 'Karton (150×20 ml)' WHERE name = 'Portionen Tomatenketchup' AND unit = 'Ktn';
+UPDATE items SET name = 'Mayonnaise 80 % Portionen', unit = 'Karton (150×20 ml)' WHERE name = 'Portionen Majo' AND unit = 'Ktn';
+UPDATE items SET name = 'Salatmayonnaise 50 %', unit = 'Flasche (875 ml)' WHERE name = 'Salat Majo Tube' AND unit = 'Stk';
+UPDATE items SET name = 'Sweet-Chili-Sauce', unit = 'Flasche (0,7 l)' WHERE name = 'Sweet Chili' AND unit = 'Stk';
+UPDATE items SET name = 'Pesto rosso', unit = 'Glas (500 g)' WHERE name = 'Pesto Rosso' AND unit = 'Stk';
+UPDATE items SET name = 'Pesto Verde Basilikum', unit = 'Becher (1 kg)' WHERE name = 'Pesto Verde, Basilikum 1kg' AND unit = 'Stk';
+UPDATE items SET name = 'Soßenbinder hell Mondamin', unit = 'Dose (1 kg)' WHERE name = 'Mondamin hell' AND unit = 'Stk';
+UPDATE items SET name = 'Soßenbinder dunkel Mondamin', unit = 'Dose (1 kg)' WHERE name = 'Mondamin dunkel' AND unit = 'Stk';
+UPDATE items SET name = 'Senf Portionen', unit = 'Beutel (150×10 ml)' WHERE name = 'Portionen Senf' AND unit = 'Ktn';
+UPDATE items SET name = 'Oliven Kalamata ohne Stein', unit = 'Dose (2 kg)' WHERE name = 'Kalamata Oliven' AND unit = 'Stk';
+UPDATE items SET name = 'Blütenhonig Spendertube', unit = 'Flasche (500 g)' WHERE name = 'Blütenhonig Spender' AND unit = 'Stk';
+UPDATE items SET name = 'Basmatireis', unit = 'Beutel (5 kg)' WHERE name = 'Reis, Basmati' AND unit = 'Btl';
+UPDATE items SET name = 'Risottoreis Arborio', unit = 'Beutel (5 kg)' WHERE name = 'Reis, Risotto' AND unit = 'Btl';
+UPDATE items SET name = 'Siegelrandbeutel 160×240 mm (100 St.)', unit = 'Packung (100 St.)' WHERE name = 'Siegelrandbeutel 160x240' AND unit = 'Ktn';
+UPDATE items SET name = 'Siegelrandbeutel 150×250 mm (100 St.)', unit = 'Packung (100 St.)' WHERE name = 'Siegelrandbeutel 150x250' AND unit = 'Ktn';
+UPDATE items SET name = 'Siegelrandbeutel 250×300 mm (100 St.)', unit = 'Packung (100 St.)' WHERE name = 'Siegelrandbeutel 250x300' AND unit = 'Ktn';
+UPDATE items SET name = 'Knoblauch gehackt', unit = 'Eimer (1 kg)' WHERE name = 'Knoblauch, gehackt' AND unit = 'Stk';
+UPDATE items SET name = 'Couscous 1 kg', unit = 'Beutel (1 kg)' WHERE name = 'Cous cous 1kg' AND unit = 'Stk';
+UPDATE items SET name = 'Bagel Sesam (TK)', unit = 'Karton (44×85 g)' WHERE name = 'Bagel Sesam' AND unit = 'Ktn';
+UPDATE items SET name = 'Kapern Fines', unit = 'Glas (720 ml)' WHERE name = 'Kapern fines, 720ml' AND unit = 'Stk';
+UPDATE items SET name = 'Croutons Kräuter', unit = 'Beutel (500 g)' WHERE name = 'Croutons, Kräuter' AND unit = 'Btl';
+UPDATE items SET name = 'Grafschafter Goldsaft Rübensirup g.g.A.', unit = 'Flasche (500 g)' WHERE name = 'Rübensirup, Grafschafter Goldsaft' AND unit = 'Stk';

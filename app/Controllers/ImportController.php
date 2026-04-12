@@ -41,6 +41,7 @@ final class ImportController
             'type' => $type,
             'rows' => $result['preview'],
             'ok' => $result['ok'],
+            'items_not_in_csv' => $result['items_not_in_csv'] ?? [],
         ];
         View::layout('layout', 'pages/import', [
             'title' => 'CSV-Import',
@@ -64,11 +65,30 @@ final class ImportController
         }
         $svc = new CsvImportService();
         $stats = $svc->execute((string) $data['type'], $data['rows']);
+
+        $deactivated = 0;
+        if ($data['type'] === 'items'
+            && !empty($_POST['deactivate_missing_items'])
+            && $_POST['deactivate_missing_items'] === '1'
+            && !empty($data['items_not_in_csv'])
+            && is_array($data['items_not_in_csv'])
+        ) {
+            $ids = array_map(
+                static fn (array $r): int => (int) ($r['id'] ?? 0),
+                $data['items_not_in_csv']
+            );
+            $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+            if ($ids !== []) {
+                $svc->deactivateItemsByIds($ids);
+                $deactivated = count($ids);
+            }
+        }
+
         unset($_SESSION['import_preview']);
         View::layout('layout', 'pages/import', [
             'title' => 'CSV-Import',
             'csrf' => Csrf::token(),
-            'done' => $stats,
+            'done' => array_merge($stats, ['deactivated' => $deactivated]),
         ]);
     }
 }

@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/config/bootstrap.php';
 
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\ExportController;
 use App\Controllers\ImportController;
 use App\Controllers\ItemController;
 use App\Controllers\LocationController;
@@ -35,6 +36,11 @@ $router = new Router([
         '/order/review' => [OrderController::class, 'review'],
         '/order/output' => [OrderController::class, 'output'],
         '/api/order/payload' => [OrderApiController::class, 'payload'],
+        '/export/locations' => [ExportController::class, 'locations'],
+        '/export/suppliers' => [ExportController::class, 'suppliers'],
+        '/export/delivery-days' => [ExportController::class, 'deliveryDays'],
+        '/export/items' => [ExportController::class, 'items'],
+        '/export/item-supplier' => [ExportController::class, 'itemSupplier'],
     ],
     'POST' => [
         '/login' => [AuthController::class, 'login'],
@@ -46,6 +52,7 @@ $router = new Router([
         '/import/preview' => [ImportController::class, 'preview'],
         '/import/run' => [ImportController::class, 'run'],
         '/api/pdf/supplier' => [OrderApiController::class, 'pdf'],
+        '/api/order/send-mail' => [OrderApiController::class, 'sendMail'],
     ],
 ]);
 

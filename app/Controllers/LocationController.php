@@ -76,6 +76,7 @@ final class LocationController
         } else {
             $this->repo->create($name, $sort, $active);
         }
+        $_SESSION['flash_ok'] = 'Lagerort gespeichert.';
         Response::redirect('/locations');
     }
 }

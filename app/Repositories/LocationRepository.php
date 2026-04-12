@@ -16,7 +16,7 @@ final class LocationRepository
         if ($activeOnly) {
             $sql .= ' WHERE active = 1';
         }
-        $sql .= ' ORDER BY sort_order ASC, name ASC';
+        $sql .= ' ORDER BY active DESC, sort_order ASC, name ASC';
         return Database::pdo()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 

@@ -9,6 +9,8 @@ namespace App\Services;
  */
 final class EmailService
 {
+    private const DEFAULT_ORDER_SUBJECT = 'Bestellung {{COMPANY}} {{TARGET_DATE}}';
+
     /**
      * @param list<array{label: string, quantity: string, unit: string}> $lines
      * @param list<string> $freeLines
@@ -19,9 +21,12 @@ final class EmailService
         string $targetDateFormatted,
         array $lines,
         array $freeLines,
-        string $supplierNote = ''
+        string $supplierNote = '',
+        ?string $subjectTemplate = null,
+        string $companyName = '',
+        string $appName = ''
     ): array {
-        $defaultBody = "Bestellung für {{TARGET_DATE}}\n\n{{LINES}}\n\n{{FREE_ITEMS}}\n\n{{SUPPLIER_NOTE}}";
+        $defaultBody = "Bestellung für {{TARGET_DATE}}\n\n{{LINES}}\n\n{{IF ADDONS}}Zusätzlich:\n{{ADDONS}}\n{{ENDIF}}\n{{SUPPLIER_NOTE}}";
         $tpl = $template !== null && trim($template) !== '' ? $template : $defaultBody;
 
         $linesBlock = '';
@@ -38,11 +43,8 @@ final class EmailService
         }
 
         $freeBlock = '';
-        if ($freeLines !== []) {
-            $freeBlock = "Zusätzlich:\n";
-            foreach ($freeLines as $f) {
-                $freeBlock .= "- {$f}\n";
-            }
+        foreach ($freeLines as $f) {
+            $freeBlock .= "- {$f}\n";
         }
 
         $noteBlock = $supplierNote !== '' ? "Hinweis:\n{$supplierNote}\n" : '';
@@ -52,8 +54,9 @@ final class EmailService
                 '{{TARGET_DATE}}',
                 '{{SUPPLIER}}',
                 '{{LINES}}',
-                '{{FREE_ITEMS}}',
+                '{{ADDONS}}',
                 '{{SUPPLIER_NOTE}}',
+                '{{DATE_TODAY}}',
                 '[DATE_TODAY]',
             ],
             [
@@ -63,22 +66,46 @@ final class EmailService
                 $freeBlock,
                 $noteBlock,
                 $targetDateFormatted,
+                $targetDateFormatted,
             ],
             $tpl
         );
 
-        // Simple conditional blocks [IF ADDONS] ... [ENDIF]
-        if (str_contains($body, '[IF ADDONS]')) {
+        // Conditional blocks {{IF ADDONS}} ... {{ENDIF}}
+        if (str_contains($body, '{{IF ADDONS}}')) {
             $hasAddons = $freeLines !== [];
             $body = preg_replace(
-                '/\[IF ADDONS\].*?\[ENDIF\]/s',
+                '/\{\{IF ADDONS\}\}.*?\{\{ENDIF\}\}/s',
                 $hasAddons ? '$0' : '',
                 $body
             ) ?? $body;
-            $body = str_replace(['[IF ADDONS]', '[ENDIF]'], '', $body);
+            $body = str_replace(['{{IF ADDONS}}', '{{ENDIF}}'], '', $body);
         }
 
-        $subject = 'Bestellung ' . $supplierName . ' ' . $targetDateFormatted;
+        $subjectTpl = $subjectTemplate !== null && trim($subjectTemplate) !== ''
+            ? trim($subjectTemplate)
+            : self::DEFAULT_ORDER_SUBJECT;
+        $company = trim($companyName) !== '' ? trim($companyName) : trim($appName);
+        $subject = str_replace(
+            [
+                '{{COMPANY}}',
+                '{{APP_NAME}}',
+                '{{SUPPLIER}}',
+                '{{TARGET_DATE}}',
+                '{{DATE_TODAY}}',
+                '[DATE_TODAY]',
+            ],
+            [
+                $company,
+                trim($appName),
+                $supplierName,
+                $targetDateFormatted,
+                $targetDateFormatted,
+                $targetDateFormatted,
+            ],
+            $subjectTpl
+        );
+        $subject = trim(preg_replace('/\s+/u', ' ', $subject) ?? $subject);
 
         return ['subject' => $subject, 'body' => trim($body)];
     }

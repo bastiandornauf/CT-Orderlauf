@@ -16,7 +16,7 @@ final class SupplierRepository
         if ($activeOnly) {
             $sql .= ' WHERE active = 1';
         }
-        $sql .= ' ORDER BY name ASC';
+        $sql .= ' ORDER BY active DESC, name ASC';
         return Database::pdo()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -39,14 +39,22 @@ final class SupplierRepository
     public function create(
         string $name,
         ?string $email,
+        ?string $phone,
+        ?string $fax,
+        ?string $mobile,
+        ?string $street,
+        ?string $city,
         string $orderType,
         ?string $emailTemplate,
-        bool $active
+        ?string $emailSubjectTemplate,
+        bool $active,
+        bool $attachPdf = false
     ): int {
         $stmt = Database::pdo()->prepare(
-            'INSERT INTO suppliers (name, email, order_type, email_template, active) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO suppliers (name, email, phone, fax, mobile, street, city, order_type, email_template, email_subject_template, active, attach_pdf)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$name, $email, $orderType, $emailTemplate, $active ? 1 : 0]);
+        $stmt->execute([$name, $email, $phone, $fax, $mobile, $street, $city, $orderType, $emailTemplate, $emailSubjectTemplate, $active ? 1 : 0, $attachPdf ? 1 : 0]);
         return (int) Database::pdo()->lastInsertId();
     }
 
@@ -54,14 +62,22 @@ final class SupplierRepository
         int $id,
         string $name,
         ?string $email,
+        ?string $phone,
+        ?string $fax,
+        ?string $mobile,
+        ?string $street,
+        ?string $city,
         string $orderType,
         ?string $emailTemplate,
-        bool $active
+        ?string $emailSubjectTemplate,
+        bool $active,
+        bool $attachPdf = false
     ): void {
         $stmt = Database::pdo()->prepare(
-            'UPDATE suppliers SET name = ?, email = ?, order_type = ?, email_template = ?, active = ? WHERE id = ?'
+            'UPDATE suppliers SET name = ?, email = ?, phone = ?, fax = ?, mobile = ?,
+             street = ?, city = ?, order_type = ?, email_template = ?, email_subject_template = ?, active = ?, attach_pdf = ? WHERE id = ?'
         );
-        $stmt->execute([$name, $email, $orderType, $emailTemplate, $active ? 1 : 0, $id]);
+        $stmt->execute([$name, $email, $phone, $fax, $mobile, $street, $city, $orderType, $emailTemplate, $emailSubjectTemplate, $active ? 1 : 0, $attachPdf ? 1 : 0, $id]);
     }
 
     /** @return list<int> */
