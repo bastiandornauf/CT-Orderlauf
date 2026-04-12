@@ -1,0 +1,7 @@
+/vendor/
+/.env
+/public/uploads/
+*.log
+.DS_Store
+.idea/
+.vscode/

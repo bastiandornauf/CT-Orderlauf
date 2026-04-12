@@ -1,0 +1,11 @@
+{
+ "name": "ct-orderlauf/app",
+    "description": "Mobile offline-capable kitchen ordering web app",
+    "type": "project",
+    "require": {
+        "php": ">=8.2"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

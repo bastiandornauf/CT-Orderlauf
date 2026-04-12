@@ -1,0 +1,18 @@
+[BETREFF]
+Bestellung Kochkultur [DATE_TODAY]
+[BODY]
+Hallo zusammen, 
+
+anbei unsere Bestellung für die Kochkultur zu morgen. (Anhang PDF)
+
+[IF ADDONS]
+Bitte auch noch folgende Artikel liefern:
+    [ADDONS]
+[ENDIF]
+
+Danke &
+mit freundlichen Grüßen
+Bastian Dornauf
+Küchenchef
+
+[SIGNATURE]
