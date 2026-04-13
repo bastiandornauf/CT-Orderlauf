@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\Csrf;
 use App\Helpers\Database;
+use App\Helpers\UserRole;
 use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
 
@@ -18,6 +19,7 @@ final class DashboardController
         View::layout('layout', 'pages/dashboard', [
             'title' => 'Start',
             'csrf' => Csrf::token(),
+            'canEditMaster' => UserRole::canEditMasterData((string) ($_SESSION['role'] ?? '')),
             'counts' => [
                 'items' => (int) $pdo->query('SELECT COUNT(*) FROM items')->fetchColumn(),
                 'suppliers' => (int) $pdo->query('SELECT COUNT(*) FROM suppliers')->fetchColumn(),

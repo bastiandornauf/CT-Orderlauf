@@ -20,7 +20,7 @@ final class LocationController
 
     public function index(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         View::layout('layout', 'pages/locations/index', [
             'title' => 'Lagerorte',
             'locations' => $this->repo->all(),
@@ -30,7 +30,7 @@ final class LocationController
 
     public function form(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
         $row = $id ? $this->repo->find($id) : null;
         if ($id && $row === null) {
@@ -46,7 +46,7 @@ final class LocationController
 
     public function save(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/locations');
             return;

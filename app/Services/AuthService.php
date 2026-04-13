@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Helpers\UserRole;
 use App\Repositories\UserRepository;
 
 final class AuthService
@@ -24,6 +25,7 @@ final class AuthService
         }
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = (string) ($user['role'] ?? UserRole::EDITOR);
         return true;
     }
 

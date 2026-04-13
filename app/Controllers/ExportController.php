@@ -12,7 +12,7 @@ final class ExportController
 {
     public function locations(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
             'SELECT name, sort_order FROM locations ORDER BY sort_order'
         )->fetchAll(PDO::FETCH_ASSOC);
@@ -22,7 +22,7 @@ final class ExportController
 
     public function suppliers(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
             'SELECT name, email, order_type AS type, active, email_subject_template FROM suppliers ORDER BY name'
         )->fetchAll(PDO::FETCH_ASSOC);
@@ -32,7 +32,7 @@ final class ExportController
 
     public function deliveryDays(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
             'SELECT s.name AS supplier_name,
                     GROUP_CONCAT(sdd.weekday ORDER BY sdd.weekday SEPARATOR \',\') AS delivery_days
@@ -47,7 +47,7 @@ final class ExportController
 
     public function items(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
             'SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, i.active
              FROM items i
@@ -60,7 +60,7 @@ final class ExportController
 
     public function itemSupplier(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
             'SELECT i.id AS item_id, i.name AS item_name, s.name AS supplier_name, isl.priority
              FROM item_supplier isl

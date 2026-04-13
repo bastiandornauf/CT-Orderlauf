@@ -6,6 +6,11 @@
     <?php if (!empty($error)): ?>
         <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
+    <?php if (isset($smtp_test_ok) && $smtp_test_ok === true): ?>
+        <p class="toast toast--success"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+    <?php elseif (isset($smtp_test_ok) && $smtp_test_ok === false): ?>
+        <p class="toast toast--error" style="white-space:pre-wrap;word-break:break-word"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+    <?php endif; ?>
     <form method="post" action="/settings/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
         <div class="form-group">
@@ -105,33 +110,40 @@
                        placeholder="z.B. smtp.gmail.com oder mail.dein-hoster.de">
                 <p class="form-hint">Leer = PHP <code>mail()</code> nutzen. Ausgefüllt = Versand über diesen SMTP-Server.</p>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="smtp_port">Port</label>
-                    <input class="input" id="smtp_port" name="smtp_port" type="number"
-                           value="<?= htmlspecialchars($smtp_port ?? '587', ENT_QUOTES, 'UTF-8') ?>">
-                    <p class="form-hint">587 (STARTTLS) oder 465 (SSL)</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="smtp_user">Benutzername</label>
-                    <input class="input" id="smtp_user" name="smtp_user"
-                           value="<?= htmlspecialchars($smtp_user ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                           autocomplete="off">
-                </div>
+            <div class="form-group">
+                <label class="form-label" for="smtp_port">Port</label>
+                <input class="input" id="smtp_port" name="smtp_port" type="number"
+                       style="max-width: 8rem"
+                       value="<?= htmlspecialchars($smtp_port ?? '587', ENT_QUOTES, 'UTF-8') ?>">
+                <p class="form-hint">587 (STARTTLS) oder 465 (SSL)</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="smtp_user">Benutzername (vollständige E-Mail)</label>
+                <input class="input" id="smtp_user" name="smtp_user" type="email"
+                       value="<?= htmlspecialchars($smtp_user ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       autocomplete="username"
+                       inputmode="email"
+                       spellcheck="false"
+                       placeholder="name@ihre-domain.de"
+                       style="width:100%;max-width:42rem">
+                <p class="form-hint">In der Regel die <strong>vollständige E-Mail-Adresse</strong> des Postfachs (nicht Kundennummer/FTP). Oft identisch mit „Absender-Adresse“ – siehe Hinweis unten. Eingabe ggf. komplett markieren und auf Tippfehler prüfen.</p>
             </div>
             <div class="form-group">
                 <label class="form-label" for="smtp_pass">Passwort</label>
                 <input class="input" id="smtp_pass" name="smtp_pass" type="password"
-                       value="<?= htmlspecialchars($smtp_pass ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       autocomplete="new-password">
+                       value=""
+                       autocomplete="new-password"
+                       placeholder="Leer lassen = Passwort unverändert lassen">
+                <p class="form-hint">Nach dem ersten Speichern bleibt das Passwort gespeichert, auch wenn das Feld leer bleibt.</p>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="smtp_from_email">Absender-Adresse</label>
                     <input class="input" id="smtp_from_email" name="smtp_from_email" type="email"
                            value="<?= htmlspecialchars($smtp_from_email ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                           placeholder="z.B. bestellung@firma.de">
-                    <p class="form-hint">Leer = CC-Adresse wird als Absender verwendet</p>
+                           placeholder="z.B. bestellung@firma.de"
+                           autocomplete="email">
+                    <p class="form-hint">Leer = oft wird die CC-Adresse als Absender genutzt. Manche Anbieter verlangen, dass Absender und SMTP-Benutzer exakt übereinstimmen.</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="smtp_from_name">Absendername</label>
@@ -141,6 +153,10 @@
                     <p class="form-hint">Leer = Firmenname</p>
                 </div>
             </div>
+            <details class="form-details" style="margin-top: var(--space-3)">
+                <summary class="text-muted" style="cursor:pointer">Hinweis zu manchen Hostern (z. B. IONOS)</summary>
+                <p class="form-hint" style="margin-top: var(--space-2)">Bei <strong>smtp.ionos.de</strong> müssen Absender-Adresse und SMTP-Anmeldung dieselbe vollständige E-Mail sein (Relay-Regel). Andere Provider haben ähnliche oder andere Regeln – in der Hilfe des Hosters nachsehen.</p>
+            </details>
         </fieldset>
 
         <fieldset class="form-fieldset">
@@ -163,4 +179,13 @@
 
         <button type="submit" class="button button--primary">Speichern</button>
     </form>
+
+    <div class="card card--pad" style="margin-top: var(--space-5)">
+        <p class="section-header" style="margin-top:0">SMTP-Mini-Test</p>
+        <p class="text-muted" style="margin-bottom: var(--space-3)">Prüft nur: Verbindung, TLS und Anmeldung beim Server – <strong>es wird keine E-Mail versendet</strong>. Verwendet die <strong>zuletzt gespeicherten</strong> SMTP-Daten (nach Änderungen zuerst „Speichern“).</p>
+        <form method="post" action="/settings/smtp-test">
+            <?= \App\Helpers\Csrf::field() ?>
+            <button type="submit" class="button button--secondary">SMTP-Verbindung testen</button>
+        </form>
+    </div>
 </section>

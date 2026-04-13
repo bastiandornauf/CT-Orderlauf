@@ -14,7 +14,7 @@ final class ImportController
 {
     public function index(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         View::layout('layout', 'pages/import', [
             'title' => 'CSV-Import',
             'csrf' => Csrf::token(),
@@ -24,7 +24,7 @@ final class ImportController
 
     public function preview(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/import');
             return;
@@ -53,7 +53,7 @@ final class ImportController
 
     public function run(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/import');
             return;

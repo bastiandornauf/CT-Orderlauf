@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/config/bootstrap.php';
 
+use App\Controllers\AdminUsersController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\ProfileController;
 use App\Controllers\ExportController;
 use App\Controllers\ImportController;
 use App\Controllers\ItemController;
@@ -30,6 +32,10 @@ $router = new Router([
         '/items/new' => [ItemController::class, 'form'],
         '/items/edit' => [ItemController::class, 'form'],
         '/settings' => [SettingsController::class, 'index'],
+        '/profile' => [ProfileController::class, 'index'],
+        '/admin/users' => [AdminUsersController::class, 'index'],
+        '/admin/users/new' => [AdminUsersController::class, 'form'],
+        '/admin/users/edit' => [AdminUsersController::class, 'form'],
         '/import' => [ImportController::class, 'index'],
         '/order/prepare' => [OrderController::class, 'prepare'],
         '/order/round' => [OrderController::class, 'round'],
@@ -49,6 +55,10 @@ $router = new Router([
         '/suppliers/save' => [SupplierController::class, 'save'],
         '/items/save' => [ItemController::class, 'save'],
         '/settings/save' => [SettingsController::class, 'save'],
+        '/settings/smtp-test' => [SettingsController::class, 'smtpTest'],
+        '/profile/password' => [ProfileController::class, 'password'],
+        '/admin/users/save' => [AdminUsersController::class, 'save'],
+        '/admin/users/delete' => [AdminUsersController::class, 'delete'],
         '/import/preview' => [ImportController::class, 'preview'],
         '/import/run' => [ImportController::class, 'run'],
         '/api/pdf/supplier' => [OrderApiController::class, 'pdf'],

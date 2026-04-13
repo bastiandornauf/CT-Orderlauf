@@ -100,6 +100,20 @@ body.app-body {
   flex-shrink: 0;
 }
 
+.app-header__user {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+  text-decoration: none;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-header__user:hover {
+  text-decoration: underline;
+  color: var(--color-accent);
+}
+
 .app-header__menu-btn {
   display: none;
   align-items: center;
@@ -466,6 +480,18 @@ body.app-body--nav-open {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.list-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.list-item__actions .inline-form {
+  display: inline;
+  margin: 0;
 }
 
 .grow {
@@ -1138,6 +1164,19 @@ button.supplier-chip--choice-active .supplier-chip--choice__name {
 .toast-float--visible {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
+}
+
+.toast-float.toast-float--error {
+  background: #6b1c18;
+  color: #fff;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: min(92vw, 32rem);
+  max-height: min(50vh, 18rem);
+  overflow-y: auto;
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .toast--error {

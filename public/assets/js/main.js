@@ -11,6 +11,12 @@ Alpine.data('appHeader', () => ({
     this.$watch('navOpen', (open) => {
       document.body.classList.toggle('app-body--nav-open', !!open);
     });
+    // Nach Browser-Zurück (bfcache) kann das Menü sonst „hängen“ (grauer Screen)
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) {
+        this.navOpen = false;
+      }
+    });
   },
   toggleNav() {
     this.navOpen = !this.navOpen;

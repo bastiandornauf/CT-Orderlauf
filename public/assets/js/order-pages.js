@@ -23,13 +23,17 @@ function orderTypeLabel(raw) {
 }
 
 let _toastTimer = null;
-function showToast(msg, durationMs = 2000) {
+/** Kurze Hinweise Standard ~2,5s; Fehler länger und hervorgehoben (SMTP-Text bleibt lesbar). */
+function showToast(msg, durationMs = 2500, isError = false) {
   const el = document.getElementById('toast-float');
   if (!el) return;
   el.textContent = msg;
+  el.classList.toggle('toast-float--error', !!isError);
   el.classList.add('toast-float--visible');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('toast-float--visible'), durationMs);
+  _toastTimer = setTimeout(() => {
+    el.classList.remove('toast-float--visible', 'toast-float--error');
+  }, durationMs);
 }
 
 /** Min/Max-Bestand für Anzeige im Bestellprozess (leer wenn nicht gepflegt). */
@@ -790,7 +794,7 @@ export function registerOrderAlpine(Alpine) {
         showToast(`Gesendet an ${params.to}`);
       } catch (e) {
         this.sendStatus[sid] = 'error';
-        showToast(e.message || 'Versand fehlgeschlagen');
+        showToast(e.message || 'Versand fehlgeschlagen', 60000, true);
       }
     },
     async sendAllBlocks() {
@@ -810,9 +814,10 @@ export function registerOrderAlpine(Alpine) {
       this.sendingAll = false;
       if (fail === 0) {
         showToast(`Alle ${ok} Mails gesendet!`);
-      } else {
-        showToast(`${ok} gesendet, ${fail} fehlgeschlagen`);
+      } else if (ok > 0) {
+        showToast(`${ok} gesendet, ${fail} fehlgeschlagen.`, 15000, true);
       }
+      /* Wenn alle fehlschlagen: keine kurze End-Meldung — die letzte ausführliche Fehlermeldung bleibt sichtbar (60s). */
     },
     async pdfBlock(block) {
       try {

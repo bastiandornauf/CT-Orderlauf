@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(64) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(255) NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'editor' COMMENT 'admin|editor|order',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -74,10 +75,11 @@ CREATE TABLE IF NOT EXISTS settings (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Default admin: admin / admin123 (change in production)
-INSERT INTO users (username, password_hash, email) VALUES (
+INSERT INTO users (username, password_hash, email, role) VALUES (
     'admin',
     '$2y$12$T6uKJd52pBDfB5YvRN9Cf.sdknFBtTbgs6tsJWnshJDr6zL900zEG',
-    'admin@example.com'
+    'admin@example.com',
+    'admin'
 ) ON DUPLICATE KEY UPDATE username = username;
 
 INSERT INTO settings (key_name, value) VALUES

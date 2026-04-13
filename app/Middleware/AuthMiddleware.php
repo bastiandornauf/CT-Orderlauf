@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Helpers\Response;
+use App\Helpers\UserRole;
 
 final class AuthMiddleware
 {
@@ -15,6 +16,31 @@ final class AuthMiddleware
                 Response::jsonError('Unauthorized', 401);
             }
             Response::redirect('/login');
+        }
+    }
+
+    /** Administrator oder Stammdaten: Lagerorte, Artikel, Import, Einstellungen, Export */
+    public static function requireEditor(): void
+    {
+        self::requireAuth();
+        $role = (string) ($_SESSION['role'] ?? '');
+        if (!UserRole::canEditMasterData($role)) {
+            if (self::isApiRequest()) {
+                Response::jsonError('Forbidden', 403);
+            }
+            Response::redirect('/');
+        }
+    }
+
+    /** Nur Administrator: Nutzerverwaltung */
+    public static function requireAdmin(): void
+    {
+        self::requireAuth();
+        if (!UserRole::isAdmin((string) ($_SESSION['role'] ?? ''))) {
+            if (self::isApiRequest()) {
+                Response::jsonError('Forbidden', 403);
+            }
+            Response::redirect('/');
         }
     }
 

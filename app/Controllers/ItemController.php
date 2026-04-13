@@ -24,7 +24,7 @@ final class ItemController
 
     public function index(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $locId = isset($_GET['loc']) ? (int) $_GET['loc'] : 0;
         if ($locId <= 0) {
             $locId = 0;
@@ -60,7 +60,7 @@ final class ItemController
 
     public function form(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
         $row = $id ? $this->items->find($id) : null;
         if ($id && $row === null) {
@@ -80,7 +80,7 @@ final class ItemController
 
     public function save(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/items');
             return;

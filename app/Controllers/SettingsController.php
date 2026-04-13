@@ -6,10 +6,12 @@ namespace App\Controllers;
 
 use App\Helpers\Csrf;
 use App\Helpers\Response;
+use App\Helpers\SmtpHost;
 use App\Helpers\Validator;
 use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\SettingsRepository;
+use App\Services\MailSenderService;
 
 final class SettingsController
 {
@@ -22,10 +24,18 @@ final class SettingsController
 
     public function index(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $subjectTpl = trim((string) $this->settings->get('order_email_subject_template', ''));
         if ($subjectTpl === '') {
             $subjectTpl = self::DEFAULT_ORDER_SUBJECT;
+        }
+        $smtpHost = trim((string) $this->settings->get('smtp_host', ''));
+        $smtpUser = trim((string) $this->settings->get('smtp_user', ''));
+        $smtpFromDisplay = trim((string) $this->settings->get('smtp_from_email', ''));
+        if (SmtpHost::requiresSenderEqualsSmtpUser($smtpHost) && $smtpUser !== '') {
+            if ($smtpFromDisplay === '' || strcasecmp($smtpFromDisplay, $smtpUser) !== 0) {
+                $smtpFromDisplay = $smtpUser;
+            }
         }
         View::layout('layout', 'pages/settings', [
             'title' => 'Einstellungen',
@@ -45,16 +55,38 @@ final class SettingsController
             'smtp_host' => $this->settings->get('smtp_host', ''),
             'smtp_port' => $this->settings->get('smtp_port', '587'),
             'smtp_user' => $this->settings->get('smtp_user', ''),
-            'smtp_pass' => $this->settings->get('smtp_pass', ''),
-            'smtp_from_email' => $this->settings->get('smtp_from_email', ''),
+            'smtp_pass' => '',
+            'smtp_from_email' => $smtpFromDisplay,
             'smtp_from_name' => $this->settings->get('smtp_from_name', ''),
             'csrf' => Csrf::token(),
+            'smtp_test_ok' => $_SESSION['smtp_test_ok'] ?? null,
+            'smtp_test_message' => $_SESSION['smtp_test_message'] ?? '',
         ]);
+        unset($_SESSION['smtp_test_ok'], $_SESSION['smtp_test_message']);
+    }
+
+    /** POST: SMTP nur Verbindung + Anmeldung testen (gespeicherte Werte aus der Datenbank). */
+    public function smtpTest(): void
+    {
+        AuthMiddleware::requireEditor();
+        if (!Csrf::validate($_POST['_csrf'] ?? null)) {
+            Response::redirect('/settings');
+            return;
+        }
+        $result = (new MailSenderService($this->settings))->testSmtpConnection();
+        if ($result['ok']) {
+            $_SESSION['smtp_test_ok'] = true;
+            $_SESSION['smtp_test_message'] = (string) ($result['detail'] ?? 'OK');
+        } else {
+            $_SESSION['smtp_test_ok'] = false;
+            $_SESSION['smtp_test_message'] = (string) ($result['error'] ?? 'Fehler');
+        }
+        Response::redirect('/settings');
     }
 
     public function save(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/settings');
             return;
@@ -85,6 +117,19 @@ final class SettingsController
         }
         if (!$err && $devEmail !== '') {
             $err = Validator::email($devEmail);
+        }
+        if (!$err && $smtpHost !== '' && $smtpUser !== '') {
+            $smtpUserEmailErr = Validator::email($smtpUser);
+            if ($smtpUserEmailErr !== null) {
+                $err = 'SMTP-Benutzer muss eine vollständige E-Mail-Adresse sein (z. B. name@domain.de) – nicht abgeschnitten oder nur der lokale Teil.';
+            }
+        }
+        if (!$err && $smtpHost !== '' && SmtpHost::requiresSenderEqualsSmtpUser($smtpHost) && $smtpUser !== '') {
+            if ($smtpFromEmail === '') {
+                $smtpFromEmail = $smtpUser;
+            } elseif (strcasecmp($smtpFromEmail, $smtpUser) !== 0) {
+                $err = 'Absender-Adresse und SMTP-Benutzer müssen identisch sein (Vorgabe dieses SMTP-Anbieters, z. B. IONOS).';
+            }
         }
         if ($err) {
             View::layout('layout', 'pages/settings', [
@@ -132,7 +177,11 @@ final class SettingsController
         $this->settings->set('smtp_host', $smtpHost === '' ? null : $smtpHost);
         $this->settings->set('smtp_port', $smtpPort);
         $this->settings->set('smtp_user', $smtpUser === '' ? null : $smtpUser);
-        $this->settings->set('smtp_pass', $smtpPass === '' ? null : $smtpPass);
+        if ($smtpPass !== '') {
+            $this->settings->set('smtp_pass', $smtpPass);
+        } elseif ($smtpHost === '') {
+            $this->settings->set('smtp_pass', null);
+        }
         $this->settings->set('smtp_from_email', $smtpFromEmail === '' ? null : $smtpFromEmail);
         $this->settings->set('smtp_from_name', $smtpFromName === '' ? null : $smtpFromName);
         Response::redirect('/settings?saved=1');

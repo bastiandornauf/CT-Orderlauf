@@ -45,9 +45,22 @@ if (is_file($root . '/vendor/autoload.php')) {
 require_once $root . '/config/app.php';
 require_once $root . '/config/database.php';
 
+if (APP_DEBUG) {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+}
+
 session_name(SESSION_NAME);
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax',
 ]);
 session_start();
+
+if (!empty($_SESSION['user_id']) && (!isset($_SESSION['role']) || $_SESSION['role'] === '')) {
+    $row = (new \App\Repositories\UserRepository())->findById((int) $_SESSION['user_id']);
+    if ($row !== null) {
+        $_SESSION['role'] = (string) ($row['role'] ?? \App\Helpers\UserRole::EDITOR);
+        $_SESSION['username'] = (string) $row['username'];
+    }
+}

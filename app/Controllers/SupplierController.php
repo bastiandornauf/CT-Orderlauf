@@ -20,7 +20,7 @@ final class SupplierController
 
     public function index(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $list = $this->repo->all();
         foreach ($list as &$s) {
             $s['weekdays'] = $this->repo->deliveryWeekdays((int) $s['id']);
@@ -35,7 +35,7 @@ final class SupplierController
 
     public function form(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
         $row = $id ? $this->repo->find($id) : null;
         if ($id && $row === null) {
@@ -53,7 +53,7 @@ final class SupplierController
 
     public function save(): void
     {
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/suppliers');
             return;

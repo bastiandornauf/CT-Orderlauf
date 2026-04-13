@@ -2,6 +2,7 @@
     <h1 class="page-title">Start</h1>
     <p class="page-lead">Bestellrunden durch den Lager-Rundgang, Kontrolle und Ausgabe per E-Mail oder PDF.</p>
 
+    <?php if (!empty($canEditMaster)): ?>
     <div class="dashboard-quick card card--pad">
         <p class="section-header" style="margin-top:0">Stammdaten</p>
         <ul class="dashboard-quick__list">
@@ -10,6 +11,7 @@
             <li><a href="/locations" class="dashboard-quick__link">Lagerorte <span class="dashboard-quick__count"><?= (int) ($counts['locations'] ?? 0) ?></span></a></li>
         </ul>
     </div>
+    <?php endif; ?>
 
     <template x-if="hasRound && roundStatusLabel">
         <div class="card card--pad dashboard-round-status">
