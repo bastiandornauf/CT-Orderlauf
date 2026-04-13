@@ -1560,6 +1560,7 @@ html.js .app-nav__link--logout:hover {
 .card--has-qty {
   border-left: 3px solid var(--color-accent);
 }
+/* Rundgang überschreibt border-left selbst (s.u.) */
 
 .dashboard-quick__list {
   list-style: none;
@@ -1629,5 +1630,78 @@ html.js .app-nav__link--logout:hover {
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     text-align: center;
+  }
+}
+
+/* ─── Sleek-Mode Toggle Button ───────────────────────────────── */
+.app-header__sleek-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-header__sleek-btn:hover {
+  color: var(--color-accent);
+  background: var(--color-bg);
+}
+.app-header__sleek-btn[aria-pressed="true"] {
+  color: var(--color-accent);
+}
+.sleek-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── Sleek-Mode: Hilfstexte und Beschreibungen ausblenden ──── */
+.sleek .form-hint,
+.sleek .output-disclaimer,
+.sleek .review-supplier-choice__hint,
+.sleek .text-muted.order-item-meta,
+.sleek .order-stammdaten-hint,
+.sleek [class*="page-hint"],
+.sleek details summary ~ p,
+.sleek .card .text-muted:not(.delivery-badge):not(.dashboard-quick__count) {
+  display: none !important;
+}
+
+/* Rundgang: Kompaktzeile (unit + stock zusammen) bleibt sichtbar */
+.sleek .order-stock-hint {
+  display: inline !important;
+}
+
+/* ─── Rundgang-Artikel: klare visuelle Trennung ─────────────── */
+.card-list .card.list-item--round {
+  border-left: 3px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.card-list .card.list-item--round.card--has-qty {
+  border-left-color: var(--color-accent);
+  background: rgba(26, 95, 74, 0.04);
+}
+
+.list-item--round .list-item__main strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Trennung zwischen Artikeln betonen */
+.card-list {
+  gap: var(--space-2);
+}
+
+@media (min-width: 769px) {
+  .card-list {
+    gap: var(--space-3);
   }
 }

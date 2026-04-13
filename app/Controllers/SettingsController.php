@@ -61,8 +61,9 @@ final class SettingsController
             'csrf' => Csrf::token(),
             'smtp_test_ok' => $_SESSION['smtp_test_ok'] ?? null,
             'smtp_test_message' => $_SESSION['smtp_test_message'] ?? '',
+            'smtp_test_log' => $_SESSION['smtp_test_log'] ?? '',
         ]);
-        unset($_SESSION['smtp_test_ok'], $_SESSION['smtp_test_message']);
+        unset($_SESSION['smtp_test_ok'], $_SESSION['smtp_test_message'], $_SESSION['smtp_test_log']);
     }
 
     /** POST: SMTP nur Verbindung + Anmeldung testen (gespeicherte Werte aus der Datenbank). */
@@ -80,6 +81,9 @@ final class SettingsController
         } else {
             $_SESSION['smtp_test_ok'] = false;
             $_SESSION['smtp_test_message'] = (string) ($result['error'] ?? 'Fehler');
+        }
+        if (isset($result['log'])) {
+            $_SESSION['smtp_test_log'] = $result['log'];
         }
         Response::redirect('/settings');
     }

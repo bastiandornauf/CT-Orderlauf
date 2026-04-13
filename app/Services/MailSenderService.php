@@ -21,11 +21,7 @@ final class MailSenderService
         return $this->settings->get('send_email_direct', '0') === '1';
     }
 
-    /**
-     * Minimaler Test: TCP + TLS + SMTP-Auth, danach QUIT — kein Versand, keine MAIL FROM/RCPT/DATA.
-     *
-     * @return array{ok: bool, error?: string, detail?: string}
-     */
+    /** @return array{ok: bool, error?: string, detail?: string, log: string} */
     public function testSmtpConnection(): array
     {
         $host = trim((string) $this->settings->get('smtp_host', ''));
@@ -33,63 +29,116 @@ final class MailSenderService
         $user = trim((string) $this->settings->get('smtp_user', ''));
         $pass = trim((string) $this->settings->get('smtp_pass', ''), " \t\r\n\v\f\0");
 
+        $log = [];
+        $log[] = "Host: {$host}:{$port}";
+        $log[] = "User: {$user}";
+        $log[] = "Pass-Laenge: " . strlen($pass) . " Zeichen";
+        $log[] = "EHLO-Name: " . (gethostname() ?: 'localhost');
+        $log[] = str_repeat('-', 40);
+
         if ($host === '') {
-            return ['ok' => false, 'error' => 'Kein SMTP-Server konfiguriert.'];
+            return ['ok' => false, 'error' => 'Kein SMTP-Server konfiguriert.', 'log' => implode("\n", $log)];
         }
         if ($user === '' || $pass === '') {
-            return ['ok' => false, 'error' => 'SMTP-Benutzer oder Passwort fehlt (Passwort nach Änderung speichern).'];
+            return ['ok' => false, 'error' => 'SMTP-Benutzer oder Passwort fehlt.', 'log' => implode("\n", $log)];
         }
 
         $prefix = $port === 465 ? 'ssl://' : '';
-        $errno = 0;
-        $errstr = '';
+        $log[] = "Verbinde {$prefix}{$host}:{$port} ...";
         $conn = @stream_socket_client(
-            "{$prefix}{$host}:{$port}",
-            $errno,
-            $errstr,
-            15,
+            "{$prefix}{$host}:{$port}", $errno, $errstr, 15,
             STREAM_CLIENT_CONNECT,
             stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]])
         );
         if (!$conn) {
-            return ['ok' => false, 'error' => "Verbindung zu {$host}:{$port} fehlgeschlagen: {$errstr}"];
+            $log[] = "FEHLER: {$errstr}";
+            return ['ok' => false, 'error' => "Verbindung fehlgeschlagen: {$errstr}", 'log' => implode("\n", $log)];
         }
         stream_set_timeout($conn, 15);
+        $log[] = 'Verbunden.';
 
         try {
-            $this->smtpRead($conn);
-            $this->smtpCmd($conn, 'EHLO ' . gethostname(), 250);
+            $greeting = $this->smtpRead($conn);
+            $log[] = "S: {$greeting}";
+
+            $ehloHost = gethostname() ?: 'localhost';
+            $log[] = "C: EHLO {$ehloHost}";
+            $ehloResp = $this->smtpCmd($conn, "EHLO {$ehloHost}", 250);
+            foreach (explode("\n", $ehloResp) as $el) {
+                $log[] = 'S: ' . trim($el);
+            }
 
             if ($port !== 465) {
-                $this->smtpCmd($conn, 'STARTTLS', 220);
+                $log[] = 'C: STARTTLS';
+                $stResp = $this->smtpCmd($conn, 'STARTTLS', 220);
+                $log[] = "S: {$stResp}";
                 $tlsMethod = defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')
                     ? (int) constant('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')
                     : STREAM_CRYPTO_METHOD_TLS_CLIENT;
                 if (!@stream_socket_enable_crypto($conn, true, $tlsMethod)) {
-                    return ['ok' => false, 'error' => 'STARTTLS fehlgeschlagen (TLS-Handshake).'];
+                    $log[] = 'FEHLER: TLS-Handshake fehlgeschlagen';
+                    return ['ok' => false, 'error' => 'STARTTLS fehlgeschlagen.', 'log' => implode("\n", $log)];
                 }
-                $this->smtpCmd($conn, 'EHLO ' . gethostname(), 250);
+                $log[] = 'TLS aktiv.';
+                $log[] = "C: EHLO {$ehloHost}";
+                $ehlo2 = $this->smtpCmd($conn, "EHLO {$ehloHost}", 250);
+                foreach (explode("\n", $ehlo2) as $el) {
+                    $log[] = 'S: ' . trim($el);
+                }
             }
 
-            $this->smtpAuthenticate($conn, $user, $pass);
-            $this->smtpCmd($conn, 'QUIT', 221);
+            $log[] = 'C: AUTH PLAIN <base64>';
+            fwrite($conn, 'AUTH PLAIN ' . base64_encode("\0{$user}\0{$pass}") . "\r\n");
+            $r1 = $this->smtpRead($conn);
+            $log[] = "S: {$r1}";
+            $c1 = (int) substr($r1, 0, 3);
+
+            if ($c1 === 235) {
+                $log[] = 'AUTH PLAIN OK.';
+            } else {
+                $log[] = "AUTH PLAIN fehlgeschlagen ({$c1}).";
+                $log[] = 'C: RSET';
+                fwrite($conn, "RSET\r\n");
+                $log[] = 'S: ' . $this->smtpRead($conn);
+
+                $log[] = 'C: AUTH LOGIN';
+                fwrite($conn, "AUTH LOGIN\r\n");
+                $al1 = $this->smtpRead($conn);
+                $log[] = "S: {$al1}";
+
+                $log[] = 'C: <base64 user>';
+                fwrite($conn, base64_encode($user) . "\r\n");
+                $al2 = $this->smtpRead($conn);
+                $log[] = "S: {$al2}";
+
+                $log[] = 'C: <base64 pass>';
+                fwrite($conn, base64_encode($pass) . "\r\n");
+                $al3 = $this->smtpRead($conn);
+                $log[] = "S: {$al3}";
+
+                if ((int) substr($al3, 0, 3) === 235) {
+                    $log[] = 'AUTH LOGIN OK.';
+                } else {
+                    $log[] = 'AUTH LOGIN fehlgeschlagen.';
+                    $log[] = str_repeat('-', 40);
+                    $log[] = 'ERGEBNIS: Anmeldung gescheitert.';
+                    return ['ok' => false, 'error' => "Anmeldung fehlgeschlagen: {$al3}", 'log' => implode("\n", $log)];
+                }
+            }
+
+            $log[] = 'C: QUIT';
+            fwrite($conn, "QUIT\r\n");
+            $log[] = 'S: ' . $this->smtpRead($conn);
         } catch (\RuntimeException $e) {
-            $msg = $e->getMessage();
-            if (str_contains($msg, '535') || str_contains($msg, 'authentication failed')) {
-                $msg .= ' — Anmeldung abgelehnt. Typisch: Benutzername = vollständige E-Mail des Postfachs (nicht Kundennummer/FTP); Passwort = genau das Postfach-Passwort. Im Webmail testen; Sonderzeichen im Passwort ggf. im Postfach neu setzen.';
-            }
-
-            return ['ok' => false, 'error' => $msg];
+            $log[] = "FEHLER: {$e->getMessage()}";
+            return ['ok' => false, 'error' => $e->getMessage(), 'log' => implode("\n", $log)];
         } finally {
             @fclose($conn);
         }
 
-        $detail = "Server {$host}:{$port}, Benutzer „{$user}“ – Anmeldung ok, keine Mail versendet.";
-        if (SmtpHost::requiresSenderEqualsSmtpUser($host)) {
-            $detail .= ' Absender-Adresse und SMTP-Benutzer sollten übereinstimmen (Anbieter-Vorgabe).';
-        }
-
-        return ['ok' => true, 'detail' => $detail];
+        $log[] = str_repeat('-', 40);
+        $log[] = 'ERGEBNIS: Anmeldung erfolgreich. Keine Mail versendet.';
+        return ['ok' => true, 'detail' => "Anmeldung bei {$host}:{$port} als {$user} erfolgreich.", 'log' => implode("\n", $log)];
     }
 
     /**
@@ -99,7 +148,7 @@ final class MailSenderService
     public function send(string $to, string $subject, string $body, string $cc = '', ?array $attachment = null): array
     {
         if ($to === '') {
-            return ['ok' => false, 'error' => 'Kein Empfänger angegeben.'];
+            return ['ok' => false, 'error' => 'Kein Empfaenger angegeben.'];
         }
 
         $devMode = $this->settings->get('dev_mode', '0') === '1';
@@ -149,7 +198,7 @@ final class MailSenderService
 
         return $ok
             ? ['ok' => true]
-            : ['ok' => false, 'error' => 'PHP mail() fehlgeschlagen – ggf. ist Mailversand auf diesem Server nicht konfiguriert.'];
+            : ['ok' => false, 'error' => 'PHP mail() fehlgeschlagen.'];
     }
 
     /**
@@ -161,7 +210,6 @@ final class MailSenderService
         $host = trim((string) $this->settings->get('smtp_host', ''));
         $port = (int) $this->settings->get('smtp_port', '587');
         $user = trim((string) $this->settings->get('smtp_user', ''));
-        // Nur äußere Leerzeichen/Kopierreste – kein trim() mitten im Passwort
         $pass = trim((string) $this->settings->get('smtp_pass', ''), " \t\r\n\v\f\0");
         $fromEmail = $this->resolveFromEmail();
         $fromName = $this->resolveFromName();
@@ -170,17 +218,12 @@ final class MailSenderService
         }
 
         if ($host === '' || $user === '' || $pass === '') {
-            return ['ok' => false, 'error' => 'SMTP nicht vollständig konfiguriert (Host/User/Passwort).'];
+            return ['ok' => false, 'error' => 'SMTP nicht vollstaendig konfiguriert (Host/User/Passwort).'];
         }
 
         $prefix = $port === 465 ? 'ssl://' : '';
-        $errno = 0;
-        $errstr = '';
         $conn = @stream_socket_client(
-            "{$prefix}{$host}:{$port}",
-            $errno,
-            $errstr,
-            15,
+            "{$prefix}{$host}:{$port}", $errno, $errstr, 15,
             STREAM_CLIENT_CONNECT,
             stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]])
         );
@@ -198,8 +241,7 @@ final class MailSenderService
                 $tlsMethod = defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')
                     ? (int) constant('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')
                     : STREAM_CRYPTO_METHOD_TLS_CLIENT;
-                $cryptoOk = @stream_socket_enable_crypto($conn, true, $tlsMethod);
-                if (!$cryptoOk) {
+                if (!@stream_socket_enable_crypto($conn, true, $tlsMethod)) {
                     return ['ok' => false, 'error' => 'STARTTLS fehlgeschlagen (TLS-Handshake).'];
                 }
                 $this->smtpCmd($conn, "EHLO " . gethostname(), 250);
@@ -249,11 +291,11 @@ final class MailSenderService
 
             $this->smtpCmd($conn, "QUIT", 221);
         } catch (\RuntimeException $e) {
-            $msg = $e->getMessage();
-            if (str_contains($msg, '535') || str_contains($msg, 'authentication failed')) {
-                $msg .= ' — Anmeldung abgelehnt. Typisch: Benutzername = vollständige E-Mail des Postfachs (nicht Kundennummer/FTP); Passwort = genau das Postfach-Passwort. Im Webmail testen; Sonderzeichen im Passwort ggf. im Postfach neu setzen.';
+            $emsg = $e->getMessage();
+            if (str_contains($emsg, '535') || str_contains($emsg, 'authentication failed')) {
+                $emsg .= ' -- Anmeldung abgelehnt.';
             }
-            return ['ok' => false, 'error' => $msg];
+            return ['ok' => false, 'error' => $emsg];
         } finally {
             @fclose($conn);
         }
@@ -286,7 +328,7 @@ final class MailSenderService
         return ['boundary' => $boundary, 'content' => $content];
     }
 
-    /** AUTH PLAIN (RFC 4616), ggf. zweite Variante, danach AUTH LOGIN – bessere Kompatibilität als nur LOGIN. */
+    /** AUTH PLAIN dann AUTH LOGIN */
     private function smtpAuthenticate(mixed $conn, string $user, string $pass): void
     {
         fwrite($conn, 'AUTH PLAIN ' . base64_encode("\0" . $user . "\0" . $pass) . "\r\n");

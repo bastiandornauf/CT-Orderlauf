@@ -11,6 +11,12 @@
     <?php elseif (isset($smtp_test_ok) && $smtp_test_ok === false): ?>
         <p class="toast toast--error" style="white-space:pre-wrap;word-break:break-word"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
+    <?php if (!empty($smtp_test_log)): ?>
+        <details <?= (isset($smtp_test_ok) && $smtp_test_ok === false) ? 'open' : '' ?>>
+            <summary style="cursor:pointer;font-weight:600;margin-bottom:.5rem">SMTP-Protokoll anzeigen</summary>
+            <pre style="background:#1e1e2e;color:#cdd6f4;padding:1rem;border-radius:.5rem;overflow-x:auto;font-size:.85rem;line-height:1.5;max-height:400px;overflow-y:auto"><?= htmlspecialchars($smtp_test_log, ENT_QUOTES, 'UTF-8') ?></pre>
+        </details>
+    <?php endif; ?>
     <form method="post" action="/settings/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
         <div class="form-group">

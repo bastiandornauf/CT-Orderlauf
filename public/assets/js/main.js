@@ -7,15 +7,17 @@ registerOrderAlpine(Alpine);
 
 Alpine.data('appHeader', () => ({
   navOpen: false,
+  sleek: false,
   init() {
+    this.sleek = localStorage.getItem('sleekMode') === '1';
+    document.body.classList.toggle('sleek', this.sleek);
+
     this.$watch('navOpen', (open) => {
       document.body.classList.toggle('app-body--nav-open', !!open);
     });
-    // Nach Browser-Zurück (bfcache) kann das Menü sonst „hängen“ (grauer Screen)
+    // Nach Browser-Zurück (bfcache) kann das Menü sonst hängen (grauer Screen)
     window.addEventListener('pageshow', (e) => {
-      if (e.persisted) {
-        this.navOpen = false;
-      }
+      if (e.persisted) this.navOpen = false;
     });
   },
   toggleNav() {
@@ -23,6 +25,11 @@ Alpine.data('appHeader', () => ({
   },
   closeNav() {
     this.navOpen = false;
+  },
+  toggleSleek() {
+    this.sleek = !this.sleek;
+    localStorage.setItem('sleekMode', this.sleek ? '1' : '0');
+    document.body.classList.toggle('sleek', this.sleek);
   },
 }));
 
