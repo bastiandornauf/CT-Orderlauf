@@ -205,10 +205,14 @@ final class CsvImportService
         array &$preview,
         array &$itemsNotInCsv
     ): void {
-        $withId = $header === ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
-        $legacy = $header === ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $baseWithId = ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $baseLegacy = ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $hasSort = count($header) > 0 && end($header) === 'sort_order';
+        $h = $hasSort ? array_slice($header, 0, -1) : $header;
+        $withId = $h === $baseWithId;
+        $legacy = $h === $baseLegacy;
         if (!$withId && !$legacy) {
-            $errors[] = 'Artikel: Kopfzeile mit ID: id;name;location;unit;min_stock;max_stock;active — oder ohne ID (nur nach Namen): name;location;unit;min_stock;max_stock;active';
+            $errors[] = 'Artikel: Kopfzeile mit ID: id;name;location;unit;min_stock;max_stock;active — optional ;sort_order am Ende — oder ohne ID: name;location;unit;min_stock;max_stock;active';
             return;
         }
 
@@ -223,6 +227,7 @@ final class CsvImportService
                 $minS = trim((string) ($cols[4] ?? ''));
                 $maxS = trim((string) ($cols[5] ?? ''));
                 $active = trim((string) ($cols[6] ?? '1'));
+                $sortRaw = $hasSort ? trim((string) ($cols[7] ?? '')) : '';
             } else {
                 $idRaw = '';
                 $name = trim((string) ($cols[0] ?? ''));
@@ -231,6 +236,16 @@ final class CsvImportService
                 $minS = trim((string) ($cols[3] ?? ''));
                 $maxS = trim((string) ($cols[4] ?? ''));
                 $active = trim((string) ($cols[5] ?? '1'));
+                $sortRaw = $hasSort ? trim((string) ($cols[6] ?? '')) : '';
+            }
+
+            $sortOrder = 0;
+            if ($hasSort) {
+                if ($sortRaw !== '' && !is_numeric($sortRaw)) {
+                    $errors[] = "Zeile {$line}: sort_order muss eine Ganzzahl sein.";
+                    continue;
+                }
+                $sortOrder = $sortRaw === '' ? 0 : (int) $sortRaw;
             }
 
             if ($name === '' || $locName === '') {
@@ -273,6 +288,7 @@ final class CsvImportService
                     'min_stock' => $min,
                     'max_stock' => $max,
                     'active' => $active === '1',
+                    'sort_order' => $sortOrder,
                 ];
             } elseif ($withId) {
                 $preview[] = [
@@ -283,6 +299,7 @@ final class CsvImportService
                     'min_stock' => $min,
                     'max_stock' => $max,
                     'active' => $active === '1',
+                    'sort_order' => $sortOrder,
                 ];
             } else {
                 $exist = $this->items->findByName($name);
@@ -294,6 +311,7 @@ final class CsvImportService
                     'min_stock' => $min,
                     'max_stock' => $max,
                     'active' => $active === '1',
+                    'sort_order' => $sortOrder,
                 ];
             }
         }
@@ -461,6 +479,7 @@ final class CsvImportService
     {
         foreach ($preview as $row) {
             $tid = isset($row['target_id']) && $row['target_id'] !== null ? (int) $row['target_id'] : 0;
+            $sort = (int) ($row['sort_order'] ?? 0);
             if ($tid > 0) {
                 $this->items->update(
                     $tid,
@@ -469,7 +488,8 @@ final class CsvImportService
                     (int) $row['location_id'],
                     $row['min_stock'],
                     $row['max_stock'],
-                    $row['active']
+                    $row['active'],
+                    $sort
                 );
                 $updated++;
             } else {
@@ -479,7 +499,8 @@ final class CsvImportService
                     (int) $row['location_id'],
                     $row['min_stock'],
                     $row['max_stock'],
-                    $row['active']
+                    $row['active'],
+                    $sort
                 );
                 $inserted++;
             }

@@ -1,25 +1,31 @@
 <section class="page-section" x-data="reviewPage()">
     <?php $order_step = 3;
     require __DIR__ . '/../../partials/order-stepper.php'; ?>
-    <h1 class="page-title">Kontrolle</h1>
-    <p class="text-muted">Nur bestellte Positionen. Gibt es für einen Artikel mehrere Lieferanten am Bestelltag, erscheint eine <strong>auswählbare Lieferantenzeile</strong> – die erste Option entspricht der Priorität aus den Artikelstammdaten.</p>
-    <p class="text-muted order-stammdaten-hint">
-        Wenn Sie zwischendurch Lieferanten oder Einstellungen geändert haben: zurück auf diese Seite wechseln (Tab/Fokus) lädt die Daten neu – oder
-        <button type="button" class="button button--ghost button--small order-stammdaten-hint__btn"
-                :disabled="syncBusy || loading" @click="refreshStammdaten()">vom Server aktualisieren</button>
-        <span x-show="syncBusy" class="text-muted"> …</span>
-    </p>
+    <div class="page-toolbar">
+        <h1 class="page-title">Kontrolle</h1>
+        <button type="button" class="button button--ghost button--small"
+                :disabled="syncBusy || loading" @click="refreshStammdaten()">
+            <span x-show="!syncBusy">↻ Aktualisieren</span>
+            <span x-show="syncBusy">…</span>
+        </button>
+    </div>
+    <p class="text-muted order-stammdaten-hint">Nur bestellte Positionen. Bei mehreren Lieferanten am gleichen Tag erscheinen Auswahlkacheln.</p>
 
     <template x-if="loading">
-        <p>Lade…</p>
+        <p class="text-muted">Lade…</p>
     </template>
 
+    <!-- Problemartikel -->
     <template x-if="!loading && problemLines.length">
-        <div class="card card--pad">
-            <h2 class="section-header">Problemartikel</h2>
-            <ul class="error-list">
+        <div class="card card--pad review-block review-block--problems">
+            <h2 class="review-block__title">
+                <span class="review-block__icon">⚠</span>
+                Problemartikel
+                <span class="review-block__count" x-text="problemLines.length"></span>
+            </h2>
+            <ul class="review-problem-list">
                 <template x-for="(p, idx) in problemLines" :key="idx">
-                    <li>
+                    <li class="review-problem-list__item">
                         <strong x-text="p.itemLabel"></strong>
                         <span class="text-muted" x-text="p.reason"></span>
                     </li>
@@ -28,11 +34,15 @@
         </div>
     </template>
 
+    <!-- Freie Positionen ohne Lieferant -->
     <template x-if="!loading && pendingFreeLines.length">
-        <div class="card card--pad review-pending-free">
-            <h2 class="section-header">Freie Positionen – Lieferant wählen</h2>
-            <p class="text-muted">Diese Zeilen wurden im Rundgang ohne Lieferant erfasst („später in Kontrolle“). Bitte einen Lieferanten zuordnen.</p>
-            <ul class="card-list">
+        <div class="card card--pad review-block review-block--pending">
+            <h2 class="review-block__title">
+                <span class="review-block__icon">!</span>
+                Freie Positionen – Lieferant wählen
+                <span class="review-block__count" x-text="pendingFreeLines.length"></span>
+            </h2>
+            <ul class="card-list" style="margin-top: var(--space-3)">
                 <template x-for="line in pendingFreeLines" :key="line.entryId">
                     <li class="list-item list-item--stack card card--pad">
                         <div class="list-item__row">
@@ -57,40 +67,52 @@
         </div>
     </template>
 
+    <!-- Lieferanten-Blöcke -->
     <template x-for="g in groups" :key="g.supplierId">
-        <div class="card card--pad">
-            <div class="page-toolbar">
-                <div>
-                    <h2 class="section-header" x-text="g.supplier?.name"></h2>
-                    <span class="text-muted">
-                        <span x-text="(g.supplier?.order_type === 'mail' ? 'E-Mail' : g.supplier?.order_type === 'webshop' ? 'Webshop' : (g.supplier?.order_type || ''))"></span>
+        <div class="card review-supplier-card">
+            <!-- Lieferant-Header -->
+            <div class="review-supplier-card__header">
+                <div class="review-supplier-card__header-main">
+                    <span class="review-supplier-card__name" x-text="g.supplier?.name"></span>
+                    <div class="review-supplier-card__badges">
+                        <span class="review-badge review-badge--type"
+                              x-text="g.supplier?.order_type === 'mail' ? 'E-Mail' : g.supplier?.order_type === 'webshop' ? 'Webshop' : (g.supplier?.order_type || '')">
+                        </span>
                         <template x-if="g.deliveryDate">
-                            &nbsp;·&nbsp;<span class="delivery-badge" x-text="'Lieferung ' + formatDate(g.deliveryDate)"></span>
+                            <span class="review-badge review-badge--date" x-text="'Lieferung ' + formatDate(g.deliveryDate)"></span>
                         </template>
-                    </span>
+                    </div>
                 </div>
                 <button type="button" class="button button--small button--ghost" @click="addFreeToSupplier(g.supplierId)">+ Frei</button>
             </div>
 
-            <ul class="card-list">
+            <!-- Artikel-Zeilen -->
+            <ul class="review-lines">
                 <template x-for="line in g.lines" :key="line.entryId">
-                    <li class="list-item list-item--stack">
-                        <div class="list-item__row">
-                            <span class="grow" x-text="line.label"></span>
-                            <input class="input input--qty" type="text" :value="line.quantity"
-                                   @change="updateQty(line, $event)">
-                            <span class="text-muted order-item-meta">
-                                <span x-text="line.unit"></span><span class="order-stock-hint" x-show="line.stockHint" x-text="' · ' + line.stockHint"></span>
-                            </span>
-                            <button type="button" class="button button--small button--ghost" @click="removeLine(line)">Entfernen</button>
+                    <li class="review-line">
+                        <div class="review-line__row">
+                            <div class="review-line__info">
+                                <span class="review-line__name" x-text="line.label"></span>
+                                <span class="review-line__meta text-muted" x-show="line.unit || line.stockHint">
+                                    <span x-text="line.unit"></span><span x-show="line.stockHint" x-text="' · ' + line.stockHint"></span>
+                                </span>
+                            </div>
+                            <div class="review-line__actions">
+                                <input class="input input--qty" type="text" :value="line.quantity"
+                                       @change="updateQty(line, $event)">
+                                <button type="button" class="button button--small button--ghost review-line__remove"
+                                        @click="removeLine(line)" aria-label="Entfernen">×</button>
+                            </div>
                         </div>
+
+                        <!-- Lieferanten-Auswahl bei Alternativen -->
                         <template x-if="line.candidates.length > 1">
                             <div class="review-supplier-choice">
                                 <div class="review-supplier-choice__head">
                                     <span class="review-supplier-choice__title">Lieferant wählen</span>
                                     <span class="review-supplier-choice__badge">Alternativen</span>
                                 </div>
-                                <p class="review-supplier-choice__hint">Zum Wechseln den gewünschten Lieferanten antippen. Die hervorgehobene Kachel ist die aktive Zuordnung für diese Position.</p>
+                                <p class="review-supplier-choice__hint">Aktive Zuordnung antippen zum Wechseln.</p>
                                 <div class="review-supplier-choice__chips" role="group" :aria-label="'Lieferant für ' + line.label">
                                     <template x-for="(s, cidx) in supplierOptions(line)" :key="s.id">
                                         <button type="button"
@@ -123,9 +145,10 @@
                 </template>
             </ul>
 
-            <div class="form-group">
+            <!-- Zusatznotiz -->
+            <div class="review-supplier-card__note">
                 <label class="form-label">Zusatz für diesen Lieferanten</label>
-                <textarea class="textarea" rows="3" x-model="g.note"
+                <textarea class="textarea" rows="2" x-model="g.note"
                           @blur="saveNote(g.supplierId, g.note)"></textarea>
             </div>
         </div>
@@ -136,7 +159,7 @@
                 :disabled="pendingFreeLines.length > 0 || problemLines.length > 0"
                 @click="goOutput()">Weiter zur Ausgabe</button>
         <p class="form-hint text-muted" style="margin:0" x-show="pendingFreeLines.length > 0 || problemLines.length > 0">
-            Solange freie Positionen ohne Lieferant oder Problemartikel bestehen, ist die Ausgabe gesperrt.
+            Freie Positionen ohne Lieferant oder Problemartikel auflösen um fortzufahren.
         </p>
         <a href="/order/round" class="button button--ghost button--block">Zurück zum Rundgang</a>
     </div>

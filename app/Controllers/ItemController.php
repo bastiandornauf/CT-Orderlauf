@@ -15,6 +15,70 @@ use App\Repositories\SupplierRepository;
 
 final class ItemController
 {
+    /**
+     * @return array{loc:int, active:string, supplier:int, q:string}
+     */
+    private static function parseListFilterFromGet(): array
+    {
+        $loc = isset($_GET['loc']) ? (int) $_GET['loc'] : 0;
+        $active = (string) ($_GET['active'] ?? 'all');
+        if (!in_array($active, ['all', '1', '0'], true)) {
+            $active = 'all';
+        }
+        $supplier = isset($_GET['supplier']) ? (int) $_GET['supplier'] : 0;
+        $q = trim((string) ($_GET['q'] ?? ''));
+
+        return [
+            'loc' => max(0, $loc),
+            'active' => $active,
+            'supplier' => max(0, $supplier),
+            'q' => $q,
+        ];
+    }
+
+    /**
+     * @param array{loc:int, active:string, supplier:int, q:string} $f
+     */
+    private static function buildItemsIndexQuery(array $f): string
+    {
+        $params = [];
+        if ($f['loc'] > 0) {
+            $params['loc'] = $f['loc'];
+        }
+        if ($f['active'] !== 'all') {
+            $params['active'] = $f['active'];
+        }
+        if ($f['supplier'] > 0) {
+            $params['supplier'] = $f['supplier'];
+        }
+        if ($f['q'] !== '') {
+            $params['q'] = $f['q'];
+        }
+
+        return $params === [] ? '' : '?' . http_build_query($params);
+    }
+
+    /**
+     * @return array{loc:int, active:string, supplier:int, q:string}
+     */
+    private static function parseListFilterFromPost(): array
+    {
+        $loc = (int) ($_POST['list_filter_loc'] ?? 0);
+        $active = (string) ($_POST['list_filter_active'] ?? 'all');
+        if (!in_array($active, ['all', '1', '0'], true)) {
+            $active = 'all';
+        }
+        $supplier = (int) ($_POST['list_filter_supplier'] ?? 0);
+        $q = trim((string) ($_POST['list_filter_q'] ?? ''));
+
+        return [
+            'loc' => max(0, $loc),
+            'active' => $active,
+            'supplier' => max(0, $supplier),
+            'q' => $q,
+        ];
+    }
+
     public function __construct(
         private ItemRepository $items = new ItemRepository(),
         private LocationRepository $locations = new LocationRepository(),
@@ -64,16 +128,18 @@ final class ItemController
         $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
         $row = $id ? $this->items->find($id) : null;
         if ($id && $row === null) {
-            Response::redirect('/items');
+            Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromGet()));
             return;
         }
         $links = $id ? $this->items->supplierLinksWithNames($id) : [];
+        $listFilter = self::parseListFilterFromGet();
         View::layout('layout', 'pages/items/form', [
             'title' => $id ? 'Artikel bearbeiten' : 'Artikel anlegen',
             'item' => $row,
             'locations' => $this->locations->all(true),
             'suppliers' => $this->suppliers->all(true),
             'links' => $links,
+            'list_filter' => $listFilter,
             'csrf' => Csrf::token(),
         ]);
     }
@@ -82,7 +148,7 @@ final class ItemController
     {
         AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
-            Response::redirect('/items');
+            Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromPost()));
             return;
         }
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
@@ -91,6 +157,7 @@ final class ItemController
         $locId = (int) ($_POST['location_id'] ?? 0);
         $min = ($_POST['min_stock'] ?? '') === '' ? null : (int) $_POST['min_stock'];
         $max = ($_POST['max_stock'] ?? '') === '' ? null : (int) $_POST['max_stock'];
+        $sortOrder = (int) ($_POST['sort_order'] ?? 0);
         $active = isset($_POST['active']);
 
         $err = Validator::required(['name' => $name], 'name');
@@ -98,14 +165,14 @@ final class ItemController
             $err = $err ?? 'Lagerort wählen.';
         }
         if ($err) {
-            $this->renderFormError($id, $name, $unit, $locId, $min, $max, $active, $err);
+            $this->renderFormError($id, $name, $unit, $locId, $min, $max, $active, $err, $sortOrder, self::parseListFilterFromPost());
             return;
         }
 
         if ($id > 0) {
-            $this->items->update($id, $name, $unit, $locId, $min, $max, $active);
+            $this->items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder);
         } else {
-            $id = $this->items->create($name, $unit, $locId, $min, $max, $active);
+            $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder);
         }
 
         $pairs = [];
@@ -122,10 +189,10 @@ final class ItemController
         $this->items->setSupplierLinks($id, $pairs);
 
         $_SESSION['flash_ok'] = 'Artikel gespeichert.';
-        Response::redirect('/items');
+        Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromPost()));
     }
 
-    /** @param list<array{supplier_id:int,priority:int}> $pairs placeholder */
+    /** @param array{loc:int, active:string, supplier:int, q:string} $listFilter */
     private function renderFormError(
         int $id,
         string $name,
@@ -134,7 +201,9 @@ final class ItemController
         ?int $min,
         ?int $max,
         bool $active,
-        string $error
+        string $error,
+        int $sortOrder,
+        array $listFilter
     ): void {
         View::layout('layout', 'pages/items/form', [
             'title' => $id ? 'Artikel bearbeiten' : 'Artikel anlegen',
@@ -146,10 +215,12 @@ final class ItemController
                 'min_stock' => $min,
                 'max_stock' => $max,
                 'active' => $active ? 1 : 0,
+                'sort_order' => $sortOrder,
             ],
             'locations' => $this->locations->all(true),
             'suppliers' => $this->suppliers->all(true),
             'links' => $id ? $this->items->supplierLinksWithNames($id) : [],
+            'list_filter' => $listFilter,
             'error' => $error,
             'csrf' => Csrf::token(),
         ]);

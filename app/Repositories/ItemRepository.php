@@ -58,7 +58,7 @@ final class ItemRepository
             $params[] = $t;
             $params[] = $t;
         }
-        $sql .= ' ORDER BY l.sort_order ASC, i.name ASC';
+        $sql .= ' ORDER BY l.sort_order ASC, i.sort_order ASC, i.name ASC';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -130,13 +130,14 @@ final class ItemRepository
         int $locationId,
         ?int $minStock,
         ?int $maxStock,
-        bool $active
+        bool $active,
+        int $sortOrder = 0
     ): int {
         $stmt = Database::pdo()->prepare(
-            'INSERT INTO items (name, unit, location_id, min_stock, max_stock, active)
-             VALUES (?, ?, ?, ?, ?, ?)'
+            'INSERT INTO items (name, unit, location_id, sort_order, min_stock, max_stock, active)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$name, $unit, $locationId, $minStock, $maxStock, $active ? 1 : 0]);
+        $stmt->execute([$name, $unit, $locationId, $sortOrder, $minStock, $maxStock, $active ? 1 : 0]);
         return (int) Database::pdo()->lastInsertId();
     }
 
@@ -147,12 +148,13 @@ final class ItemRepository
         int $locationId,
         ?int $minStock,
         ?int $maxStock,
-        bool $active
+        bool $active,
+        int $sortOrder = 0
     ): void {
         $stmt = Database::pdo()->prepare(
-            'UPDATE items SET name = ?, unit = ?, location_id = ?, min_stock = ?, max_stock = ?, active = ? WHERE id = ?'
+            'UPDATE items SET name = ?, unit = ?, location_id = ?, sort_order = ?, min_stock = ?, max_stock = ?, active = ? WHERE id = ?'
         );
-        $stmt->execute([$name, $unit, $locationId, $minStock, $maxStock, $active ? 1 : 0, $id]);
+        $stmt->execute([$name, $unit, $locationId, $sortOrder, $minStock, $maxStock, $active ? 1 : 0, $id]);
     }
 
     /** @return list<array{item_id:int,supplier_id:int,priority:int}> */

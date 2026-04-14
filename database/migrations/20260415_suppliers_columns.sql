@@ -1,0 +1,26 @@
+-- Fehlende Spalten in suppliers ergänzen (idempotent)
+SET @db = DATABASE();
+
+-- street
+SET @s = IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='street')>0,
+    'SELECT 1', 'ALTER TABLE suppliers ADD COLUMN street VARCHAR(255) NULL AFTER mobile');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- city
+SET @s = IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='city')>0,
+    'SELECT 1', 'ALTER TABLE suppliers ADD COLUMN city VARCHAR(255) NULL AFTER street');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- email_subject_template
+SET @s = IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='email_subject_template')>0,
+    'SELECT 1', 'ALTER TABLE suppliers ADD COLUMN email_subject_template VARCHAR(512) NULL AFTER email_template');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- attach_pdf
+SET @s = IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=@db AND TABLE_NAME='suppliers' AND COLUMN_NAME='attach_pdf')>0,
+    'SELECT 1', 'ALTER TABLE suppliers ADD COLUMN attach_pdf TINYINT(1) NOT NULL DEFAULT 0 AFTER email_subject_template');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

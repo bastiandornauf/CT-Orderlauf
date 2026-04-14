@@ -69,7 +69,7 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
             </div>
             <div class="app-nav__links">
                 <a href="/" class="app-nav__link<?= $navActive('/', true) ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Start</a>
-                <a href="/order/prepare" class="app-nav__link<?= $navActive('/order') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Bestellen</a>
+                <a href="/?open=bestellen" class="app-nav__link<?= ($navPath === '/' || $navPath === '') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Bestellen</a>
                 <?php if ($_canEditMaster): ?>
                 <a href="/locations" class="app-nav__link<?= $navActive('/locations') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lagerorte</a>
                 <a href="/suppliers" class="app-nav__link<?= $navActive('/suppliers') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lieferanten</a>

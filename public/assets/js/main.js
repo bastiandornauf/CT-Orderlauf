@@ -1,9 +1,9 @@
 import Alpine from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/module.esm.js';
-import { registerOrderAlpine } from './order-pages.js';
+import { registerOrderAlpine, dashboardPageData } from './order-pages.js';
 import { initOnlineIndicator, registerServiceWorker } from './offline.js';
-import * as storage from './storage.js';
 
 registerOrderAlpine(Alpine);
+Alpine.data('dashboardPage', dashboardPageData);
 
 Alpine.data('appHeader', () => ({
   navOpen: false,
@@ -30,26 +30,6 @@ Alpine.data('appHeader', () => ({
     this.sleek = !this.sleek;
     localStorage.setItem('sleekMode', this.sleek ? '1' : '0');
     document.body.classList.toggle('sleek', this.sleek);
-  },
-}));
-
-Alpine.data('dashboardPage', () => ({
-  hasRound: false,
-  roundStatus: 'idle',
-  get roundStatusLabel() {
-    const m = {
-      prepared: 'Vorbereitet – Rundgang noch nicht begonnen',
-      active: 'Rundgang läuft',
-      ready_for_review: 'Bereit zur Kontrolle und Ausgabe',
-      finalized: 'Abgeschlossen – neue Runde möglich',
-      paused: 'Runde pausiert',
-    };
-    return m[this.roundStatus] || '';
-  },
-  async init() {
-    const row = await storage.getOrderRound();
-    this.hasRound = !!row;
-    this.roundStatus = row?.status || 'idle';
   },
 }));
 

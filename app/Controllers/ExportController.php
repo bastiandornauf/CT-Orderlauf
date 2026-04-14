@@ -49,13 +49,13 @@ final class ExportController
     {
         AuthMiddleware::requireEditor();
         $rows = Database::pdo()->query(
-            'SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, i.active
+            'SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, i.active, i.sort_order
              FROM items i
              JOIN locations l ON l.id = i.location_id
-             ORDER BY l.sort_order, i.name'
+             ORDER BY l.sort_order, i.sort_order, i.name'
         )->fetchAll(PDO::FETCH_ASSOC);
 
-        $this->sendCsv('artikel.csv', ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'], $rows);
+        $this->sendCsv('artikel.csv', ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active', 'sort_order'], $rows);
     }
 
     public function itemSupplier(): void
@@ -84,13 +84,13 @@ final class ExportController
         echo "\xEF\xBB\xBF";
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, $header, ';');
+        fputcsv($out, $header, ';', '"', '\\');
         foreach ($rows as $row) {
             $line = [];
             foreach ($header as $col) {
                 $line[] = (string) ($row[$col] ?? '');
             }
-            fputcsv($out, $line, ';');
+            fputcsv($out, $line, ';', '"', '\\');
         }
         fclose($out);
         exit;

@@ -52,88 +52,136 @@ function formatStockHint(it) {
   return `max ${max}`;
 }
 
-/** @param {any} Alpine */
-export function registerOrderAlpine(Alpine) {
-  Alpine.data('preparePage', () => ({
+/**
+ * @param {{ targetDate: string, loading: boolean, error: string, suppliersWithDates: object[] }} ctx
+ */
+async function executeLoadPreparedRound(ctx) {
+  ctx.error = '';
+  ctx.loading = true;
+  try {
+    if (!navigator.onLine) {
+      throw new Error('Vorbereitung nur online möglich.');
+    }
+    if (await storage.prepareReloadWouldEraseLocalProgress()) {
+      const ok = window.confirm(
+        'Es gibt bereits eine Bestellrunde mit gespeicherten Eingaben (Rundgang, Kontrolle oder Lieferanten-Notizen).\n\n' +
+          'Wenn Sie jetzt „Bestellrunde laden“ ausführen, werden diese lokalen Daten gelöscht und durch eine neue, leere Runde ersetzt.\n\n' +
+          'Zum Fortsetzen ohne Datenverlust: oben „Rundgang fortsetzen“ oder „Kontrolle / Abschluss“ wählen – nicht erneut laden.\n\n' +
+          'Trotzdem neu laden und alles verwerfen?',
+      );
+      if (!ok) {
+        return;
+      }
+    }
+    const data = await api.fetchPayload(ctx.targetDate);
+    const payload = {
+      target_date: data.target_date,
+      target_weekday: data.target_weekday,
+      suppliers_delivering_ids: data.suppliers_delivering_ids,
+      supplier_delivery_targets: data.supplier_delivery_targets || [],
+      locations: data.locations,
+      suppliers: data.suppliers,
+      supplier_delivery_days: data.supplier_delivery_days,
+      items: data.items,
+      item_supplier_links: data.item_supplier_links,
+      settings: data.settings,
+    };
+    await storage.savePreparedSnapshot(payload);
+
+    const targetMap = new Map((data.supplier_delivery_targets || []).map((t) => [Number(t.supplier_id), t.delivery_date]));
+    ctx.suppliersWithDates = data.suppliers
+      .filter((s) => s.active)
+      .map((s) => ({
+        ...s,
+        deliveryDate: targetMap.get(Number(s.id)) || null,
+      }))
+      .sort((a, b) => (a.deliveryDate || '').localeCompare(b.deliveryDate || '') || a.name.localeCompare(b.name));
+
+    window.location.href = '/order/round';
+  } catch (e) {
+    ctx.error = e.message || 'Fehler';
+  } finally {
+    ctx.loading = false;
+  }
+}
+
+/** Start-Seite: Status + Fortsetzen + neue Runde vorbereiten */
+export function dashboardPageData() {
+  return {
+    hasRound: false,
+    roundStatus: 'idle',
     targetDate: tomorrowIso(),
     loading: false,
     error: '',
     suppliersWithDates: [],
-    init() {
-      this.suppliersWithDates = [];
+    get roundStatusLabel() {
+      const m = {
+        prepared: 'Vorbereitet – Rundgang noch nicht begonnen',
+        active: 'Rundgang läuft',
+        ready_for_review: 'Bereit zur Kontrolle und Ausgabe',
+        finalized: 'Abgeschlossen – neue Runde möglich',
+        paused: 'Runde pausiert',
+      };
+      return m[this.roundStatus] || '';
     },
-    async loadRound() {
-      this.error = '';
-      this.loading = true;
-      try {
-        if (!navigator.onLine) {
-          throw new Error('Vorbereitung nur online möglich.');
-        }
-        if (await storage.prepareReloadWouldEraseLocalProgress()) {
-          const ok = window.confirm(
-            'Es gibt bereits eine Bestellrunde mit gespeicherten Eingaben (Rundgang, Kontrolle oder Lieferanten-Notizen).\n\n' +
-              'Wenn Sie jetzt „Bestellrunde laden“ ausführen, werden diese lokalen Daten gelöscht und durch eine neue, leere Runde ersetzt.\n\n' +
-              'Zum Fortsetzen: Start öffnen und „Rundgang fortsetzen“ oder „Kontrolle“ wählen – nicht erneut hier laden.\n\n' +
-              'Trotzdem neu laden und alles verwerfen?',
-          );
-          if (!ok) {
-            return;
+    async init() {
+      const row = await storage.getOrderRound();
+      this.hasRound = !!row;
+      this.roundStatus = row?.status || 'idle';
+      this.suppliersWithDates = [];
+      this.$nextTick(() => {
+        const open = new URLSearchParams(window.location.search).get('open');
+        if (open === 'bestellen') {
+          document.getElementById('bestellen')?.scrollIntoView({ behavior: 'smooth' });
+          try {
+            const u = new URL(window.location.href);
+            u.searchParams.delete('open');
+            const clean = u.pathname + (u.searchParams.toString() ? `?${u.searchParams}` : '') + u.hash;
+            window.history.replaceState({}, '', clean || '/');
+          } catch {
+            /* ignore */
           }
         }
-        const data = await api.fetchPayload(this.targetDate);
-        const payload = {
-          target_date: data.target_date,
-          target_weekday: data.target_weekday,
-          suppliers_delivering_ids: data.suppliers_delivering_ids,
-          supplier_delivery_targets: data.supplier_delivery_targets || [],
-          locations: data.locations,
-          suppliers: data.suppliers,
-          supplier_delivery_days: data.supplier_delivery_days,
-          items: data.items,
-          item_supplier_links: data.item_supplier_links,
-          settings: data.settings,
-        };
-        await storage.savePreparedSnapshot(payload);
-
-        // Build display list: all active suppliers with their calculated delivery date
-        const targetMap = new Map((data.supplier_delivery_targets || []).map(
-          (t) => [Number(t.supplier_id), t.delivery_date]
-        ));
-        this.suppliersWithDates = data.suppliers
-          .filter((s) => s.active)
-          .map((s) => ({
-            ...s,
-            deliveryDate: targetMap.get(Number(s.id)) || null,
-          }))
-          .sort((a, b) => (a.deliveryDate || '').localeCompare(b.deliveryDate || '') || a.name.localeCompare(b.name));
-
-        window.location.href = '/order/round';
-      } catch (e) {
-        this.error = e.message || 'Fehler';
-      } finally {
-        this.loading = false;
-      }
+      });
+    },
+    async loadRound() {
+      await executeLoadPreparedRound(this);
     },
     formatDate(iso) {
       return formatDeDate(iso);
     },
-  }));
+  };
+}
 
+/** @param {any} Alpine */
+export function registerOrderAlpine(Alpine) {
   Alpine.data('roundPage', () => ({
     locations: [],
     activeLocId: null,
     items: [],
+    allItems: [],
+    search: '',
     quantities: {},
-    locationCounts: new Map(),
     freeLabel: '',
     freeQty: '',
     freeSupplierId: '',
     suppliers: [],
-    supplierMap: new Map(),
+    /** @type {Map<number, number[]>} itemId -> Lieferanten-IDs (Priorität) */
+    supplierIdsByItem: new Map(),
+    supplierNameById: new Map(),
+    /** Lieferanten heute ausblenden (nur Anzeige) */
+    hiddenSupplierIds: [],
+    get filteredItems() {
+      const q = this.search.trim().toLowerCase();
+      const hid = new Set(this.hiddenSupplierIds.map(Number));
+      const base =
+        q === '' ? this.items : this.allItems.filter((it) => it.name.toLowerCase().includes(q));
+      return base.filter((it) => this.isItemVisibleForRound(it.id, hid));
+    },
     async init() {
       const round = await storage.getOrderRound();
       if (!round) {
-        window.location.href = '/order/prepare';
+        window.location.href = '/?open=bestellen';
         return;
       }
       if (round.status === 'prepared') {
@@ -142,36 +190,90 @@ export function registerOrderAlpine(Alpine) {
       this.locations = await storage.getLocationsSorted();
       this.activeLocId = this.locations[0]?.id ?? null;
       this.suppliers = await storage.getAllSuppliers();
-      const allItems = await storage.getAllItems();
-      this.locationCounts = new Map();
-      for (const loc of this.locations) {
-        const n = allItems.filter((i) => Number(i.location_id) === Number(loc.id)).length;
-        this.locationCounts.set(loc.id, n);
-      }
+      this.hiddenSupplierIds = await storage.getHiddenSupplierIds();
+      this.allItems = await storage.getAllItems();
 
-      // Build item_id -> supplier names map (sorted by priority, highest = preferred)
+      this.supplierNameById = new Map(this.suppliers.map((s) => [s.id, s.name]));
       const links = await storage.getItemSupplierLinks();
-      const supMap = new Map(this.suppliers.map((s) => [s.id, s]));
       const byItem = groupLinksByItem(links);
+      this.supplierIdsByItem = new Map();
       for (const [itemId, itemLinks] of byItem.entries()) {
         const sorted = [...itemLinks].sort((a, b) => b.priority - a.priority);
-        this.supplierMap.set(Number(itemId), sorted.map((l) => supMap.get(l.supplier_id)?.name).filter(Boolean));
+        this.supplierIdsByItem.set(
+          Number(itemId),
+          sorted.map((l) => Number(l.supplier_id)).filter((id) => id > 0),
+        );
       }
 
       await this.reloadEntries();
       this.$watch('activeLocId', () => this.loadItemsForTab());
       await this.loadItemsForTab();
     },
+    get suppliersForFree() {
+      const hid = new Set(this.hiddenSupplierIds.map(Number));
+      return this.suppliers.filter((s) => s.active && !hid.has(Number(s.id)));
+    },
+    /**
+     * Artikel ausblenden, wenn er nur ausgeblendete Lieferanten hat.
+     * Ohne Lieferantenzuordnung: weiter anzeigen (Pflege-Hinweis möglich).
+     * @param {Set<number>} [hidSet]
+     */
+    isItemVisibleForRound(itemId, hidSet = null) {
+      const hid = hidSet ?? new Set(this.hiddenSupplierIds.map(Number));
+      const ids = this.supplierIdsByItem.get(Number(itemId)) || [];
+      if (ids.length === 0) return true;
+      return ids.some((sid) => !hid.has(Number(sid)));
+    },
+    countVisibleInLocation(locId) {
+      const hid = new Set(this.hiddenSupplierIds.map(Number));
+      return this.allItems.filter((i) => {
+        if (Number(i.location_id) !== Number(locId)) return false;
+        return this.isItemVisibleForRound(i.id, hid);
+      }).length;
+    },
+    async toggleSupplierHidden(supplierId) {
+      const id = Number(supplierId);
+      const i = this.hiddenSupplierIds.indexOf(id);
+      if (i >= 0) {
+        this.hiddenSupplierIds.splice(i, 1);
+      } else {
+        this.hiddenSupplierIds.push(id);
+      }
+      await storage.setHiddenSupplierIds(this.hiddenSupplierIds);
+      await this.loadItemsForTab();
+    },
+    isSupplierHidden(supplierId) {
+      return this.hiddenSupplierIds.includes(Number(supplierId));
+    },
+    nextLocation() {
+      if (this.locations.length < 2) return;
+      const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
+      const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
+      this.activeLocId = next.id;
+      this.$nextTick(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    },
+    nextLocationLabel() {
+      if (this.locations.length < 2) return '';
+      const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
+      const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
+      return next?.name || '';
+    },
     itemSupplierNames(itemId) {
-      return this.supplierMap.get(Number(itemId)) || [];
+      const ids = this.supplierIdsByItem.get(Number(itemId)) || [];
+      const hid = new Set(this.hiddenSupplierIds.map(Number));
+      return ids
+        .filter((sid) => !hid.has(Number(sid)))
+        .map((sid) => this.supplierNameById.get(sid))
+        .filter(Boolean);
     },
     stockHint(it) {
       return formatStockHint(it);
     },
     tabLabel(loc) {
-      const n = this.locationCounts.get(loc.id);
-      const suffix = n != null ? ` (${n})` : '';
-      return `${loc.name}${suffix}`;
+      const n = this.countVisibleInLocation(loc.id);
+      return `${loc.name} (${n})`;
     },
     hasQty(itemId) {
       const q = this.quantities[itemId];
@@ -191,7 +293,9 @@ export function registerOrderAlpine(Alpine) {
         this.items = [];
         return;
       }
-      this.items = await storage.getItemsByLocation(this.activeLocId);
+      const raw = await storage.getItemsByLocation(this.activeLocId);
+      const hid = new Set(this.hiddenSupplierIds.map(Number));
+      this.items = raw.filter((it) => this.isItemVisibleForRound(it.id, hid));
     },
     async onQtyBlur(itemId, event) {
       const v = event.target.value;
@@ -229,7 +333,7 @@ export function registerOrderAlpine(Alpine) {
     async init() {
       const round = await storage.getOrderRound();
       if (!round) {
-        window.location.href = '/order/prepare';
+        window.location.href = '/?open=bestellen';
         return;
       }
       this.loading = true;
@@ -324,6 +428,7 @@ export function registerOrderAlpine(Alpine) {
             itemId: null,
             candidates: [sid],
             supplierId: sid,
+            sortOrder: 0,
           });
           continue;
         }
@@ -351,18 +456,36 @@ export function registerOrderAlpine(Alpine) {
           itemId: e.item_id,
           candidates: pick.candidates,
           supplierId: sid,
+          sortOrder: Number(item.sort_order) || 0,
+        });
+      }
+
+      for (const arr of bySup.values()) {
+        arr.sort((a, b) => {
+          const ao = a.sortOrder ?? 0;
+          const bo = b.sortOrder ?? 0;
+          if (ao !== bo) return ao - bo;
+          return String(a.label).localeCompare(String(b.label), 'de');
         });
       }
 
       this.problemLines = problem;
       this.pendingFreeLines = pendingFree;
-      this.groups = Array.from(bySup.entries()).map(([supplierId, lines]) => ({
-        supplierId,
-        supplier: supMap.get(supplierId),
-        deliveryDate: this.deliveryMap.get(Number(supplierId)) || null,
-        lines,
-        note: '',
-      }));
+      const sortedSupIds = [...bySup.keys()].sort((a, b) => {
+        const na = supMap.get(a)?.name ?? '';
+        const nb = supMap.get(b)?.name ?? '';
+        return String(na).localeCompare(String(nb), 'de');
+      });
+      this.groups = sortedSupIds.map((supplierId) => {
+        const lines = bySup.get(supplierId) || [];
+        return {
+          supplierId,
+          supplier: supMap.get(supplierId),
+          deliveryDate: this.deliveryMap.get(Number(supplierId)) || null,
+          lines,
+          note: '',
+        };
+      });
 
       for (const g of this.groups) {
         g.note = await storage.getSupplierNote(g.supplierId);
@@ -602,7 +725,7 @@ export function registerOrderAlpine(Alpine) {
     async init() {
       const round = await storage.getOrderRound();
       if (!round) {
-        window.location.href = '/order/prepare';
+        window.location.href = '/?open=bestellen';
         return;
       }
       this.targetDate = round.target_date;
@@ -665,7 +788,7 @@ export function registerOrderAlpine(Alpine) {
           if (!sid) continue;
           if (!bySup.has(sid)) bySup.set(sid, []);
           if (!freesBySup.has(sid)) freesBySup.set(sid, []);
-          freesBySup.get(sid).push(`${e.free_label}: ${e.quantity}`);
+          freesBySup.get(sid).push(`${String(e.quantity ?? '').trim()}x ${String(e.free_label ?? '').trim()}`);
           continue;
         }
         const item = itemMap.get(e.item_id);
@@ -675,11 +798,28 @@ export function registerOrderAlpine(Alpine) {
         const sid = pick.supplierId;
         if (sid == null) continue;
         if (!bySup.has(sid)) bySup.set(sid, []);
-        bySup.get(sid).push({ label: item.name, quantity: e.quantity, unit: item.unit });
+        bySup.get(sid).push({
+          label: item.name,
+          quantity: e.quantity,
+          unit: item.unit,
+          sortOrder: Number(item.sort_order) || 0,
+        });
       }
 
-      // Merge supplier IDs from both maps
-      const allSupIds = new Set([...bySup.keys(), ...freesBySup.keys()]);
+      for (const arr of bySup.values()) {
+        arr.sort((a, b) => {
+          const ao = a.sortOrder ?? 0;
+          const bo = b.sortOrder ?? 0;
+          if (ao !== bo) return ao - bo;
+          return String(a.label).localeCompare(String(b.label), 'de');
+        });
+      }
+
+      const allSupIds = [...new Set([...bySup.keys(), ...freesBySup.keys()])].sort((a, b) => {
+        const na = suppliers.find((s) => s.id === a)?.name ?? '';
+        const nb = suppliers.find((s) => s.id === b)?.name ?? '';
+        return String(na).localeCompare(String(nb), 'de');
+      });
 
       this.blocks = [];
       for (const supplierId of allSupIds) {

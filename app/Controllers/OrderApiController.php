@@ -46,7 +46,11 @@ final class OrderApiController
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $items = Database::pdo()->query(
-            'SELECT id, name, unit, location_id, min_stock, max_stock, active FROM items WHERE active = 1 ORDER BY name ASC'
+            'SELECT i.id, i.name, i.unit, i.location_id, i.sort_order, i.min_stock, i.max_stock, i.active
+             FROM items i
+             JOIN locations l ON l.id = i.location_id
+             WHERE i.active = 1 AND l.active = 1
+             ORDER BY l.sort_order ASC, i.sort_order ASC, i.name ASC'
         )->fetchAll(PDO::FETCH_ASSOC);
 
 

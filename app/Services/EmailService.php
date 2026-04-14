@@ -12,6 +12,24 @@ final class EmailService
     private const DEFAULT_ORDER_SUBJECT = 'Bestellung {{COMPANY}} {{TARGET_DATE}}';
 
     /**
+     * @param array{label: string, quantity: string, unit: string} $l
+     */
+    private static function formatCatalogLine(array $l): string
+    {
+        $q = trim((string) $l['quantity']);
+        $label = trim((string) $l['label']);
+        $unit = trim((string) $l['unit']);
+        if ($label === '') {
+            return '';
+        }
+        if ($unit !== '') {
+            return sprintf("- %sx %s (%s)\n", $q, $label, $unit);
+        }
+
+        return sprintf("- %sx %s\n", $q, $label);
+    }
+
+    /**
      * @param list<array{label: string, quantity: string, unit: string}> $lines
      * @param list<string> $freeLines
      */
@@ -31,12 +49,7 @@ final class EmailService
 
         $linesBlock = '';
         foreach ($lines as $l) {
-            $linesBlock .= sprintf(
-                "- %s: %s %s\n",
-                $l['label'],
-                $l['quantity'],
-                $l['unit']
-            );
+            $linesBlock .= self::formatCatalogLine($l);
         }
         if ($linesBlock === '') {
             $linesBlock = "(keine Artikel)\n";

@@ -1,6 +1,18 @@
 const DEFAULT_ORDER_SUBJECT = 'Bestellung {{COMPANY}} {{TARGET_DATE}}';
 
 /**
+ * @param {{ label: string, quantity: string, unit?: string }} l
+ */
+export function formatCatalogMailLine(l) {
+  const q = String(l.quantity ?? '').trim();
+  const label = String(l.label ?? '').trim();
+  const unit = String(l.unit ?? '').trim();
+  if (!label) return '';
+  if (unit) return `- ${q}x ${label} (${unit})\n`;
+  return `- ${q}x ${label}\n`;
+}
+
+/**
  * @param {{ subjectTemplate?: string, supplierName: string, targetDateFormatted: string, companyName?: string, appName?: string }} p
  */
 export function buildMailSubject(p) {
@@ -45,7 +57,7 @@ export function buildMailPreview(opts) {
 
   let linesBlock = '';
   for (const l of lines) {
-    linesBlock += `- ${l.label}: ${l.quantity} ${l.unit}\n`;
+    linesBlock += formatCatalogMailLine(l);
   }
   if (!linesBlock) linesBlock = '(keine Artikel)\n';
 

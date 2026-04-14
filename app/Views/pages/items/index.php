@@ -1,4 +1,20 @@
 <section class="page-section">
+    <?php
+    $listParams = [];
+    if (($filter_loc ?? 0) > 0) {
+        $listParams['loc'] = (int) $filter_loc;
+    }
+    if (($filter_active ?? 'all') !== 'all') {
+        $listParams['active'] = $filter_active;
+    }
+    if (($filter_supplier ?? 0) > 0) {
+        $listParams['supplier'] = (int) $filter_supplier;
+    }
+    if (trim((string) ($filter_q ?? '')) !== '') {
+        $listParams['q'] = trim((string) $filter_q);
+    }
+    $listQuery = $listParams === [] ? '' : http_build_query($listParams);
+    ?>
     <?php if (!empty($_SESSION['flash_ok'])): ?>
         <?php $flashOk = $_SESSION['flash_ok'];
         unset($_SESSION['flash_ok']); ?>
@@ -9,7 +25,7 @@
         <div class="toolbar-actions">
             <a href="/export/items" class="button button--ghost button--small" title="CSV-Export Artikel">&#8681; CSV</a>
             <a href="/export/item-supplier" class="button button--ghost button--small" title="CSV-Export Zuordnungen">&#8681; Zuordnungen</a>
-            <a href="/items/new" class="button button--primary button--small">Neu</a>
+            <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>" class="button button--primary button--small">Neu</a>
         </div>
     </div>
 
@@ -69,7 +85,7 @@
 
     <?php if (empty($items)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Keine Artikel für diese Filter. <a href="/items/new">Ersten Artikel anlegen</a> oder Filter zurücksetzen.</p>
+            <p class="text-muted" style="margin:0">Keine Artikel für diese Filter. <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>">Ersten Artikel anlegen</a> oder Filter zurücksetzen.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">
@@ -90,7 +106,7 @@
                         <span class="status-badge status-badge--warn">inaktiv</span>
                     <?php endif; ?>
                 </div>
-                <a href="/items/edit?id=<?= (int) $it['id'] ?>" class="button button--ghost button--small">Bearbeiten</a>
+                <a href="/items/edit?id=<?= (int) $it['id'] ?><?= $listQuery !== '' ? '&' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>" class="button button--ghost button--small">Bearbeiten</a>
             </li>
         <?php endforeach; ?>
     </ul>

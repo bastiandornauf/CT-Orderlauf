@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\Csrf;
+use App\Helpers\Response;
 use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\SettingsRepository;
@@ -14,10 +15,7 @@ final class OrderController
     public function prepare(): void
     {
         AuthMiddleware::requireAuth();
-        View::layout('layout', 'pages/order/prepare', [
-            'title' => 'Bestellung vorbereiten',
-            'csrf' => Csrf::token(),
-        ]);
+        Response::redirect('/?open=bestellen');
     }
 
     public function round(): void

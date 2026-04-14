@@ -190,6 +190,7 @@ export async function savePreparedSnapshot(payload) {
       name: it.name,
       unit: it.unit,
       location_id: it.location_id,
+      sort_order: it.sort_order ?? 0,
       min_stock: it.min_stock ?? null,
       max_stock: it.max_stock ?? null,
       active: it.active,
@@ -263,6 +264,7 @@ export async function mergeSuppliersAndSettingsFromPayload(payload) {
   }
   const meta = await getOne('meta', 'snapshot');
   if (meta) {
+    const hidden = meta.hidden_supplier_ids;
     const incomingSettings = payload.settings || {};
     meta.settings = { ...meta.settings, ...incomingSettings };
     if (Array.isArray(payload.suppliers_delivering_ids)) {
@@ -270,6 +272,9 @@ export async function mergeSuppliersAndSettingsFromPayload(payload) {
     }
     if (Array.isArray(payload.supplier_delivery_targets)) {
       meta.supplier_delivery_targets = payload.supplier_delivery_targets;
+    }
+    if (Array.isArray(hidden)) {
+      meta.hidden_supplier_ids = hidden;
     }
     meta.last_sync = now;
     await putRow('meta', meta);
@@ -299,6 +304,21 @@ export async function getMetaSnapshot() {
   return getOne('meta', 'snapshot');
 }
 
+/** Lieferanten-IDs, die im Rundgang ausgeblendet sind (nur lokal, pro Gerät). */
+export async function getHiddenSupplierIds() {
+  const m = await getMetaSnapshot();
+  const raw = m?.hidden_supplier_ids;
+  if (!Array.isArray(raw)) return [];
+  return raw.map(Number).filter((n) => n > 0);
+}
+
+/** @param {number[]} ids */
+export async function setHiddenSupplierIds(ids) {
+  const m = (await getOne('meta', 'snapshot')) || { key: 'snapshot' };
+  m.hidden_supplier_ids = [...new Set(ids.map(Number).filter((n) => n > 0))];
+  await putRow('meta', m);
+}
+
 export async function getLocationsSorted() {
   const rows = await getAll('locations');
   return rows.sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name)));
@@ -309,7 +329,12 @@ export async function getItemsByLocation(locationId) {
   const lid = Number(locationId);
   return items
     .filter((i) => Number(i.location_id) === lid)
-    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'de'));
+    .sort((a, b) => {
+      const ao = Number(a.sort_order) || 0;
+      const bo = Number(b.sort_order) || 0;
+      if (ao !== bo) return ao - bo;
+      return String(a.name).localeCompare(String(b.name), 'de');
+    });
 }
 
 export async function getAllItems() {

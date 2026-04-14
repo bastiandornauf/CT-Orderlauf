@@ -46,6 +46,13 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
     <?php endif; ?>
     <form method="post" action="/items/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
+        <?php
+        $lf = $list_filter ?? ['loc' => 0, 'active' => 'all', 'supplier' => 0, 'q' => ''];
+        ?>
+        <input type="hidden" name="list_filter_loc" value="<?= (int) ($lf['loc'] ?? 0) ?>">
+        <input type="hidden" name="list_filter_active" value="<?= htmlspecialchars((string) ($lf['active'] ?? 'all'), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="list_filter_supplier" value="<?= (int) ($lf['supplier'] ?? 0) ?>">
+        <input type="hidden" name="list_filter_q" value="<?= htmlspecialchars((string) ($lf['q'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         <?php if (!empty($item['id'])): ?>
             <input type="hidden" name="id" value="<?= (int) $item['id'] ?>">
         <?php endif; ?>
@@ -67,6 +74,12 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
                     </option>
                 <?php endforeach; ?>
             </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="sort_order">Reihenfolge im Rundgang (optional)</label>
+            <input class="input" id="sort_order" name="sort_order" type="number"
+                   value="<?= isset($item['sort_order']) ? (int) $item['sort_order'] : 0 ?>">
+            <p class="form-hint">Niedrigere Zahl = weiter oben im Lager-Tab; gleiche Zahl = alphabetisch nach Name.</p>
         </div>
         <div class="form-group">
             <label class="form-label" for="min_stock">Mindestbestand (optional)</label>
