@@ -4,10 +4,14 @@ import * as orch from './order-round.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
 
+/** Nächster Kalendertag in lokaler Zeitzone (nicht UTC), für input type="date" */
 function tomorrowIso() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function formatDeDate(iso) {
@@ -125,6 +129,10 @@ export function dashboardPageData() {
       return m[this.roundStatus] || '';
     },
     async init() {
+      const dateIn = document.getElementById('target_date');
+      if (dateIn instanceof HTMLInputElement && dateIn.value) {
+        this.targetDate = dateIn.value;
+      }
       const row = await storage.getOrderRound();
       this.hasRound = !!row;
       this.roundStatus = row?.status || 'idle';

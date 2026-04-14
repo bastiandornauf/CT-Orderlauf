@@ -1,4 +1,4 @@
-<section class="page-section" x-data="dashboardPage()" x-init="init()">
+<section class="page-section" x-data="dashboardPage">
     <h1 class="page-title">Start</h1>
     <p class="page-lead">Bestellrunden durch den Lager-Rundgang, Kontrolle und Ausgabe per E-Mail oder PDF.</p>
 
@@ -34,11 +34,12 @@
         <div class="form-stack" style="margin-top: var(--space-4);">
             <div class="form-group">
                 <label class="form-label" for="target_date">Ziel-Datum</label>
-                <input class="input" type="date" id="target_date" x-model="targetDate">
+                <input class="input" type="date" id="target_date" name="target_date"
+                       value="<?= htmlspecialchars($default_target_date ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       x-model="targetDate">
             </div>
             <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
-                <span x-show="!loading">Bestellrunde laden</span>
-                <span x-show="loading">Lade…</span>
+                <span x-text="loading ? 'Lade…' : 'Bestellrunde laden'"></span>
             </button>
             <p class="toast toast--error" x-show="error" x-text="error"></p>
         </div>

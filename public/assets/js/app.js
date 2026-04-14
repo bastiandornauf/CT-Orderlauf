@@ -6,5 +6,5 @@ registerServiceWorker();
 
 document.addEventListener('alpine:init', () => {
   registerOrderAlpine(window.Alpine);
-  window.Alpine.data('dashboardPage', dashboardPageData);
+  window.Alpine.data('dashboardPage', () => dashboardPageData());
 });

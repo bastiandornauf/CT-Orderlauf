@@ -3,7 +3,7 @@ import { registerOrderAlpine, dashboardPageData } from './order-pages.js';
 import { initOnlineIndicator, registerServiceWorker } from './offline.js';
 
 registerOrderAlpine(Alpine);
-Alpine.data('dashboardPage', dashboardPageData);
+Alpine.data('dashboardPage', () => dashboardPageData());
 
 Alpine.data('appHeader', () => ({
   navOpen: false,

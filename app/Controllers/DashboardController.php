@@ -18,6 +18,7 @@ final class DashboardController
         $pdo = Database::pdo();
         View::layout('layout', 'pages/dashboard', [
             'title' => 'Start',
+            'default_target_date' => (new \DateTimeImmutable('tomorrow'))->format('Y-m-d'),
             'csrf' => Csrf::token(),
             'canEditMaster' => UserRole::canEditMasterData((string) ($_SESSION['role'] ?? '')),
             'counts' => [
