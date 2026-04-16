@@ -620,6 +620,15 @@ body.app-body--nav-open {
   line-height: 1.45;
 }
 
+.output-cc-line {
+  margin: 0 0 var(--space-3);
+  line-height: 1.45;
+}
+
+.output-cc-line__addr {
+  word-break: break-all;
+}
+
 .delivery-badge {
   font-size: var(--text-sm);
   font-weight: 600;

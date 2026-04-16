@@ -20,6 +20,12 @@
         <p class="toast toast--warn">Testbetrieb aktiv – Alle Mails gehen an <strong x-text="devEmail"></strong></p>
     </template>
 
+    <template x-if="cc && String(cc).trim()">
+        <p class="text-muted output-cc-line">
+            <strong>CC</strong> für Bestellmails (Lieferanten per E-Mail / Serverversand): <span class="output-cc-line__addr" x-text="cc"></span>
+        </p>
+    </template>
+
     <p class="text-muted order-stammdaten-hint">
         Nach Änderungen an Lieferanten oder Einstellungen (z.&nbsp;B. Betreff-Vorlagen):
         <button type="button" class="button button--ghost button--small order-stammdaten-hint__btn"
