@@ -1528,9 +1528,14 @@ html.js .app-nav__link--logout:hover {
   -webkit-overflow-scrolling: touch;
 }
 
-.order-stepper__item {
+.order-stepper__cell {
   flex: 1 1 0;
   min-width: 4.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+a.order-stepper__item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1543,6 +1548,21 @@ html.js .app-nav__link--logout:hover {
   line-height: 1.2;
   text-align: center;
   color: var(--color-muted);
+  text-decoration: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.order-stepper__item:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+a.order-stepper__item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .order-stepper__item--active {
@@ -1564,6 +1584,54 @@ html.js .app-nav__link--logout:hover {
 
 .order-stepper__item--active .order-stepper__num {
   color: var(--color-accent);
+}
+
+.order-stepper__hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.page-lead--compact {
+  margin-bottom: var(--space-3);
+}
+
+.dashboard-order-hero {
+  margin-bottom: var(--space-4);
+}
+
+.dashboard-order-hero__status {
+  margin: 0 0 var(--space-3);
+  color: var(--color-muted);
+}
+
+.dashboard-order-hero__actions {
+  margin-bottom: 0;
+}
+
+.dashboard-stammdaten {
+  margin-top: var(--space-4);
+}
+
+.dashboard-stammdaten__summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--text-base);
+  list-style: none;
+}
+
+.dashboard-stammdaten__summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-stammdaten__summary::after {
+  content: ' ▾';
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.dashboard-stammdaten[open] .dashboard-stammdaten__summary::after {
+  content: ' ▴';
 }
 
 .card--has-qty {
@@ -1769,6 +1837,7 @@ html.js .app-nav__link--logout:hover {
 .sleek .review-supplier-choice__hint,
 .sleek .text-muted.order-item-meta,
 .sleek .order-stammdaten-hint,
+.sleek .order-stepper__hint,
 .sleek [class*="page-hint"],
 .sleek details summary ~ p,
 .sleek .card .text-muted:not(.delivery-badge):not(.dashboard-quick__count) {

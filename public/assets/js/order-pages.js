@@ -112,6 +112,8 @@ async function executeLoadPreparedRound(ctx) {
 /** Start-Seite: Status + Fortsetzen + neue Runde vorbereiten */
 export function dashboardPageData() {
   return {
+    /** Nach init() true – vermeidet „Keine Runde“-Flash vor IndexedDB-Lesezugriff */
+    initialized: false,
     hasRound: false,
     roundStatus: 'idle',
     targetDate: tomorrowIso(),
@@ -137,6 +139,7 @@ export function dashboardPageData() {
       this.hasRound = !!row;
       this.roundStatus = row?.status || 'idle';
       this.suppliersWithDates = [];
+      this.initialized = true;
       this.$nextTick(() => {
         const open = new URLSearchParams(window.location.search).get('open');
         if (open === 'bestellen') {

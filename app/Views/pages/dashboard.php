@@ -1,35 +1,25 @@
 <section class="page-section" x-data="dashboardPage">
     <h1 class="page-title">Start</h1>
-    <p class="page-lead">Bestellrunden durch den Lager-Rundgang, Kontrolle und Ausgabe per E-Mail oder PDF.</p>
+    <p class="page-lead page-lead--compact">Rundgang, Kontrolle, Ausgabe – alles lokal im Browser bis zum Versand.</p>
 
-    <?php if (!empty($canEditMaster)): ?>
-    <div class="dashboard-quick card card--pad">
-        <p class="section-header" style="margin-top:0">Stammdaten</p>
-        <ul class="dashboard-quick__list">
-            <li><a href="/items" class="dashboard-quick__link">Artikel <span class="dashboard-quick__count"><?= (int) ($counts['items'] ?? 0) ?></span></a></li>
-            <li><a href="/suppliers" class="dashboard-quick__link">Lieferanten <span class="dashboard-quick__count"><?= (int) ($counts['suppliers'] ?? 0) ?></span></a></li>
-            <li><a href="/locations" class="dashboard-quick__link">Lagerorte <span class="dashboard-quick__count"><?= (int) ($counts['locations'] ?? 0) ?></span></a></li>
-        </ul>
-    </div>
-    <?php endif; ?>
+    <div class="card card--pad dashboard-order-hero">
+        <h2 class="section-header" style="margin-top:0">Bestellrunde</h2>
+        <p class="dashboard-order-hero__status" x-show="initialized" x-cloak>
+            <span x-show="hasRound && roundStatusLabel" x-text="roundStatusLabel"></span>
+            <span x-show="!hasRound">Keine aktive Runde. Zum Starten unten <strong>Neue Bestellrunde</strong> nutzen.</span>
+        </p>
 
-    <template x-if="hasRound && roundStatusLabel">
-        <div class="card card--pad dashboard-round-status">
-            <p class="section-header" style="margin-top:0">Aktuelle Runde</p>
-            <p class="text-muted" style="margin:0" x-text="roundStatusLabel"></p>
+        <div class="button-stack dashboard-order-hero__actions">
+            <a href="/order/round" class="button button--primary button--block" x-show="hasRound && (roundStatus === 'prepared' || roundStatus === 'active' || roundStatus === 'paused')">Rundgang fortsetzen</a>
+            <a href="/order/review" class="button button--secondary button--block" x-show="hasRound && (roundStatus === 'ready_for_review' || roundStatus === 'active' || roundStatus === 'paused')">Kontrolle / Abschluss</a>
+            <a href="/order/output" class="button button--secondary button--block" x-show="hasRound && roundStatus === 'ready_for_review'">Ausgabe</a>
         </div>
-    </template>
-
-    <div class="button-stack">
-        <a href="/order/round" class="button button--primary button--block" x-show="hasRound && (roundStatus === 'prepared' || roundStatus === 'active' || roundStatus === 'paused')">Rundgang fortsetzen</a>
-        <a href="/order/review" class="button button--secondary button--block" x-show="hasRound && (roundStatus === 'ready_for_review' || roundStatus === 'active' || roundStatus === 'paused')">Kontrolle / Abschluss</a>
-        <a href="/order/output" class="button button--secondary button--block" x-show="hasRound && roundStatus === 'ready_for_review'">Ausgabe</a>
     </div>
 
     <div id="bestellen" class="card card--pad dashboard-prepare">
         <h2 class="section-header" style="margin-top:0">Neue Bestellrunde</h2>
         <p class="text-muted">Wunsch-Lieferdatum wählen (z.&nbsp;B. Montag für OGA/Pütz). Lieferanten mit anderen Liefertagen erhalten automatisch ihr nächstmögliches Datum.</p>
-        <p class="text-muted"><strong>Bestellrunde laden</strong> startet eine <strong>neue</strong> Runde und löscht dabei alle bisherigen lokalen Eingaben dieser Runde. Eine laufende Runde setzen Sie oben mit <strong>Rundgang fortsetzen</strong> oder <strong>Kontrolle</strong> fort – nicht durch erneutes Laden.</p>
+        <p class="text-muted"><strong>Bestellrunde laden</strong> startet eine <strong>neue</strong> Runde und löscht dabei alle bisherigen lokalen Eingaben dieser Runde. Laufende Runden setzen Sie mit <strong>Rundgang fortsetzen</strong> oder <strong>Kontrolle</strong> fort – nicht durch erneutes Laden.</p>
 
         <div class="form-stack" style="margin-top: var(--space-4);">
             <div class="form-group">
@@ -67,5 +57,17 @@
         </template>
     </div>
 
-    <p class="text-muted dashboard-hint">Weitere Bereiche: <strong>Menü</strong> oben (drei Striche auf dem Handy).</p>
+    <?php if (!empty($canEditMaster)): ?>
+    <details class="dashboard-stammdaten card card--pad">
+        <summary class="dashboard-stammdaten__summary">Stammdaten pflegen</summary>
+        <p class="text-muted" style="margin-top:0">Artikel, Lieferanten, Lagerorte – für den Bestellablauf und die Ausgabe.</p>
+        <ul class="dashboard-quick__list">
+            <li><a href="/items" class="dashboard-quick__link">Artikel <span class="dashboard-quick__count"><?= (int) ($counts['items'] ?? 0) ?></span></a></li>
+            <li><a href="/suppliers" class="dashboard-quick__link">Lieferanten <span class="dashboard-quick__count"><?= (int) ($counts['suppliers'] ?? 0) ?></span></a></li>
+            <li><a href="/locations" class="dashboard-quick__link">Lagerorte <span class="dashboard-quick__count"><?= (int) ($counts['locations'] ?? 0) ?></span></a></li>
+        </ul>
+    </details>
+    <?php endif; ?>
+
+    <p class="text-muted dashboard-hint">Weitere Bereiche über das <strong>Menü</strong> oben.</p>
 </section>
