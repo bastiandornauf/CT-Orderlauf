@@ -2123,3 +2123,91 @@ a.order-stepper__item:focus-visible {
   cursor: pointer;
   user-select: none;
 }
+
+.app-header__clock {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.help-doc {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.help-doc__h1 {
+  margin: 0 0 var(--space-3);
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.help-doc__h2 {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.help-doc__h2:first-child {
+  margin-top: 0;
+}
+
+.help-doc__h3 {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.help-doc__p {
+  margin: 0 0 var(--space-3);
+}
+
+.help-doc__p:last-child {
+  margin-bottom: 0;
+}
+
+.help-doc__ul,
+.help-doc__ol {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.25rem;
+}
+
+.help-doc__hr {
+  margin: var(--space-4) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.help-doc__table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 0 var(--space-3);
+}
+
+.help-doc__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.help-doc__table th,
+.help-doc__table td {
+  border: 1px solid var(--color-border);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.help-doc__table thead th {
+  background: var(--color-bg);
+  font-weight: 600;
+}
+
+.help-doc__ref {
+  border-bottom: 1px dotted var(--color-border);
+  cursor: help;
+}
+
+.help-doc a {
+  color: var(--color-accent);
+}

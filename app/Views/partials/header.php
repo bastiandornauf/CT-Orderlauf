@@ -30,6 +30,7 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                 <span class="status-badge status-badge--offline" data-offline-badge>Offline</span>
             </div>
             <?php if ($loggedIn): ?>
+            <time class="app-header__clock" x-text="clockLabel" :datetime="clockIso" title="Aktuelle Uhrzeit"></time>
             <a href="/profile" class="app-header__user" title="Mein Konto"><?= htmlspecialchars((string) ($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?></a>
             <button type="button"
                     class="app-header__sleek-btn"
@@ -80,6 +81,7 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                 <?php if ($_isAdmin): ?>
                 <a href="/admin/users" class="app-nav__link<?= $navActive('/admin/users') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Benutzer</a>
                 <?php endif; ?>
+                <a href="/help" class="app-nav__link<?= $navActive('/help') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Hilfe</a>
                 <a href="/profile" class="app-nav__link<?= $navActive('/profile') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Mein Konto</a>
                 <form method="post" action="/logout" class="app-nav__logout">
                     <?= \App\Helpers\Csrf::field() ?>

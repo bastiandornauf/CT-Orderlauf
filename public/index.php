@@ -9,6 +9,7 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\ProfileController;
 use App\Controllers\ExportController;
+use App\Controllers\HelpController;
 use App\Controllers\ImportController;
 use App\Controllers\ItemController;
 use App\Controllers\LocationController;
@@ -33,6 +34,7 @@ $router = new Router([
         '/items/edit' => [ItemController::class, 'form'],
         '/settings' => [SettingsController::class, 'index'],
         '/profile' => [ProfileController::class, 'index'],
+        '/help' => [HelpController::class, 'index'],
         '/admin/users' => [AdminUsersController::class, 'index'],
         '/admin/users/new' => [AdminUsersController::class, 'form'],
         '/admin/users/edit' => [AdminUsersController::class, 'form'],

@@ -8,9 +8,13 @@ Alpine.data('dashboardPage', () => dashboardPageData());
 Alpine.data('appHeader', () => ({
   navOpen: false,
   sleek: false,
+  clockLabel: '',
+  clockIso: '',
   init() {
     this.sleek = localStorage.getItem('sleekMode') === '1';
     document.body.classList.toggle('sleek', this.sleek);
+    this.tickClock();
+    setInterval(() => this.tickClock(), 30000);
 
     this.$watch('navOpen', (open) => {
       document.body.classList.toggle('app-body--nav-open', !!open);
@@ -30,6 +34,14 @@ Alpine.data('appHeader', () => ({
     this.sleek = !this.sleek;
     localStorage.setItem('sleekMode', this.sleek ? '1' : '0');
     document.body.classList.toggle('sleek', this.sleek);
+  },
+  tickClock() {
+    const d = new Date();
+    this.clockIso = d.toISOString();
+    this.clockLabel = new Intl.DateTimeFormat('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d);
   },
 }));
 
