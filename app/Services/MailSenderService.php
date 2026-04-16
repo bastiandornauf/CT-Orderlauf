@@ -163,7 +163,37 @@ final class MailSenderService
         if ($smtpHost !== '') {
             return $this->sendSmtp($to, $subject, $body, $cc, $attachment);
         }
+
         return $this->sendPhpMail($to, $subject, $body, $cc, $attachment);
+    }
+
+    /**
+     * Liefert einzelne E-Mail-Adressen aus einem freien CC-String (Komma, Semikolon, „Name <mail>“).
+     *
+     * @return list<string>
+     */
+    private function parseRecipientAddresses(string $raw): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+        $parts = preg_split('/[,;]/', $raw) ?: [];
+        $out = [];
+        foreach ($parts as $p) {
+            $e = trim((string) $p);
+            if ($e === '') {
+                continue;
+            }
+            if (preg_match('/<([^>]+)>/', $e, $m)) {
+                $e = trim($m[1]);
+            }
+            if (filter_var($e, FILTER_VALIDATE_EMAIL)) {
+                $out[] = $e;
+            }
+        }
+
+        return array_values(array_unique($out, SORT_STRING));
     }
 
     /**
@@ -177,23 +207,39 @@ final class MailSenderService
         $from = $fromName !== '' ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <{$fromEmail}>" : $fromEmail;
         $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
+        $toList = $this->parseRecipientAddresses($to);
+        $toNorm = $toList[0] ?? trim($to);
+        $ccList = $this->parseRecipientAddresses($cc);
+        $ccList = array_values(array_filter(
+            $ccList,
+            static fn (string $a): bool => strcasecmp($a, $toNorm) !== 0
+        ));
+        $ccHeader = $ccList !== [] ? implode(', ', $ccList) : '';
+
         $headers = [
             "From: {$from}",
             "Reply-To: {$fromEmail}",
+            "To: {$toNorm}",
             'MIME-Version: 1.0',
         ];
-        if ($cc !== '') {
-            $headers[] = "Cc: {$cc}";
+        if ($ccHeader !== '') {
+            $headers[] = "Cc: {$ccHeader}";
+        }
+
+        // Ohne SMTP liest viele MTA nur den ersten Empfaenger aus mail() — CC muss in die Empfaengerliste.
+        $envelopeTo = $toNorm;
+        if ($ccHeader !== '') {
+            $envelopeTo .= ', ' . implode(', ', $ccList);
         }
 
         if ($attachment !== null) {
             $mime = $this->buildMimeBody($body, $attachment);
             $headers[] = "Content-Type: multipart/mixed; boundary=\"{$mime['boundary']}\"";
-            $ok = @mail($to, $encodedSubject, $mime['content'], implode("\r\n", $headers));
+            $ok = @mail($envelopeTo, $encodedSubject, $mime['content'], implode("\r\n", $headers));
         } else {
             $headers[] = 'Content-Type: text/plain; charset=UTF-8';
             $headers[] = 'Content-Transfer-Encoding: 8bit';
-            $ok = @mail($to, $encodedSubject, $body, implode("\r\n", $headers));
+            $ok = @mail($envelopeTo, $encodedSubject, $body, implode("\r\n", $headers));
         }
 
         return $ok
@@ -249,10 +295,19 @@ final class MailSenderService
 
             $this->smtpAuthenticate($conn, $user, $pass);
 
+            $toList = $this->parseRecipientAddresses($to);
+            $toNorm = $toList[0] ?? trim($to);
+            $ccAddresses = $this->parseRecipientAddresses($cc);
+            $ccAddresses = array_values(array_filter(
+                $ccAddresses,
+                static fn (string $a): bool => strcasecmp($a, $toNorm) !== 0
+            ));
+            $ccHeader = $ccAddresses !== [] ? implode(', ', $ccAddresses) : '';
+
             $this->smtpCmd($conn, "MAIL FROM:<{$fromEmail}>", 250);
-            $this->smtpCmd($conn, "RCPT TO:<{$to}>", 250);
-            if ($cc !== '') {
-                $this->smtpCmd($conn, "RCPT TO:<{$cc}>", 250);
+            $this->smtpCmd($conn, "RCPT TO:<{$toNorm}>", 250);
+            foreach ($ccAddresses as $ccAddr) {
+                $this->smtpCmd($conn, "RCPT TO:<{$ccAddr}>", 250);
             }
 
             $this->smtpCmd($conn, "DATA", 354);
@@ -262,9 +317,9 @@ final class MailSenderService
                 : $fromEmail;
 
             $msg = "From: {$fromHeader}\r\n";
-            $msg .= "To: {$to}\r\n";
-            if ($cc !== '') {
-                $msg .= "Cc: {$cc}\r\n";
+            $msg .= "To: {$toNorm}\r\n";
+            if ($ccHeader !== '') {
+                $msg .= "Cc: {$ccHeader}\r\n";
             }
             $msg .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
             $msg .= "MIME-Version: 1.0\r\n";
