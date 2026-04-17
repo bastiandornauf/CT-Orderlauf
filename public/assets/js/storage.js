@@ -354,6 +354,60 @@ export async function getItemSupplierLinks() {
   return getAll('item_supplier_links');
 }
 
+/**
+ * Artikelzeile in der lokalen DB (Form wie nach savePreparedSnapshot).
+ * @param {object} it
+ */
+export async function upsertItemRow(it) {
+  await putRow('items', {
+    id: Number(it.id),
+    name: it.name,
+    unit: it.unit ?? '',
+    location_id: Number(it.location_id),
+    sort_order: Number(it.sort_order) || 0,
+    min_stock: it.min_stock != null && it.min_stock !== '' ? Number(it.min_stock) : null,
+    max_stock: it.max_stock != null && it.max_stock !== '' ? Number(it.max_stock) : null,
+    active: Number(it.active) ? 1 : 0,
+  });
+}
+
+/**
+ * Alle item_supplier_links für eine Artikel-ID ersetzen (ohne andere Artikel zu ändern).
+ * @param {number} itemId
+ * @param {{ supplier_id: number, priority: number }[]} links
+ */
+export async function replaceItemSupplierLinks(itemId, links) {
+  const iid = Number(itemId);
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('item_supplier_links', 'readwrite');
+    const store = tx.objectStore('item_supplier_links');
+    const idx = store.index('by_item');
+    const req = idx.getAll(iid);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      try {
+        for (const row of req.result) {
+          if (row.id != null) {
+            store.delete(row.id);
+          }
+        }
+        for (const L of links) {
+          store.add({
+            item_id: iid,
+            supplier_id: Number(L.supplier_id),
+            priority: Number(L.priority) || 0,
+          });
+        }
+      } catch (e) {
+        reject(e);
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function getOrderEntries() {
   return getAll('order_entries');
 }

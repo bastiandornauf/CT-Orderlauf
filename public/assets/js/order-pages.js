@@ -182,12 +182,34 @@ export function registerOrderAlpine(Alpine) {
     supplierNameById: new Map(),
     /** Lieferanten heute ausblenden (nur Anzeige) */
     hiddenSupplierIds: [],
+    canEditMaster: false,
+    editDraft: {
+      id: null,
+      name: '',
+      unit: '',
+      location_id: '',
+      sort_order: '0',
+      min_stock: '',
+      max_stock: '',
+      active: true,
+    },
+    /** @type {{ supplier_id: string, priority: number }[]} */
+    editSupplierRows: [],
+    editError: '',
+    editSaving: false,
     get filteredItems() {
       const q = this.search.trim().toLowerCase();
       const hid = new Set(this.hiddenSupplierIds.map(Number));
       const base =
-        q === '' ? this.items : this.allItems.filter((it) => it.name.toLowerCase().includes(q));
-      return base.filter((it) => this.isItemVisibleForRound(it.id, hid));
+        q === ''
+          ? this.items
+          : this.allItems.filter(
+              (it) =>
+                Number(it.active) !== 0 && it.name.toLowerCase().includes(q),
+            );
+      return base.filter(
+        (it) => Number(it.active) !== 0 && this.isItemVisibleForRound(it.id, hid),
+      );
     },
     async init() {
       const round = await storage.getOrderRound();
@@ -195,6 +217,7 @@ export function registerOrderAlpine(Alpine) {
         window.location.href = '/?open=bestellen';
         return;
       }
+      this.canEditMaster = this.$el.dataset.canEditMaster === '1';
       if (round.status === 'prepared') {
         await storage.setOrderRoundStatus('active');
       }
@@ -205,6 +228,13 @@ export function registerOrderAlpine(Alpine) {
       this.allItems = await storage.getAllItems();
 
       this.supplierNameById = new Map(this.suppliers.map((s) => [s.id, s.name]));
+      await this.rebuildSupplierLinksMap();
+
+      await this.reloadEntries();
+      this.$watch('activeLocId', () => this.loadItemsForTab());
+      await this.loadItemsForTab();
+    },
+    async rebuildSupplierLinksMap() {
       const links = await storage.getItemSupplierLinks();
       const byItem = groupLinksByItem(links);
       this.supplierIdsByItem = new Map();
@@ -215,10 +245,101 @@ export function registerOrderAlpine(Alpine) {
           sorted.map((l) => Number(l.supplier_id)).filter((id) => id > 0),
         );
       }
-
-      await this.reloadEntries();
-      this.$watch('activeLocId', () => this.loadItemsForTab());
+    },
+    async refreshItemCatalogState() {
+      this.allItems = await storage.getAllItems();
+      await this.rebuildSupplierLinksMap();
       await this.loadItemsForTab();
+    },
+    async openQuickEdit(it) {
+      this.editError = '';
+      this.editDraft = {
+        id: it.id,
+        name: it.name ?? '',
+        unit: it.unit ?? '',
+        location_id: String(it.location_id ?? ''),
+        sort_order: String(it.sort_order ?? 0),
+        min_stock:
+          it.min_stock != null && it.min_stock !== '' ? String(it.min_stock) : '',
+        max_stock:
+          it.max_stock != null && it.max_stock !== '' ? String(it.max_stock) : '',
+        active: Number(it.active) !== 0,
+      };
+      const allLinks = await storage.getItemSupplierLinks();
+      const mine = allLinks.filter((l) => Number(l.item_id) === Number(it.id));
+      const sorted = [...mine].sort((a, b) => b.priority - a.priority);
+      if (sorted.length === 0) {
+        this.editSupplierRows = [{ supplier_id: '', priority: 0 }];
+      } else {
+        this.editSupplierRows = sorted.map((l) => ({
+          supplier_id: String(l.supplier_id),
+          priority: Number(l.priority) || 0,
+        }));
+      }
+      await this.$nextTick();
+      this.$refs.quickEditDialog?.showModal?.();
+    },
+    closeQuickEdit() {
+      this.$refs.quickEditDialog?.close?.();
+      this.editError = '';
+    },
+    addEditSupplierRow() {
+      this.editSupplierRows.push({ supplier_id: '', priority: 0 });
+    },
+    removeEditSupplierRow(idx) {
+      if (this.editSupplierRows.length <= 1) return;
+      this.editSupplierRows.splice(idx, 1);
+    },
+    async submitQuickEdit() {
+      if (!navigator.onLine) {
+        this.editError = 'Nur online möglich.';
+        return;
+      }
+      this.editSaving = true;
+      this.editError = '';
+      try {
+        const supplier_links = this.editSupplierRows
+          .filter((r) => r.supplier_id && String(r.supplier_id).trim() !== '')
+          .map((r) => ({
+            supplier_id: Number(r.supplier_id),
+            priority: Number(r.priority) || 0,
+          }));
+        const lid = Number(this.editDraft.location_id);
+        if (!lid) {
+          this.editError = 'Lagerort wählen.';
+          return;
+        }
+        const hadQty = this.hasQty(this.editDraft.id);
+        const minStr = String(this.editDraft.min_stock ?? '').trim();
+        const maxStr = String(this.editDraft.max_stock ?? '').trim();
+        const data = await api.saveItem({
+          id: this.editDraft.id,
+          name: this.editDraft.name.trim(),
+          unit: this.editDraft.unit.trim(),
+          location_id: lid,
+          sort_order: Number(this.editDraft.sort_order) || 0,
+          min_stock: minStr === '' ? null : Number(minStr),
+          max_stock: maxStr === '' ? null : Number(maxStr),
+          active: this.editDraft.active,
+          supplier_links,
+        });
+        await storage.upsertItemRow(data.item);
+        await storage.replaceItemSupplierLinks(data.item.id, data.item_supplier_links || []);
+        await this.refreshItemCatalogState();
+        await this.reloadEntries();
+        this.closeQuickEdit();
+        showToast('Artikel gespeichert.');
+        if (!Number(data.item.active) && hadQty) {
+          showToast(
+            'Hinweis: Artikel ist deaktiviert; eingetragene Menge bleibt lokal, bis Sie sie leeren oder in der Kontrolle weiterbearbeiten.',
+            5000,
+          );
+        }
+      } catch (e) {
+        this.editError = e?.message || 'Speichern fehlgeschlagen';
+      } finally {
+        this.editSaving = false;
+      }
     },
     get suppliersForFree() {
       const hid = new Set(this.hiddenSupplierIds.map(Number));
@@ -238,6 +359,7 @@ export function registerOrderAlpine(Alpine) {
     countVisibleInLocation(locId) {
       const hid = new Set(this.hiddenSupplierIds.map(Number));
       return this.allItems.filter((i) => {
+        if (Number(i.active) === 0) return false;
         if (Number(i.location_id) !== Number(locId)) return false;
         return this.isItemVisibleForRound(i.id, hid);
       }).length;
@@ -306,7 +428,9 @@ export function registerOrderAlpine(Alpine) {
       }
       const raw = await storage.getItemsByLocation(this.activeLocId);
       const hid = new Set(this.hiddenSupplierIds.map(Number));
-      this.items = raw.filter((it) => this.isItemVisibleForRound(it.id, hid));
+      this.items = raw.filter(
+        (it) => Number(it.active) !== 0 && this.isItemVisibleForRound(it.id, hid),
+      );
     },
     async onQtyBlur(itemId, event) {
       const v = event.target.value;

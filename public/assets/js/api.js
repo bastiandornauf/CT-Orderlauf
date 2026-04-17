@@ -20,6 +20,27 @@ export async function fetchPayload(targetDate) {
  * @param {{ to: string, subject: string, body: string, cc?: string }} params
  * @returns {Promise<{ ok: boolean, error?: string }>}
  */
+/**
+ * Artikel-Stammdaten speichern (JSON-API, nur Update bestehender Artikel).
+ * @param {object} body id, name, unit, location_id, sort_order, min_stock, max_stock, active, supplier_links
+ */
+export async function saveItem(body) {
+  const res = await fetch('/api/items/save', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ ...body, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Speichern fehlgeschlagen');
+  }
+  return data;
+}
+
 export async function sendMail(params) {
   const res = await fetch('/api/order/send-mail', {
     method: 'POST',

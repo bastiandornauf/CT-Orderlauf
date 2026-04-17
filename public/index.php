@@ -11,6 +11,7 @@ use App\Controllers\ProfileController;
 use App\Controllers\ExportController;
 use App\Controllers\HelpController;
 use App\Controllers\ImportController;
+use App\Controllers\ItemApiController;
 use App\Controllers\ItemController;
 use App\Controllers\LocationController;
 use App\Controllers\OrderApiController;
@@ -65,6 +66,7 @@ $router = new Router([
         '/import/run' => [ImportController::class, 'run'],
         '/api/pdf/supplier' => [OrderApiController::class, 'pdf'],
         '/api/order/send-mail' => [OrderApiController::class, 'sendMail'],
+        '/api/items/save' => [ItemApiController::class, 'save'],
     ],
 ]);
 
