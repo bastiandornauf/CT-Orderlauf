@@ -29,9 +29,9 @@
                        x-model="targetDate">
             </div>
             <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
-                <span x-text="loading ? 'Lade…' : 'Bestellrunde laden'"></span>
+                <span class="button__label" x-text="loading ? 'Lade...' : 'Bestellrunde laden'">Bestellrunde laden</span>
             </button>
-            <p class="toast toast--error" x-show="error" x-text="error"></p>
+            <p class="toast toast--error" x-show="error && String(error).trim()" x-text="error" x-cloak></p>
         </div>
 
         <template x-if="suppliersWithDates.length">
@@ -69,5 +69,5 @@
     </details>
     <?php endif; ?>
 
-    <p class="text-muted dashboard-hint">Weitere Bereiche über das <strong>Menü</strong> oben.</p>
+    <p class="text-muted dashboard-hint">Inventur und weitere Bereiche über das <strong>Menü</strong> oben.</p>
 </section>

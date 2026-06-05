@@ -23,8 +23,10 @@
     <div class="page-toolbar">
         <h1 class="page-title">Artikel</h1>
         <div class="toolbar-actions">
-            <a href="/export/items" class="button button--ghost button--small" title="CSV-Export Artikel">&#8681; CSV</a>
+            <a href="/export/items" class="button button--ghost button--small" title="CSV-Export Artikel inkl. Bewertungspreis">&#8681; CSV</a>
+            <a href="/export/item-prices" class="button button--ghost button--small" title="CSV nur Bewertungspreise (Massenpflege)">&#8681; Preise</a>
             <a href="/export/item-supplier" class="button button--ghost button--small" title="CSV-Export Zuordnungen">&#8681; Zuordnungen</a>
+            <a href="/items/pending" class="button button--secondary button--small" title="Freitext-Artikel aus Inventur/Bestellung übernehmen">Neue Artikel</a>
             <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>" class="button button--primary button--small">Neu</a>
         </div>
     </div>

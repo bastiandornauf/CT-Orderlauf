@@ -257,14 +257,25 @@ final class MailSenderService
         $port = (int) $this->settings->get('smtp_port', '587');
         $user = trim((string) $this->settings->get('smtp_user', ''));
         $pass = trim((string) $this->settings->get('smtp_pass', ''), " \t\r\n\v\f\0");
+
+        if ($host === '' || $user === '' || $pass === '') {
+            return ['ok' => false, 'error' => 'SMTP nicht vollstaendig konfiguriert (Host/User/Passwort).'];
+        }
+
+        $smtpFromSetting = trim((string) $this->settings->get('smtp_from_email', ''));
+        $fromViaSmtpUser = SmtpHost::requiresSenderEqualsSmtpUser($host)
+            && filter_var($user, FILTER_VALIDATE_EMAIL);
+        if (!$fromViaSmtpUser && $smtpFromSetting === '') {
+            return [
+                'ok' => false,
+                'error' => 'Absender-Adresse fehlt: Unter Einstellungen → E-Mail-Versand → „SMTP-Server konfigurieren“ das Feld „Absender-Adresse“ ausfüllen (z. B. dieselbe Adresse wie beim SMTP-Benutzer). Ohne diese Adresse ist der Versand über SMTP nicht möglich.',
+            ];
+        }
+
         $fromEmail = $this->resolveFromEmail();
         $fromName = $this->resolveFromName();
         if (SmtpHost::requiresSenderEqualsSmtpUser($host) && $user !== '') {
             $fromEmail = $user;
-        }
-
-        if ($host === '' || $user === '' || $pass === '') {
-            return ['ok' => false, 'error' => 'SMTP nicht vollstaendig konfiguriert (Host/User/Passwort).'];
         }
 
         $prefix = $port === 465 ? 'ssl://' : '';
@@ -438,13 +449,32 @@ final class MailSenderService
     {
         $smtp = trim((string) $this->settings->get('smtp_from_email', ''));
         if ($smtp !== '') {
-            return $smtp;
+            $parsed = $this->parseRecipientAddresses($smtp);
+            if ($parsed !== []) {
+                return $parsed[0];
+            }
+            if (filter_var($smtp, FILTER_VALIDATE_EMAIL)) {
+                return $smtp;
+            }
         }
-        $cc = trim((string) $this->settings->get('order_cc_email', ''));
-        if ($cc !== '') {
-            return $cc;
+
+        // Kein Fallback mehr auf order_cc_email: Wenn From und Cc dieselbe Mailbox sind,
+        // unterdrücken u. a. Microsoft 365 / Exchange oft die CC-Kopie an denselben Empfänger.
+        return 'noreply@' . $this->defaultMailHostname();
+    }
+
+    /** Hostname für noreply@… (nur ASCII, ohne Port). */
+    private function defaultMailHostname(): string
+    {
+        $host = trim((string) ($_SERVER['SERVER_NAME'] ?? ''));
+        if ($host === '' || strcasecmp($host, 'localhost') === 0 || filter_var($host, FILTER_VALIDATE_IP)) {
+            $fromHttp = (string) ($_SERVER['HTTP_HOST'] ?? '');
+            $host = preg_replace('/:\d+$/', '', trim($fromHttp)) ?: 'localhost';
         }
-        return 'noreply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost');
+        $host = strtolower($host);
+        $host = preg_replace('/[^a-z0-9.-]+/', '', $host) ?: 'localhost';
+
+        return $host;
     }
 
     private function resolveFromName(): string

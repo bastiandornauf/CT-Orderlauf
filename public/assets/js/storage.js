@@ -3,7 +3,7 @@
  */
 
 const DB_NAME = 'ct-orderlauf';
-const DB_VERSION = 1;
+const DB_VERSION = 4;
 
 /** @returns {Promise<IDBDatabase>} */
 function openDb() {
@@ -43,9 +43,35 @@ function openDb() {
       if (!db.objectStoreNames.contains('supplier_notes')) {
         db.createObjectStore('supplier_notes', { keyPath: 'supplier_id' });
       }
+      if (!db.objectStoreNames.contains('inventory_session')) {
+        db.createObjectStore('inventory_session', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('inventory_lines')) {
+        const inv = db.createObjectStore('inventory_lines', { keyPath: 'id', autoIncrement: true });
+        inv.createIndex('by_item', 'item_id', { unique: true });
+      }
+      if (!db.objectStoreNames.contains('inventory_catalog_locations')) {
+        db.createObjectStore('inventory_catalog_locations', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('inventory_catalog_items')) {
+        db.createObjectStore('inventory_catalog_items', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('inventory_free_items')) {
+        const s = db.createObjectStore('inventory_free_items', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('by_location', 'location_id', { unique: false });
+      }
     };
   });
 }
+
+/** Inventur-Stores (inventory_*) werden von savePreparedSnapshot/clearOrderRound nicht geleert. */
+export const INVENTORY_ONLY_STORES = [
+  'inventory_session',
+  'inventory_lines',
+  'inventory_catalog_locations',
+  'inventory_catalog_items',
+  'inventory_free_items',
+];
 
 /** @param {string} store */
 async function clearStore(store) {
@@ -501,3 +527,5 @@ export async function clearOrderRound() {
     await clearStore(s);
   }
 }
+
+export { openDb, putRow, getAll, getOne, deleteRow, clearStore };

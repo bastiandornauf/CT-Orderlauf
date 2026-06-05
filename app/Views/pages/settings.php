@@ -117,7 +117,8 @@
                             <label class="form-label" for="smtp_from_email">Absender-Adresse</label>
                             <input class="input" id="smtp_from_email" name="smtp_from_email" type="email"
                                    value="<?= htmlspecialchars($smtp_from_email ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                   placeholder="leer = CC-Adresse" autocomplete="email">
+                                   placeholder="z. B. bestellung@ihre-domain.de" autocomplete="email">
+                            <p class="form-hint"><strong>Pflichtfeld</strong>, sobald ein SMTP-Server eingetragen ist: dieselbe Adresse wie der SMTP-Benutzer, eine noreply@-Adresse Ihrer Domain o. ä. – nicht die CC-Kopf-Adresse als Absender wählen (Microsoft 365 kann sonst Ihre CC unterdrücken). Ausnahme: bei Ionos wird der Absender automatisch auf den SMTP-Benutzer gesetzt. Ohne Eintrag liefert der Direktversand eine <strong>Fehlermeldung</strong>.</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="smtp_from_name">Absendername</label>

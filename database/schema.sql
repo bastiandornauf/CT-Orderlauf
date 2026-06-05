@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS items (
     sort_order INT NOT NULL DEFAULT 0,
     min_stock INT NULL,
     max_stock INT NULL,
+    valuation_price DECIMAL(10,2) NULL COMMENT 'Bewertungspreis pro Einheit fuer Inventur',
     active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_items_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE RESTRICT,

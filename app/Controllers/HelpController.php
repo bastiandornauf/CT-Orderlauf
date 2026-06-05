@@ -14,8 +14,16 @@ final class HelpController
     public function index(): void
     {
         AuthMiddleware::requireAuth();
-        $path = APP_ROOT . '/docs/ANLEITUNG.md';
-        $html = UserManualHtml::renderFile($path);
+        $html = null;
+        foreach ([
+            APP_ROOT . '/app/Data/ANLEITUNG.md',
+            APP_ROOT . '/docs/ANLEITUNG.md',
+        ] as $path) {
+            $html = UserManualHtml::renderFile($path);
+            if ($html !== null) {
+                break;
+            }
+        }
         View::layout('layout', 'pages/help', [
             'title' => 'Hilfe',
             'csrf' => Csrf::token(),

@@ -48,14 +48,56 @@ final class ExportController
     public function items(): void
     {
         AuthMiddleware::requireEditor();
+        $priceCol = $this->hasValuationPriceColumn()
+            ? 'i.valuation_price AS bewertungspreis'
+            : 'NULL AS bewertungspreis';
         $rows = Database::pdo()->query(
-            'SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, i.active, i.sort_order
+            "SELECT i.id, i.name, l.name AS location, i.unit, i.min_stock, i.max_stock, {$priceCol}, i.active, i.sort_order
              FROM items i
              JOIN locations l ON l.id = i.location_id
-             ORDER BY l.sort_order, i.sort_order, i.name'
+             ORDER BY l.sort_order, i.sort_order, i.name"
         )->fetchAll(PDO::FETCH_ASSOC);
 
-        $this->sendCsv('artikel.csv', ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active', 'sort_order'], $rows);
+        foreach ($rows as &$row) {
+            if ($row['bewertungspreis'] !== null && $row['bewertungspreis'] !== '') {
+                $row['bewertungspreis'] = number_format((float) $row['bewertungspreis'], 2, ',', '');
+            } else {
+                $row['bewertungspreis'] = '';
+            }
+        }
+        unset($row);
+
+        $this->sendCsv(
+            'artikel.csv',
+            ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'bewertungspreis', 'active', 'sort_order'],
+            $rows
+        );
+    }
+
+    public function itemPrices(): void
+    {
+        AuthMiddleware::requireEditor();
+        $priceCol = $this->hasValuationPriceColumn()
+            ? 'i.valuation_price AS bewertungspreis'
+            : 'NULL AS bewertungspreis';
+        $rows = Database::pdo()->query(
+            "SELECT i.id, i.name, l.name AS location, i.unit, {$priceCol}
+             FROM items i
+             JOIN locations l ON l.id = i.location_id
+             WHERE i.active = 1
+             ORDER BY l.sort_order, i.sort_order, i.name"
+        )->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            if ($row['bewertungspreis'] !== null && $row['bewertungspreis'] !== '') {
+                $row['bewertungspreis'] = number_format((float) $row['bewertungspreis'], 2, ',', '');
+            } else {
+                $row['bewertungspreis'] = '';
+            }
+        }
+        unset($row);
+
+        $this->sendCsv('artikel_bewertungspreise.csv', ['id', 'name', 'location', 'unit', 'bewertungspreis'], $rows);
     }
 
     public function itemSupplier(): void
@@ -76,6 +118,13 @@ final class ExportController
      * @param list<string> $header
      * @param list<array<string, mixed>> $rows
      */
+    private function hasValuationPriceColumn(): bool
+    {
+        $stmt = Database::pdo()->query("SHOW COLUMNS FROM items LIKE 'valuation_price'");
+
+        return $stmt->fetch() !== false;
+    }
+
     private function sendCsv(string $filename, array $header, array $rows): void
     {
         header('Content-Type: text/csv; charset=utf-8');

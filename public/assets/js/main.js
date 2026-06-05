@@ -1,8 +1,10 @@
 import Alpine from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/module.esm.js';
 import { registerOrderAlpine, dashboardPageData } from './order-pages.js';
+import { registerInventoryAlpine } from './inventory-pages.js';
 import { initOnlineIndicator, registerServiceWorker } from './offline.js';
 
 registerOrderAlpine(Alpine);
+registerInventoryAlpine(Alpine);
 Alpine.data('dashboardPage', () => dashboardPageData());
 
 Alpine.data('appHeader', () => ({

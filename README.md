@@ -103,6 +103,7 @@ Kurzfassung:
 
 ## Weitere Dokumentation
 
-- **Anwender (Bedienung):** [docs/ANLEITUNG.md](docs/ANLEITUNG.md)
+- **Inventur (Planung, Stufe 1–5):** [project guidelines and definition/pflichtenheft - inventur v1.md](project%20guidelines%20and%20definition/pflichtenheft%20-%20inventur%20v1.md)
+- **Anwender (Bedienung):** [docs/ANLEITUNG.md](docs/ANLEITUNG.md) (Bestellung + **Inventur**, Abschnitt 8)
 - Deployment & Hosting: [WEBSPACE-INSTALL.md](WEBSPACE-INSTALL.md)
 - Outlook-Workflow: [outlook-macro/README.md](outlook-macro/README.md)

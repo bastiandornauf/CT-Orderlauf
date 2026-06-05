@@ -31,7 +31,11 @@ final class Router
             if (str_starts_with($path, '/api/')) {
                 Response::jsonError('Not found', 404);
             }
-            echo '404 Not Found';
+            $hint = '';
+            if (str_starts_with($path, '/inventory')) {
+                $hint = ' Hinweis: config/routes.php und public/index.php auf dem Server aktualisieren (Deploy-Inventur).';
+            }
+            echo '404 Not Found' . $hint;
             exit;
         }
 

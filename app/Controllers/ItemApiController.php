@@ -6,12 +6,61 @@ namespace App\Controllers;
 
 use App\Helpers\Csrf;
 use App\Helpers\Response;
+use App\Helpers\ValuationPrice;
 use App\Helpers\Validator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
 
 final class ItemApiController
 {
+    public function create(): void
+    {
+        AuthMiddleware::requireEditor();
+        $raw = file_get_contents('php://input') ?: '';
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            Response::jsonError('Ungültiger JSON-Body.', 400);
+        }
+        if (!Csrf::validate($data['_csrf'] ?? null)) {
+            Response::jsonError('CSRF ungültig.', 403);
+        }
+
+        $name = trim((string) ($data['name'] ?? ''));
+        $unit = trim((string) ($data['unit'] ?? ''));
+        $locId = (int) ($data['location_id'] ?? 0);
+        $valuationPrice = ValuationPrice::parse($data['valuation_price'] ?? null);
+
+        $err = Validator::required(['name' => $name], 'name');
+        if ($locId <= 0) {
+            $err = $err ?? 'Lagerort wählen.';
+        }
+        if ($err !== null) {
+            Response::jsonError($err, 422);
+        }
+
+        $items = new ItemRepository();
+        $existing = $items->findByName($name);
+        if ($existing !== null) {
+            Response::jsonError('Artikel mit diesem Namen existiert bereits.', 409);
+        }
+
+        $id = $items->create($name, $unit, $locId, null, null, true, 0, $valuationPrice);
+        $saved = $items->find($id);
+        if ($saved === null) {
+            Response::jsonError('Artikel nach Anlegen nicht lesbar.', 500);
+        }
+
+        Response::jsonOk([
+            'item' => [
+                'id' => (int) $saved['id'],
+                'name' => (string) $saved['name'],
+                'unit' => (string) ($saved['unit'] ?? ''),
+                'location_id' => (int) $saved['location_id'],
+                'active' => (int) ($saved['active'] ?? 0),
+            ],
+        ]);
+    }
+
     public function save(): void
     {
         AuthMiddleware::requireEditor();
@@ -44,6 +93,7 @@ final class ItemApiController
         $max = ($maxRaw === null || $maxRaw === '') ? null : (int) $maxRaw;
         $sortOrder = (int) ($data['sort_order'] ?? 0);
         $active = !empty($data['active']);
+        $valuationPrice = ValuationPrice::parse($data['valuation_price'] ?? null);
 
         $err = Validator::required(['name' => $name], 'name');
         if ($locId <= 0) {
@@ -53,7 +103,7 @@ final class ItemApiController
             Response::jsonError($err, 422);
         }
 
-        $items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder);
+        $items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
 
         $pairs = [];
         $rawLinks = $data['supplier_links'] ?? null;
@@ -100,6 +150,8 @@ final class ItemApiController
                     ? (int) $saved['min_stock'] : null,
                 'max_stock' => $saved['max_stock'] !== null && $saved['max_stock'] !== ''
                     ? (int) $saved['max_stock'] : null,
+                'valuation_price' => $saved['valuation_price'] !== null && $saved['valuation_price'] !== ''
+                    ? round((float) $saved['valuation_price'], 2) : null,
                 'active' => (int) ($saved['active'] ?? 0),
             ],
             'item_supplier_links' => $normLinks,

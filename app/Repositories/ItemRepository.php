@@ -131,14 +131,31 @@ final class ItemRepository
         ?int $minStock,
         ?int $maxStock,
         bool $active,
-        int $sortOrder = 0
+        int $sortOrder = 0,
+        ?float $valuationPrice = null
     ): int {
         $stmt = Database::pdo()->prepare(
-            'INSERT INTO items (name, unit, location_id, sort_order, min_stock, max_stock, active)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO items (name, unit, location_id, sort_order, min_stock, max_stock, valuation_price, active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$name, $unit, $locationId, $sortOrder, $minStock, $maxStock, $active ? 1 : 0]);
+        $stmt->execute([
+            $name,
+            $unit,
+            $locationId,
+            $sortOrder,
+            $minStock,
+            $maxStock,
+            $valuationPrice,
+            $active ? 1 : 0,
+        ]);
+
         return (int) Database::pdo()->lastInsertId();
+    }
+
+    public function updateValuationPrice(int $id, ?float $valuationPrice): void
+    {
+        Database::pdo()->prepare('UPDATE items SET valuation_price = ? WHERE id = ?')
+            ->execute([$valuationPrice, $id]);
     }
 
     public function update(
@@ -149,12 +166,23 @@ final class ItemRepository
         ?int $minStock,
         ?int $maxStock,
         bool $active,
-        int $sortOrder = 0
+        int $sortOrder = 0,
+        ?float $valuationPrice = null
     ): void {
         $stmt = Database::pdo()->prepare(
-            'UPDATE items SET name = ?, unit = ?, location_id = ?, sort_order = ?, min_stock = ?, max_stock = ?, active = ? WHERE id = ?'
+            'UPDATE items SET name = ?, unit = ?, location_id = ?, sort_order = ?, min_stock = ?, max_stock = ?, valuation_price = ?, active = ? WHERE id = ?'
         );
-        $stmt->execute([$name, $unit, $locationId, $sortOrder, $minStock, $maxStock, $active ? 1 : 0, $id]);
+        $stmt->execute([
+            $name,
+            $unit,
+            $locationId,
+            $sortOrder,
+            $minStock,
+            $maxStock,
+            $valuationPrice,
+            $active ? 1 : 0,
+            $id,
+        ]);
     }
 
     /** @return list<array{item_id:int,supplier_id:int,priority:int}> */

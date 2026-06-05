@@ -3,6 +3,7 @@ import * as storage from './storage.js';
 import * as orch from './order-round.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
+import { showToast } from './toast.js';
 
 /** Nächster Kalendertag in lokaler Zeitzone (nicht UTC), für input type="date" */
 function tomorrowIso() {
@@ -24,20 +25,6 @@ function orderTypeLabel(raw) {
   if (raw === 'mail') return 'E-Mail';
   if (raw === 'webshop') return 'Webshop';
   return raw || '';
-}
-
-let _toastTimer = null;
-/** Kurze Hinweise Standard ~2,5s; Fehler länger und hervorgehoben (SMTP-Text bleibt lesbar). */
-function showToast(msg, durationMs = 2500, isError = false) {
-  const el = document.getElementById('toast-float');
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.toggle('toast-float--error', !!isError);
-  el.classList.add('toast-float--visible');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => {
-    el.classList.remove('toast-float--visible', 'toast-float--error');
-  }, durationMs);
 }
 
 /** Min/Max-Bestand für Anzeige im Bestellprozess (leer wenn nicht gepflegt). */
@@ -740,11 +727,117 @@ export function registerOrderAlpine(Alpine) {
     sendStatus: {},
     sendingAll: false,
     syncBusy: false,
+    /** @type {Record<number, true>} Lieferant: mailto wurde mindestens einmal ausgelöst (persistiert pro Zieltag in sessionStorage) */
+    mailtoOpenedMap: {},
+    /** @type {Record<number, true>} Erledigte Blöcke werden automatisch eingeklappt; per Klick auf „Anzeigen" lässt sich der Block wieder ausklappen. */
+    manualExpandedIds: {},
+    mailtoWizardIndex: 0,
+    mailtoStorageKey() {
+      return `ctol_mailto_ok_${this.targetDate || 'x'}`;
+    },
+    loadMailtoOpened() {
+      try {
+        const raw = sessionStorage.getItem(this.mailtoStorageKey());
+        const o = raw ? JSON.parse(raw) : {};
+        const next = {};
+        for (const k of Object.keys(o)) {
+          next[Number(k)] = true;
+        }
+        this.mailtoOpenedMap = next;
+      } catch {
+        this.mailtoOpenedMap = {};
+      }
+    },
+    touchMailtoOpened(supplierId) {
+      const sid = Number(supplierId);
+      try {
+        const raw = sessionStorage.getItem(this.mailtoStorageKey());
+        const o = raw ? JSON.parse(raw) : {};
+        o[String(sid)] = 1;
+        sessionStorage.setItem(this.mailtoStorageKey(), JSON.stringify(o));
+      } catch {
+        /* ignore */
+      }
+      this.mailtoOpenedMap = { ...this.mailtoOpenedMap, [sid]: true };
+    },
+    mailtoOpened(block) {
+      const id = block?.supplier?.id;
+      if (id == null) return false;
+      const n = Number(id);
+      return !!(this.mailtoOpenedMap[n] ?? this.mailtoOpenedMap[id]);
+    },
+    isSendableBlock(block) {
+      if (block.supplier.order_type === 'mail' && block.supplier.email) return true;
+      if (block.supplier.order_type === 'webshop' && String(this.cc || '').trim()) return true;
+      return false;
+    },
+    mailtoNeedsAttention(block) {
+      return !this.directSend && this.isSendableBlock(block) && !this.mailtoOpened(block);
+    },
+    mailtoClientButtonClass(block) {
+      if (this.directSend) {
+        return this.mailtoOpened(block)
+          ? 'button button--ghost output-mailto-client--used'
+          : 'button button--ghost';
+      }
+      if (this.mailtoNeedsAttention(block)) return 'button button--mailto-urgent';
+      return 'button button--primary';
+    },
+    mailtoClientButtonLabel(block) {
+      if (this.directSend) {
+        return this.mailtoOpened(block) ? 'Nochmal im Mail-Programm' : 'Im Mail-Client';
+      }
+      if (block.supplier.order_type === 'webshop') {
+        if (this.mailtoOpened(block)) return 'Webshop erneut im Mail-Programm';
+        if (this.mailtoNeedsAttention(block)) return 'Webshop jetzt im Mail-Programm';
+        return 'Webshop-Liste mailen';
+      }
+      if (this.mailtoOpened(block)) return 'Nochmal im Mail-Programm öffnen';
+      if (this.mailtoNeedsAttention(block)) return 'Jetzt im Mail-Programm öffnen';
+      return 'Mail öffnen';
+    },
     formatDate(iso) {
       return formatDeDate(iso);
     },
     blockSendState(block) {
       return this.sendStatus[block.supplier.id] || 'idle';
+    },
+    /** SMTP-Direktversand: ein Button, Text/Klasse ohne verschachteltes x-text (Alpine/HTML). */
+    smtpSendButtonLabel(block) {
+      const s = this.blockSendState(block);
+      if (s === 'sent') return 'Erneut senden';
+      if (s === 'sending') return 'Sende...';
+      if (s === 'error') return 'Nochmal senden (Server)';
+      if (block.supplier.order_type === 'webshop') return 'Webshop-Liste senden';
+      return 'Senden';
+    },
+    smtpSendButtonClass(block) {
+      return this.blockSendState(block) === 'error'
+        ? 'button button--mailto-urgent'
+        : 'button button--primary';
+    },
+    /** „Erledigt" = SMTP gesendet ODER Mail-Programm geöffnet (Fallback). */
+    blockIsDone(block) {
+      if (this.blockSendState(block) === 'sent') return true;
+      if (this.mailtoOpened(block)) return true;
+      return false;
+    },
+    blockCollapsed(block) {
+      const sid = Number(block?.supplier?.id);
+      if (!sid) return false;
+      if (!this.blockIsDone(block)) return false;
+      return !this.manualExpandedIds[sid];
+    },
+    toggleBlockCollapse(block) {
+      const sid = Number(block?.supplier?.id);
+      if (!sid) return;
+      this.manualExpandedIds = {
+        ...this.manualExpandedIds,
+        [sid]: !this.manualExpandedIds[sid],
+      };
+    },
+    blockCollapseLabel(block) {
+      return this.blockCollapsed(block) ? 'Details anzeigen' : 'Details verbergen';
     },
     get mailBlocks() {
       return this.blocks.filter((b) => b.supplier.order_type === 'mail' && b.supplier.email);
@@ -759,14 +852,38 @@ export function registerOrderAlpine(Alpine) {
         return false;
       });
     },
-    async openAllMails() {
-      const toOpen = this.sendableBlocks;
-      for (let i = 0; i < toOpen.length; i++) {
-        const block = toOpen[i];
-        if (i > 0) {
-          await new Promise((r) => setTimeout(r, 800));
-        }
-        this.mailtoBlock(block);
+    get mailtoWizardStepLabel() {
+      const n = this.sendableBlocks.length;
+      if (n === 0) return '';
+      return `${this.mailtoWizardIndex + 1} / ${n}`;
+    },
+    get mailtoWizardCurrentBlock() {
+      return this.sendableBlocks[this.mailtoWizardIndex] || null;
+    },
+    get mailtoWizardSupplierName() {
+      const b = this.mailtoWizardCurrentBlock;
+      return b?.supplier?.name ?? '—';
+    },
+    /** Serientipp: Browser ersetzt mailto bei mehreren schnellen Aufrufen – ein Klick pro Mail. */
+    startMailtoWizard() {
+      if (this.sendableBlocks.length === 0) return;
+      this.mailtoWizardIndex = 0;
+      this.$nextTick(() => this.$refs.mailtoWizardDialog?.showModal?.());
+    },
+    closeMailtoWizard() {
+      this.$refs.mailtoWizardDialog?.close?.();
+    },
+    mailtoWizardOpenCurrent() {
+      const b = this.mailtoWizardCurrentBlock;
+      if (!b) return;
+      this.mailtoBlock(b);
+    },
+    mailtoWizardNext() {
+      if (this.mailtoWizardIndex < this.sendableBlocks.length - 1) {
+        this.mailtoWizardIndex += 1;
+      } else {
+        this.closeMailtoWizard();
+        showToast('Letzter Schritt. Prüfen Sie die orange markierten Lieferanten, falls eine Mail noch fehlt.', 6000);
       }
     },
     async copyAllBlocks() {
@@ -867,8 +984,17 @@ export function registerOrderAlpine(Alpine) {
       this.finalized = round.status === 'finalized';
       await this._mergeOutputServerIfOnline();
       await this._rebuildOutputBlocks();
+      window.addEventListener('pageshow', () => {
+        this.loadMailtoOpened();
+      });
+      window.addEventListener('focus', () => {
+        this.loadMailtoOpened();
+      });
       let visTimer;
       document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.loadMailtoOpened();
+        }
         if (document.visibilityState !== 'visible' || !navigator.onLine) return;
         clearTimeout(visTimer);
         visTimer = setTimeout(async () => {
@@ -957,6 +1083,7 @@ export function registerOrderAlpine(Alpine) {
       });
 
       this.blocks = [];
+      this.loadMailtoOpened();
       for (const supplierId of allSupIds) {
         const supplier = suppliers.find((s) => s.id === supplierId);
         if (!supplier) continue;
@@ -1017,13 +1144,15 @@ export function registerOrderAlpine(Alpine) {
         showToast('Kopieren fehlgeschlagen');
       }
     },
-    mailtoBlock(block) {
+    async mailtoBlock(block) {
       if (block.supplier.order_type === 'webshop') {
         if (!this.cc) {
           showToast('Keine CC-Adresse für Webshop-Mail konfiguriert');
           return;
         }
         const subj = `[Webshop] ${block.subject} – ${block.supplier.name}`;
+        this.touchMailtoOpened(block.supplier.id);
+        await this.$nextTick();
         window.location.href = mailtoLink(this.cc, subj, block.body, '', {
           devMode: this.devMode,
           devEmail: this.devEmail,
@@ -1031,6 +1160,8 @@ export function registerOrderAlpine(Alpine) {
         return;
       }
       if (!block.supplier.email) return;
+      this.touchMailtoOpened(block.supplier.id);
+      await this.$nextTick();
       window.location.href = mailtoLink(block.supplier.email, block.subject, block.body, this.cc, {
         devMode: this.devMode,
         devEmail: this.devEmail,
@@ -1066,7 +1197,12 @@ export function registerOrderAlpine(Alpine) {
       try {
         await api.sendMail(params);
         this.sendStatus[sid] = 'sent';
-        showToast(`Gesendet an ${params.to}`);
+        const ccStr = String(params.cc || '').trim();
+        showToast(
+          ccStr
+            ? `Server hat angenommen: an ${params.to}, CC ${ccStr}`
+            : `Server hat angenommen: an ${params.to}`,
+        );
       } catch (e) {
         this.sendStatus[sid] = 'error';
         showToast(e.message || 'Versand fehlgeschlagen', 60000, true);

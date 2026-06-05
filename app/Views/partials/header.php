@@ -74,8 +74,12 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                 <?php if ($_canEditMaster): ?>
                 <a href="/locations" class="app-nav__link<?= $navActive('/locations') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lagerorte</a>
                 <a href="/suppliers" class="app-nav__link<?= $navActive('/suppliers') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lieferanten</a>
-                <a href="/items" class="app-nav__link<?= $navActive('/items') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Artikel</a>
+                <a href="/items" class="app-nav__link<?= ($navActive('/items') && !$navActive('/items/pending')) ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Artikel</a>
+                <a href="/items/pending" class="app-nav__link<?= $navActive('/items/pending') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Neue Artikel</a>
                 <a href="/import" class="app-nav__link<?= $navActive('/import') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Import</a>
+                <?php endif; ?>
+                <a href="/inventory" class="app-nav__link<?= $navActive('/inventory') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Inventur</a>
+                <?php if ($_canEditMaster): ?>
                 <a href="/settings" class="app-nav__link<?= $navActive('/settings') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Einstellungen</a>
                 <?php endif; ?>
                 <?php if ($_isAdmin): ?>

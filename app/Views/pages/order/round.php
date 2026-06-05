@@ -45,7 +45,9 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
-                    @click="activeLocId = loc.id" x-text="tabLabel(loc)"></button>
+                    @click="activeLocId = loc.id">
+                <span class="button__label" x-text="tabLabel(loc)">Lager</span>
+            </button>
         </template>
     </div>
     <p class="text-muted" x-show="search !== ''" style="margin-bottom: var(--space-2); font-size: var(--text-sm)">

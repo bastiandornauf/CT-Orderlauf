@@ -149,6 +149,32 @@ RewriteBase /orderlauf/
 | DB-Verbindungsfehler | Falsche `DB_HOST` / `DB_NAME` / User / Passwort in `.env` |
 | CSS/JS 404 | Document Root zeigt nicht auf `public/` |
 | Schöne URLs gehen nicht | `mod_rewrite` aus; `.htaccess` ignoriert; `RewriteBase` falsch |
+| **`/inventory` → 404** | **`public/index.php` und `config/routes.php` nicht deployt** (nur `app/` reicht nicht); oder alter Stand ohne Inventur-Routen |
+
+### Inventur nach Update (Deploy-Check)
+
+Die Inventur braucht **mehr als den Ordner `app/`**. Mindestens hochladen:
+
+| Pfad | Zweck |
+|------|--------|
+| `config/routes.php` | Routen inkl. `/inventory`, `/api/inventory/payload` |
+| `public/index.php` | lädt `config/routes.php` |
+| `app/Controllers/InventoryController.php` | |
+| `app/Controllers/InventoryApiController.php` | |
+| `app/Helpers/ValuationPrice.php` | |
+| `app/Views/pages/inventory/` | `index.php`, `round.php`, `finalize.php` |
+| `app/Views/partials/inventory-stepper.php` | |
+| `app/Views/partials/header.php` | Menüpunkt Inventur |
+| `public/assets/js/inventory-*.js` | + `main.js`, `api.js`, `storage.js` |
+| `public/assets/css/app.css` | |
+| `public/sw.js` | Cache v24+ |
+| `app/Data/ANLEITUNG.md` | Hilfe-Seite (Kopie der Anleitung, mit `app/` deployen) |
+| `docs/ANLEITUNG.md` | optional, falls vorhanden |
+| `app/Services/CsvImportService.php` | Import inkl. `bewertungspreis`, Typ **Bewertungspreise** |
+| `app/Controllers/ExportController.php` | Export `/export/items`, `/export/item-prices` |
+
+**Schnelltest auf dem Server:** In `config/routes.php` muss die Zeile `'/inventory' =>` vorkommen.  
+Wenn `/order/round` geht, `/inventory` aber 404 liefert, fehlen fast immer die neuen Routen-Dateien.
 
 ---
 

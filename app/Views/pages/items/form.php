@@ -91,6 +91,15 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
             <input class="input" id="max_stock" name="max_stock" type="number"
                    value="<?= isset($item['max_stock']) && $item['max_stock'] !== null ? htmlspecialchars((string) $item['max_stock'], ENT_QUOTES, 'UTF-8') : '' ?>">
         </div>
+        <div class="form-group">
+            <label class="form-label" for="valuation_price">Bewertungspreis pro Einheit (optional)</label>
+            <input class="input" id="valuation_price" name="valuation_price" type="text" inputmode="decimal"
+                   placeholder="z.&nbsp;B. 2,50"
+                   value="<?= isset($item['valuation_price']) && $item['valuation_price'] !== null && $item['valuation_price'] !== ''
+                       ? htmlspecialchars(str_replace('.', ',', (string) $item['valuation_price']), ENT_QUOTES, 'UTF-8')
+                       : '' ?>">
+            <p class="form-hint">Nur für Inventur-Export (Wert = Menge × Preis). Bestellung bleibt unberührt.</p>
+        </div>
 
         <h2 class="section-header">Lieferanten &amp; Priorität</h2>
         <p class="text-muted">Höhere Zahl = bevorzugt bei mehreren Lieferanten am Zieltag.</p>

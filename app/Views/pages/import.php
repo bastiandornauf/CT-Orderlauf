@@ -1,6 +1,6 @@
 <section class="page-section">
     <h1 class="page-title">CSV-Import</h1>
-    <p class="text-muted">UTF-8, Semikolon. <strong>Export-CSV</strong> von dieser App (Artikel, Lieferanten, …) ist direkt wieder importierbar. Artikel mit Spalte <code>id</code>: gleiche ID wird aktualisiert, leere ID = neuer Artikel.</p>
+    <p class="text-muted">UTF-8, Semikolon. <strong>Export-CSV</strong> von dieser App ist direkt wieder importierbar. Artikel mit <code>id</code>: gleiche ID wird aktualisiert, leere ID = neuer Artikel. Spalte <code>bewertungspreis</code> (€ pro Einheit, Komma oder Punkt) für die Inventur – leer = kein Preis. Nur Preise pflegen: Export <strong>Bewertungspreise</strong> auf der Artikel-Seite, Import-Typ <strong>Bewertungspreise</strong>.</p>
 
     <?php if (!empty($done)): ?>
         <p class="toast toast--success">
@@ -61,7 +61,8 @@
                 <option value="locations" <?= ($import_type ?? '') === 'locations' ? 'selected' : '' ?>>Lagerorte</option>
                 <option value="suppliers" <?= ($import_type ?? '') === 'suppliers' ? 'selected' : '' ?>>Lieferanten</option>
                 <option value="delivery_days" <?= ($import_type ?? '') === 'delivery_days' ? 'selected' : '' ?>>Liefertage</option>
-                <option value="items" <?= ($import_type ?? '') === 'items' ? 'selected' : '' ?>>Artikel</option>
+                <option value="items" <?= ($import_type ?? '') === 'items' ? 'selected' : '' ?>>Artikel (Stammdaten)</option>
+                <option value="item_prices" <?= ($import_type ?? '') === 'item_prices' ? 'selected' : '' ?>>Bewertungspreise (nur Preise)</option>
                 <option value="item_supplier" <?= ($import_type ?? '') === 'item_supplier' ? 'selected' : '' ?>>Artikel–Lieferant</option>
             </select>
         </div>

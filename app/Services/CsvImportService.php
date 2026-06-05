@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Helpers\ValuationPrice;
 use App\Repositories\ItemRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\SupplierRepository;
@@ -61,6 +62,7 @@ final class CsvImportService
             'suppliers' => $this->validateSuppliers($header, $dataRows, $errors, $preview),
             'delivery_days' => $this->validateDeliveryDays($header, $dataRows, $errors, $preview),
             'items' => $this->validateItems($header, $dataRows, $errors, $preview, $itemsNotInCsv),
+            'item_prices' => $this->validateItemPrices($header, $dataRows, $errors, $preview),
             'item_supplier' => $this->validateItemSupplier($header, $dataRows, $errors, $preview),
             default => $errors[] = 'Unbekannter Importtyp.',
         };
@@ -205,16 +207,13 @@ final class CsvImportService
         array &$preview,
         array &$itemsNotInCsv
     ): void {
-        $baseWithId = ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
-        $baseLegacy = ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
-        $hasSort = count($header) > 0 && end($header) === 'sort_order';
-        $h = $hasSort ? array_slice($header, 0, -1) : $header;
-        $withId = $h === $baseWithId;
-        $legacy = $h === $baseLegacy;
-        if (!$withId && !$legacy) {
-            $errors[] = 'Artikel: Kopfzeile mit ID: id;name;location;unit;min_stock;max_stock;active — optional ;sort_order am Ende — oder ohne ID: name;location;unit;min_stock;max_stock;active';
+        $parsed = $this->parseItemsCsvHeader($header);
+        if ($parsed === null) {
+            $errors[] = 'Artikel: Kopfzeile z. B. id;name;location;unit;min_stock;max_stock;bewertungspreis;active;sort_order '
+                . '(bewertungspreis optional, sort_order optional) — oder ohne id/bewertungspreis wie bisher.';
             return;
         }
+        ['withId' => $withId, 'hasPrice' => $hasPrice, 'hasSort' => $hasSort] = $parsed;
 
         $presentIds = [];
         foreach ($dataRows as $i => $cols) {
@@ -226,8 +225,9 @@ final class CsvImportService
                 $unit = trim((string) ($cols[3] ?? ''));
                 $minS = trim((string) ($cols[4] ?? ''));
                 $maxS = trim((string) ($cols[5] ?? ''));
-                $active = trim((string) ($cols[6] ?? '1'));
-                $sortRaw = $hasSort ? trim((string) ($cols[7] ?? '')) : '';
+                $priceRaw = $hasPrice ? trim((string) ($cols[6] ?? '')) : '';
+                $active = trim((string) ($cols[$hasPrice ? 7 : 6] ?? '1'));
+                $sortRaw = $hasSort ? trim((string) ($cols[$hasPrice ? 8 : 7] ?? '')) : '';
             } else {
                 $idRaw = '';
                 $name = trim((string) ($cols[0] ?? ''));
@@ -235,8 +235,9 @@ final class CsvImportService
                 $unit = trim((string) ($cols[2] ?? ''));
                 $minS = trim((string) ($cols[3] ?? ''));
                 $maxS = trim((string) ($cols[4] ?? ''));
-                $active = trim((string) ($cols[5] ?? '1'));
-                $sortRaw = $hasSort ? trim((string) ($cols[6] ?? '')) : '';
+                $priceRaw = $hasPrice ? trim((string) ($cols[5] ?? '')) : '';
+                $active = trim((string) ($cols[$hasPrice ? 6 : 5] ?? '1'));
+                $sortRaw = $hasSort ? trim((string) ($cols[$hasPrice ? 7 : 6] ?? '')) : '';
             }
 
             $sortOrder = 0;
@@ -263,6 +264,16 @@ final class CsvImportService
             }
             $min = $minS === '' ? null : (int) $minS;
             $max = $maxS === '' ? null : (int) $maxS;
+            $valuationPrice = null;
+            $hasPriceInRow = false;
+            if ($hasPrice) {
+                $hasPriceInRow = true;
+                if ($priceRaw !== '' && ValuationPrice::parse($priceRaw) === null) {
+                    $errors[] = "Zeile {$line}: bewertungspreis ungültig (Zahl ≥ 0, Komma oder Punkt).";
+                    continue;
+                }
+                $valuationPrice = ValuationPrice::parse($priceRaw);
+            }
 
             if ($withId && $idRaw !== '') {
                 if (!ctype_digit($idRaw)) {
@@ -280,7 +291,7 @@ final class CsvImportService
                     continue;
                 }
                 $presentIds[] = $eid;
-                $preview[] = [
+                $row = [
                     'target_id' => $eid,
                     'name' => $name,
                     'location_id' => (int) $loc['id'],
@@ -290,8 +301,12 @@ final class CsvImportService
                     'active' => $active === '1',
                     'sort_order' => $sortOrder,
                 ];
+                if ($hasPriceInRow) {
+                    $row['valuation_price'] = $valuationPrice;
+                }
+                $preview[] = $row;
             } elseif ($withId) {
-                $preview[] = [
+                $row = [
                     'target_id' => null,
                     'name' => $name,
                     'location_id' => (int) $loc['id'],
@@ -301,9 +316,13 @@ final class CsvImportService
                     'active' => $active === '1',
                     'sort_order' => $sortOrder,
                 ];
+                if ($hasPriceInRow) {
+                    $row['valuation_price'] = $valuationPrice;
+                }
+                $preview[] = $row;
             } else {
                 $exist = $this->items->findByName($name);
-                $preview[] = [
+                $row = [
                     'target_id' => $exist !== null ? (int) $exist['id'] : null,
                     'name' => $name,
                     'location_id' => (int) $loc['id'],
@@ -313,12 +332,107 @@ final class CsvImportService
                     'active' => $active === '1',
                     'sort_order' => $sortOrder,
                 ];
+                if ($hasPriceInRow) {
+                    $row['valuation_price'] = $valuationPrice;
+                }
+                $preview[] = $row;
             }
         }
 
         if ($errors === [] && $withId && $presentIds !== []) {
             $itemsNotInCsv = $this->items->findActiveNotInIds($presentIds);
         }
+    }
+
+    /**
+     * Massenpflege nur Bewertungspreise: id;bewertungspreis (name optional zur Kontrolle).
+     *
+     * @param list<list<string>> $dataRows
+     */
+    private function validateItemPrices(array $header, array $dataRows, array &$errors, array &$preview): void
+    {
+        $h = array_map(static fn (string $c): string => strtolower(trim($c)), $header);
+        if ($h[0] === 'valuation_price') {
+            $h[0] = 'bewertungspreis';
+        }
+        foreach ($h as $i => $col) {
+            if ($col === 'valuation_price') {
+                $h[$i] = 'bewertungspreis';
+            }
+        }
+        $withName = $h === ['id', 'name', 'bewertungspreis']
+            || $h === ['id', 'name', 'location', 'unit', 'bewertungspreis'];
+        $minimal = $h === ['id', 'bewertungspreis'];
+        if (!$minimal && !$withName) {
+            $errors[] = 'Bewertungspreise: Kopfzeile id;bewertungspreis oder Export artikel_bewertungspreise.csv (id;name;location;unit;bewertungspreis).';
+            return;
+        }
+        $idIdx = 0;
+        $priceIdx = array_search('bewertungspreis', $h, true);
+        if ($priceIdx === false) {
+            $errors[] = 'Spalte bewertungspreis fehlt.';
+            return;
+        }
+        foreach ($dataRows as $i => $cols) {
+            $line = $i + 2;
+            $idRaw = trim((string) ($cols[$idIdx] ?? ''));
+            if ($idRaw === '' || !ctype_digit($idRaw)) {
+                $errors[] = "Zeile {$line}: id fehlt oder ungültig.";
+                continue;
+            }
+            $eid = (int) $idRaw;
+            if ($eid <= 0) {
+                $errors[] = "Zeile {$line}: id ungültig.";
+                continue;
+            }
+            $exist = $this->items->find($eid);
+            if ($exist === null) {
+                $errors[] = "Zeile {$line}: Artikel-ID {$eid} nicht gefunden.";
+                continue;
+            }
+            $priceRaw = trim((string) ($cols[$priceIdx] ?? ''));
+            if ($priceRaw !== '' && ValuationPrice::parse($priceRaw) === null) {
+                $errors[] = "Zeile {$line}: bewertungspreis ungültig.";
+                continue;
+            }
+            $preview[] = [
+                'target_id' => $eid,
+                'valuation_price' => ValuationPrice::parse($priceRaw),
+            ];
+        }
+    }
+
+    /**
+     * @return array{withId: bool, hasPrice: bool, hasSort: bool}|null
+     */
+    private function parseItemsCsvHeader(array $header): ?array
+    {
+        $hasSort = count($header) > 0 && end($header) === 'sort_order';
+        $h = $hasSort ? array_slice($header, 0, -1) : $header;
+        $h = array_map(static function (string $c): string {
+            $c = strtolower(trim($c));
+            return $c === 'valuation_price' ? 'bewertungspreis' : $c;
+        }, $h);
+
+        $baseWithId = ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $baseWithIdPrice = ['id', 'name', 'location', 'unit', 'min_stock', 'max_stock', 'bewertungspreis', 'active'];
+        $baseLegacy = ['name', 'location', 'unit', 'min_stock', 'max_stock', 'active'];
+        $baseLegacyPrice = ['name', 'location', 'unit', 'min_stock', 'max_stock', 'bewertungspreis', 'active'];
+
+        if ($h === $baseWithId) {
+            return ['withId' => true, 'hasPrice' => false, 'hasSort' => $hasSort];
+        }
+        if ($h === $baseWithIdPrice) {
+            return ['withId' => true, 'hasPrice' => true, 'hasSort' => $hasSort];
+        }
+        if ($h === $baseLegacy) {
+            return ['withId' => false, 'hasPrice' => false, 'hasSort' => $hasSort];
+        }
+        if ($h === $baseLegacyPrice) {
+            return ['withId' => false, 'hasPrice' => true, 'hasSort' => $hasSort];
+        }
+
+        return null;
     }
 
     /** @param list<list<string>> $dataRows */
@@ -395,6 +509,7 @@ final class CsvImportService
             'suppliers' => $this->importSuppliers($preview, $inserted, $updated),
             'delivery_days' => $this->importDeliveryDays($preview, $inserted),
             'items' => $this->importItems($preview, $inserted, $updated),
+            'item_prices' => $this->importItemPrices($preview, $updated),
             'item_supplier' => $this->importItemSupplier($preview, $inserted),
             default => null,
         };
@@ -480,7 +595,18 @@ final class CsvImportService
         foreach ($preview as $row) {
             $tid = isset($row['target_id']) && $row['target_id'] !== null ? (int) $row['target_id'] : 0;
             $sort = (int) ($row['sort_order'] ?? 0);
+            $valuationPrice = null;
+            $hasPrice = array_key_exists('valuation_price', $row);
+            if ($hasPrice) {
+                $valuationPrice = $row['valuation_price'];
+            }
             if ($tid > 0) {
+                if (!$hasPrice) {
+                    $existing = $this->items->find($tid);
+                    $valuationPrice = $existing !== null && $existing['valuation_price'] !== null && $existing['valuation_price'] !== ''
+                        ? (float) $existing['valuation_price']
+                        : null;
+                }
                 $this->items->update(
                     $tid,
                     $row['name'],
@@ -489,7 +615,8 @@ final class CsvImportService
                     $row['min_stock'],
                     $row['max_stock'],
                     $row['active'],
-                    $sort
+                    $sort,
+                    $valuationPrice
                 );
                 $updated++;
             } else {
@@ -500,10 +627,24 @@ final class CsvImportService
                     $row['min_stock'],
                     $row['max_stock'],
                     $row['active'],
-                    $sort
+                    $sort,
+                    $hasPrice ? $valuationPrice : null
                 );
                 $inserted++;
             }
+        }
+    }
+
+    /** @param list<array<string, mixed>> $preview */
+    private function importItemPrices(array $preview, int &$updated): void
+    {
+        foreach ($preview as $row) {
+            $tid = (int) ($row['target_id'] ?? 0);
+            if ($tid <= 0) {
+                continue;
+            }
+            $this->items->updateValuationPrice($tid, $row['valuation_price'] ?? null);
+            $updated++;
         }
     }
 

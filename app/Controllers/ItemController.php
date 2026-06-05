@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\Csrf;
 use App\Helpers\Response;
+use App\Helpers\ValuationPrice;
 use App\Helpers\Validator;
 use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
@@ -122,6 +123,16 @@ final class ItemController
         ]);
     }
 
+    public function pending(): void
+    {
+        AuthMiddleware::requireEditor();
+        View::layout('layout', 'pages/items/pending', [
+            'title' => 'Neue Artikel',
+            'locations' => $this->locations->all(true),
+            'csrf' => Csrf::token(),
+        ]);
+    }
+
     public function form(): void
     {
         AuthMiddleware::requireEditor();
@@ -159,20 +170,33 @@ final class ItemController
         $max = ($_POST['max_stock'] ?? '') === '' ? null : (int) $_POST['max_stock'];
         $sortOrder = (int) ($_POST['sort_order'] ?? 0);
         $active = isset($_POST['active']);
+        $valuationPrice = ValuationPrice::parse($_POST['valuation_price'] ?? null);
 
         $err = Validator::required(['name' => $name], 'name');
         if ($locId <= 0) {
             $err = $err ?? 'Lagerort wählen.';
         }
         if ($err) {
-            $this->renderFormError($id, $name, $unit, $locId, $min, $max, $active, $err, $sortOrder, self::parseListFilterFromPost());
+            $this->renderFormError(
+                $id,
+                $name,
+                $unit,
+                $locId,
+                $min,
+                $max,
+                $active,
+                $err,
+                $sortOrder,
+                $valuationPrice,
+                self::parseListFilterFromPost(),
+            );
             return;
         }
 
         if ($id > 0) {
-            $this->items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder);
+            $this->items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
         } else {
-            $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder);
+            $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
         }
 
         $pairs = [];
@@ -203,6 +227,7 @@ final class ItemController
         bool $active,
         string $error,
         int $sortOrder,
+        ?float $valuationPrice,
         array $listFilter
     ): void {
         View::layout('layout', 'pages/items/form', [
@@ -214,6 +239,7 @@ final class ItemController
                 'location_id' => $locId,
                 'min_stock' => $min,
                 'max_stock' => $max,
+                'valuation_price' => $valuationPrice,
                 'active' => $active ? 1 : 0,
                 'sort_order' => $sortOrder,
             ],

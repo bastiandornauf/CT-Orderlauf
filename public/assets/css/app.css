@@ -549,6 +549,13 @@ body.app-body--nav-open {
 .button--ghost {
   background: transparent;
   border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Label im Button: WebKit zeigt x-text direkt auf <button> auf iOS teils leer */
+.button .button__label,
+.tab-bar__btn .button__label {
+  pointer-events: none;
 }
 
 .button--small {
@@ -2303,4 +2310,274 @@ a.order-stepper__item:focus-visible {
 
 .round-item-edit svg {
   display: block;
+}
+
+/* Ausgabe: Mail-Client / SMTP deutlich markieren */
+.button--mailto-urgent {
+  background: var(--color-warn);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+}
+
+.button--mailto-urgent:hover {
+  filter: brightness(0.95);
+}
+
+.output-supplier-mail-pending {
+  border-left: 4px solid var(--color-warn);
+  box-shadow: inset 0 0 0 1px rgba(181, 71, 8, 0.12);
+}
+
+.output-supplier-mailto-opened {
+  border-left: 4px solid var(--color-ok);
+}
+
+.output-supplier--collapsed {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-ok) 8%);
+}
+
+.output-supplier--collapsed .page-toolbar {
+  margin-bottom: 0;
+}
+
+.output-supplier-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.output-supplier-toggle {
+  flex-shrink: 0;
+}
+
+.output-supplier-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.output-mailto-client--used {
+  border-style: dashed;
+}
+
+.output-mailto-alert {
+  background: rgba(181, 71, 8, 0.12);
+  border: 2px solid var(--color-warn);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.output-mailto-alert__hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.output-mailto-wizard {
+  margin: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  max-width: min(28rem, calc(100vw - 2rem));
+  width: 100%;
+  background: transparent;
+}
+
+.output-mailto-wizard::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.output-mailto-wizard__panel {
+  background: var(--color-surface);
+  border: 2px solid var(--color-warn);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.output-mailto-wizard__actions {
+  margin-top: var(--space-3);
+}
+
+/* Inventur (getrennt von Bestellrunde) */
+.dashboard-inventory-hero {
+  margin-top: var(--space-4);
+}
+
+.inventory-parallel-hint {
+  font-size: var(--text-sm);
+}
+
+.inventory-progress {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.inventory-line--counted {
+  border-left: 4px solid var(--color-ok);
+}
+
+.inventory-line--counted-zero {
+  border-left: 4px solid var(--color-muted);
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-muted) 4%);
+}
+
+.inventory-line--open {
+  opacity: 0.92;
+}
+
+/* Inventur-Rundgang: Mobil immer Text oben, Steuerung darunter (nicht nebeneinander quetschen) */
+.inventory-line.list-item--round .list-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.inventory-line__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  margin-top: var(--space-2);
+}
+
+.inventory-line__actions .inventory-zero-btn {
+  flex: 0 0 auto;
+}
+
+.inventory-line__actions .inventory-line__qty {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: auto;
+  max-width: min(100%, 14rem);
+  align-self: center;
+  justify-content: flex-end;
+}
+
+.inventory-zero-btn--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+@media (min-width: 769px) {
+  .inventory-line.list-item--round {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .inventory-line.list-item--round .list-item__main {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .inventory-line__actions {
+    width: auto;
+    max-width: min(52%, 20rem);
+    margin-top: 0;
+    flex: 0 0 auto;
+  }
+}
+
+.inventory-status-badge {
+  display: inline-block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.inventory-valuation-hint {
+  font-size: var(--text-sm);
+}
+
+/* Gebindegröße im Inventur-Rundgang IMMER anzeigen (auch im Kompaktmodus) */
+.inventory-unit {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  margin-top: 2px;
+}
+
+.sleek .inventory-line .inventory-unit {
+  display: block !important;
+}
+
+/* Freier Artikel im Rundgang + Sammelliste im Abschluss */
+.inventory-free__list,
+.inventory-newitems__list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.inventory-free__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.inventory-newitems__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.inventory-finalize-stats {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.inventory-finalize-stats li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.inventory-open-block {
+  margin-top: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-warn) 35%, var(--color-border));
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-warn) 6%);
+}
+
+.inventory-open-block__summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.inventory-open-block__lead {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.inventory-open-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inventory-open-list__row:last-child {
+  border-bottom: none;
 }

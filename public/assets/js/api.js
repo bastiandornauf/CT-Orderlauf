@@ -2,6 +2,34 @@ function csrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 }
 
+export async function fetchInventoryPayload(stichtag, label = '') {
+  const u = new URL('/api/inventory/payload', window.location.origin);
+  if (stichtag) {
+    u.searchParams.set('stichtag', stichtag);
+  }
+  const res = await fetch(u.toString(), {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const raw = await res.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    if (res.redirected || raw.includes('login') || raw.includes('Anmelden')) {
+      throw new Error('Sitzung abgelaufen – bitte erneut anmelden.');
+    }
+    throw new Error(
+      `Server-Antwort ungültig (HTTP ${res.status}). ` +
+        'Prüfen Sie die Datenbank-Migration oder Server-Logs.',
+    );
+  }
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `Inventur laden fehlgeschlagen (HTTP ${res.status})`);
+  }
+  return { ...data, label: String(label || '').trim() };
+}
+
 export async function fetchPayload(targetDate) {
   const u = new URL('/api/order/payload', window.location.origin);
   u.searchParams.set('target_date', targetDate);
@@ -37,6 +65,27 @@ export async function saveItem(body) {
   const data = await res.json();
   if (!res.ok || !data.ok) {
     throw new Error(data.error || 'Speichern fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
+ * Neuen Artikel-Stammdatensatz anlegen (JSON-API, nur Editor).
+ * @param {{ name: string, unit?: string, location_id: number, valuation_price?: string|number|null }} body
+ */
+export async function createItem(body) {
+  const res = await fetch('/api/items/create', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ ...body, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Anlegen fehlgeschlagen');
   }
   return data;
 }

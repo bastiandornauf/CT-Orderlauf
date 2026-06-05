@@ -108,14 +108,12 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 
 ### Rundgang
 
-- Wie bei der Bestellung: **Tabs** nach **Lagerort**, **Suche** nach Artikelname **und Gebinde/Einheit**.
-- Die **Gebindegröße/Einheit** steht immer sichtbar unter dem Artikelnamen (auch im Kompaktmodus).
+- Wie bei der Bestellung: **Tabs** nach **Lagerort**, **Suche** nach Artikelname.
 - Es erscheinen nur **aktive** Artikel (inaktive Artikel sind ausgeschlossen).
 - Pro Artikel:
   - **Leer lassen** = noch **nicht gezählt** (Status später `offen` in der CSV).
   - **Leer / 0** = bewusst **kein Bestand** (Status `gezaehlt_0`).
   - **Menge eintragen** = gezählter Bestand (Status `gezaehlt`).
-- **Artikel nicht im Bestand**: Unten im jeweiligen Lagerort gibt es den Block **„Artikel nicht im Bestand"** – Bezeichnung, Gebinde/Einheit und Menge eintragen → **Hinzufügen**. Diese freien Artikel kommen in die CSV (Status `frei_gezaehlt`) und in die **Sammelliste** im Abschluss.
 - Sie müssen **nicht** jeden Artikel im Rundgang anfassen. Offene Positionen klären Sie am besten im **Abschluss**.
 
 ### Abschluss (empfohlene Vorgehensweise)
@@ -129,20 +127,10 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
      - `offen` – nicht gezählt  
      - `gezaehlt_0` – gezählt, Bestand null  
      - `gezaehlt` – Menge in Spalte `menge`  
-     - `frei_gezaehlt` – per Freitext erfasster Artikel (nicht im Stamm)  
    - In **Excel** filtern Sie nach `status`, formatieren und werten aus.
    - Optional Spalten **`bewertungspreis`** und **`wert`** (wenn am Artikel ein Bewertungspreis gepflegt ist).
 
 **Nach dem Export** ist die Inventur **gesperrt**: keine Änderungen mehr am Rundgang. Sie können die CSV **erneut herunterladen** oder die Session **lokal löschen** (Seite **Inventur** oder Abschluss → **Inventur beenden**). Für die nächste Monats-Inventur: **Neue Inventur starten**.
-
-### Neue Artikel (eigene Seite unter „Artikel")
-
-Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** (freie Positionen) – sammeln sich auf der Seite **Neue Artikel** (Menü → **Neue Artikel**, oder im Inventur-Abschluss der Hinweis-Link, oder auf der Artikelliste oben **Neue Artikel**). Adresse: `/items/pending`.
-
-- Pro Eintrag **Bezeichnung**, **Gebinde/Einheit** und **Lagerort** prüfen/ergänzen.
-- Mit **Stammdaten-Recht** und **online**: **In Stammdaten übernehmen** legt den Artikel direkt an – einzeln pro Zeile oder per **Alle übernehmen**. Er steht dann ab der **nächsten** Inventur/Bestellung im Katalog (der aktuelle Stand ist eine lokale Kopie).
-- **Ausblenden** entfernt einen Eintrag aus der Liste, ohne ihn anzulegen.
-- Ohne Stammdaten-Recht ist die Seite nicht erreichbar (Editor-Recht nötig).
 
 ### Bewertungspreis (optional)
 
