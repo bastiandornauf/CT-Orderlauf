@@ -139,7 +139,9 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 
 Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** (freie Positionen) – sammeln sich auf der Seite **Neue Artikel** (Menü → **Neue Artikel**, oder im Inventur-Abschluss der Hinweis-Link, oder auf der Artikelliste oben **Neue Artikel**). Adresse: `/items/pending`.
 
-- Pro Eintrag **Bezeichnung**, **Gebinde/Einheit** und **Lagerort** prüfen/ergänzen.
+- Pro Eintrag **Bezeichnung**, **Gebinde/Einheit**, **Lagerort** und ggf. **Lieferant** prüfen/ergänzen.
+- **Lagerort** wird aus der Erfassung übernommen (Inventur: aktueller Lagerort-Tab; Bestellung: Lagerort der freien Position).
+- **Lieferant** wird bei Freitext aus der **Bestellung** übernommen, sofern in der Runde oder Kontrolle zugeordnet.
 - Mit **Stammdaten-Recht** und **online**: **In Stammdaten übernehmen** legt den Artikel direkt an – einzeln pro Zeile oder per **Alle übernehmen**. Er steht dann ab der **nächsten** Inventur/Bestellung im Katalog (der aktuelle Stand ist eine lokale Kopie).
 - **Ausblenden** entfernt einen Eintrag aus der Liste, ohne ihn anzulegen.
 - Ohne Stammdaten-Recht ist die Seite nicht erreichbar (Editor-Recht nötig).

@@ -71,7 +71,7 @@ export async function saveItem(body) {
 
 /**
  * Neuen Artikel-Stammdatensatz anlegen (JSON-API, nur Editor).
- * @param {{ name: string, unit?: string, location_id: number, valuation_price?: string|number|null }} body
+ * @param {{ name: string, unit?: string, location_id: number, valuation_price?: string|number|null, supplier_links?: {supplier_id:number,priority?:number}[] }} body
  */
 export async function createItem(body) {
   const res = await fetch('/api/items/create', {

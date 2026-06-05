@@ -7,11 +7,16 @@ $locJson = [];
 foreach ($locations ?? [] as $loc) {
     $locJson[] = ['id' => (int) $loc['id'], 'name' => (string) $loc['name']];
 }
+$supJson = [];
+foreach ($suppliers ?? [] as $sup) {
+    $supJson[] = ['id' => (int) $sup['id'], 'name' => (string) $sup['name']];
+}
 ?>
 <section class="page-section"
          x-data="pendingItemsPage"
          data-can-edit-master="<?= $canEditMaster ? '1' : '0' ?>"
-         data-locations="<?= htmlspecialchars(json_encode($locJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>">
+         data-locations="<?= htmlspecialchars(json_encode($locJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+         data-suppliers="<?= htmlspecialchars(json_encode($supJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>">
     <div class="page-toolbar">
         <h1 class="page-title">Neue Artikel</h1>
         <div class="toolbar-actions">
@@ -21,7 +26,7 @@ foreach ($locations ?? [] as $loc) {
 
     <p class="text-muted">
         Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong>.
-        <span x-show="canTransfer">Bezeichnung/Lagerort prüfen und in die Stammdaten übernehmen (online).</span>
+        <span x-show="canTransfer">Lagerort und ggf. Lieferant werden aus der Erfassung übernommen – bitte prüfen und in die Stammdaten übernehmen (online).</span>
         <span x-show="!canTransfer">Übernahme in die Stammdaten benötigt Stammdaten-Recht.</span>
     </p>
 
@@ -60,6 +65,17 @@ foreach ($locations ?? [] as $loc) {
                             <option :value="loc.id" x-text="loc.name"></option>
                         </template>
                     </select>
+                    <p class="form-hint text-muted" x-show="ni.location_from_source" x-text="'Aus Erfassung: ' + ni.location_from_source"></p>
+                </div>
+                <div class="form-group" x-show="ni.source === 'order' || ni.supplier_id">
+                    <label class="form-label">Lieferant</label>
+                    <select class="select" x-model.number="ni.supplier_id" :disabled="!canTransfer || ni.busy">
+                        <option value="">— keiner —</option>
+                        <template x-for="sup in transferSuppliers" :key="sup.id">
+                            <option :value="sup.id" x-text="sup.name"></option>
+                        </template>
+                    </select>
+                    <p class="form-hint text-muted" x-show="ni.supplier_from_source" x-text="'Aus Bestellung: ' + ni.supplier_from_source"></p>
                 </div>
                 <div class="button-row">
                     <button type="button" class="button button--primary button--small"

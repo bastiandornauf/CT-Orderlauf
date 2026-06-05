@@ -45,9 +45,41 @@ final class ItemApiController
         }
 
         $id = $items->create($name, $unit, $locId, null, null, true, 0, $valuationPrice);
+
+        $pairs = [];
+        $rawLinks = $data['supplier_links'] ?? null;
+        if (is_array($rawLinks)) {
+            foreach ($rawLinks as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $sid = (int) ($row['supplier_id'] ?? 0);
+                if ($sid <= 0) {
+                    continue;
+                }
+                $pairs[] = [
+                    'supplier_id' => $sid,
+                    'priority' => (int) ($row['priority'] ?? 0),
+                ];
+            }
+        }
+        if ($pairs !== []) {
+            $items->setSupplierLinks($id, $pairs);
+        }
+
         $saved = $items->find($id);
         if ($saved === null) {
             Response::jsonError('Artikel nach Anlegen nicht lesbar.', 500);
+        }
+
+        $linkRows = $items->supplierLinksForItem($id);
+        $normLinks = [];
+        foreach ($linkRows as $l) {
+            $normLinks[] = [
+                'item_id' => (int) $l['item_id'],
+                'supplier_id' => (int) $l['supplier_id'],
+                'priority' => (int) $l['priority'],
+            ];
         }
 
         Response::jsonOk([
@@ -58,6 +90,7 @@ final class ItemApiController
                 'location_id' => (int) $saved['location_id'],
                 'active' => (int) ($saved['active'] ?? 0),
             ],
+            'item_supplier_links' => $normLinks,
         ]);
     }
 

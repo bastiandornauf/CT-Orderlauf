@@ -129,6 +129,7 @@ final class ItemController
         View::layout('layout', 'pages/items/pending', [
             'title' => 'Neue Artikel',
             'locations' => $this->locations->all(true),
+            'suppliers' => $this->suppliers->all(true),
             'csrf' => Csrf::token(),
         ]);
     }

@@ -26,6 +26,8 @@ function formatDeDate(iso) {
  */
 async function collectPendingFreeItems() {
   const list = [];
+  const suppliers = await orderStorage.getAllSuppliers();
+  const supById = new Map(suppliers.map((s) => [Number(s.id), String(s.name || '')]));
 
   const invFree = await invStorage.getInventoryFreeItems();
   for (const f of invFree) {
@@ -39,6 +41,7 @@ async function collectPendingFreeItems() {
       unit: f.unit || '',
       quantity: f.quantity,
       location_id: f.location_id != null ? Number(f.location_id) : null,
+      supplier_id: null,
       busy: false,
     });
   }
@@ -48,6 +51,9 @@ async function collectPendingFreeItems() {
     if (!e.is_free_item || e.transferred_to_item_id) continue;
     const label = String(e.free_label || '').trim();
     if (label === '') continue;
+    const rawSid = e.free_supplier_id ?? e.selected_supplier_id;
+    const supplierId =
+      rawSid != null && rawSid !== '' && Number(rawSid) > 0 ? Number(rawSid) : null;
     list.push({
       key: `ord-${e.id}`,
       source: 'order',
@@ -57,6 +63,8 @@ async function collectPendingFreeItems() {
       unit: '',
       quantity: e.quantity,
       location_id: e.location_id != null ? Number(e.location_id) : null,
+      supplier_id: supplierId,
+      supplier_label: supplierId ? supById.get(supplierId) || '' : '',
       busy: false,
     });
   }
@@ -736,6 +744,8 @@ export function registerInventoryAlpine(Alpine) {
     bulkBusy: false,
     /** @type {{id:number,name:string}[]} */
     transferLocations: [],
+    /** @type {{id:number,name:string}[]} */
+    transferSuppliers: [],
     /** @type {object[]} */
     newItems: [],
     async init() {
@@ -748,14 +758,39 @@ export function registerInventoryAlpine(Alpine) {
       } catch {
         this.transferLocations = [];
       }
+      try {
+        this.transferSuppliers = JSON.parse(this.$el?.dataset?.suppliers || '[]').map((s) => ({
+          id: Number(s.id),
+          name: String(s.name),
+        }));
+      } catch {
+        this.transferSuppliers = [];
+      }
       await this.loadNewItems();
       this.ready = true;
     },
     async loadNewItems() {
       const defaultLoc = this.transferLocations[0]?.id ?? '';
+      const locById = new Map(this.transferLocations.map((l) => [l.id, l.name]));
+      const supById = new Map(this.transferSuppliers.map((s) => [s.id, s.name]));
       const list = await collectPendingFreeItems();
       for (const ni of list) {
-        ni.location_id = ni.location_id != null ? Number(ni.location_id) : defaultLoc;
+        const fromLoc = ni.location_id != null ? Number(ni.location_id) : null;
+        if (fromLoc && locById.has(fromLoc)) {
+          ni.location_id = fromLoc;
+          ni.location_from_source = locById.get(fromLoc) || '';
+        } else {
+          ni.location_id = defaultLoc;
+          ni.location_from_source = '';
+        }
+        if (ni.supplier_id != null && Number(ni.supplier_id) > 0) {
+          ni.supplier_id = Number(ni.supplier_id);
+          ni.supplier_from_source =
+            ni.supplier_label || supById.get(ni.supplier_id) || '';
+        } else {
+          ni.supplier_id = '';
+          ni.supplier_from_source = '';
+        }
       }
       this.newItems = list;
     },
@@ -780,7 +815,12 @@ export function registerInventoryAlpine(Alpine) {
       }
       entry.busy = true;
       try {
-        await api.createItem({ name, unit: entry.unit || '', location_id: locId });
+        const body = { name, unit: entry.unit || '', location_id: locId };
+        const sid = Number(entry.supplier_id);
+        if (sid > 0) {
+          body.supplier_links = [{ supplier_id: sid, priority: 10 }];
+        }
+        await api.createItem(body);
         await markPendingFreeItemDone(entry);
         showToast(`„${name}" als Artikel angelegt.`, 3500);
         await this.loadNewItems();
