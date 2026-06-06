@@ -717,6 +717,7 @@ export function registerOrderAlpine(Alpine) {
   Alpine.data('outputPage', (config = {}) => ({
     showOutlookExport: config.showOutlookExport !== false,
     showPdfDownload: config.showPdfDownload !== false,
+    mailUserName: String(config.mailUserName ?? '').trim(),
     blocks: [],
     cc: '',
     devMode: false,
@@ -1109,6 +1110,7 @@ export function registerOrderAlpine(Alpine) {
             ownSubject || (ms.order_email_subject_template || ''),
           companyName: ms.company_name || '',
           appName: ms.app_name || '',
+          userName: this.mailUserName,
         });
         this.blocks.push({
           supplier,

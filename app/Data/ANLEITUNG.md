@@ -94,6 +94,12 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 - **Bestellrunde abschließen**: Bestätigt **lokal**, dass Sie fertig sind (kein Nachweis beim Lieferanten).
 - **Neue Bestellrunde**: Löscht die **lokale** Runde und alle Eingaben dieser Runde – nur nutzen, wenn Sie wirklich von vorn beginnen wollen.
 
+### Unterschrift / Besteller in der Mail
+
+- Unter **Mein Konto** (oder **Benutzer** bearbeiten) kann ein **Anzeigename** gepflegt werden (z. B. „Bastian Dornauf“).
+- In E-Mail-Vorlagen (Einstellungen, Lieferant) steht der Platzhalter **`{{USER}}`** – wird beim Erzeugen der Mail durch den **aktuell angemeldeten** Nutzer ersetzt (Anzeigename, sonst Benutzername).
+- Beispiel im Mail-Text: `Mit freundlichen Grüßen` + Zeile mit `{{USER}}`.
+
 ---
 
 ## 8. Inventur (Bestandszählung)

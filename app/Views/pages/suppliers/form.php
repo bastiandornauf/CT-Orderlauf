@@ -78,7 +78,7 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
                    placeholder="z.B. Bestellung {{COMPANY}} – {{SUPPLIER}} {{TARGET_DATE}}">
             <div class="placeholder-legend">
                 <p class="placeholder-legend__title">Platzhalter wie unter Einstellungen:</p>
-                <p class="form-hint"><code>{{COMPANY}}</code>, <code>{{APP_NAME}}</code>, <code>{{SUPPLIER}}</code>, <code>{{TARGET_DATE}}</code>, <code>{{DATE_TODAY}}</code></p>
+                <p class="form-hint"><code>{{COMPANY}}</code>, <code>{{USER}}</code>, <code>{{APP_NAME}}</code>, <code>{{SUPPLIER}}</code>, <code>{{TARGET_DATE}}</code>, <code>{{DATE_TODAY}}</code></p>
             </div>
         </div>
         <fieldset class="form-fieldset">

@@ -42,7 +42,8 @@ final class EmailService
         string $supplierNote = '',
         ?string $subjectTemplate = null,
         string $companyName = '',
-        string $appName = ''
+        string $appName = '',
+        string $userName = ''
     ): array {
         $defaultBody = "Bestellung für {{TARGET_DATE}}\n\n{{LINES}}\n\n{{IF ADDONS}}Zusätzlich:\n{{ADDONS}}\n{{ENDIF}}\n{{SUPPLIER_NOTE}}";
         $tpl = $template !== null && trim($template) !== '' ? $template : $defaultBody;
@@ -62,10 +63,12 @@ final class EmailService
 
         $noteBlock = $supplierNote !== '' ? "Hinweis:\n{$supplierNote}\n" : '';
 
+        $user = trim($userName);
         $body = str_replace(
             [
                 '{{TARGET_DATE}}',
                 '{{SUPPLIER}}',
+                '{{USER}}',
                 '{{LINES}}',
                 '{{ADDONS}}',
                 '{{SUPPLIER_NOTE}}',
@@ -75,6 +78,7 @@ final class EmailService
             [
                 $targetDateFormatted,
                 $supplierName,
+                $user,
                 $linesBlock,
                 $freeBlock,
                 $noteBlock,
@@ -104,6 +108,7 @@ final class EmailService
                 '{{COMPANY}}',
                 '{{APP_NAME}}',
                 '{{SUPPLIER}}',
+                '{{USER}}',
                 '{{TARGET_DATE}}',
                 '{{DATE_TODAY}}',
                 '[DATE_TODAY]',
@@ -112,6 +117,7 @@ final class EmailService
                 $company,
                 trim($appName),
                 $supplierName,
+                $user,
                 $targetDateFormatted,
                 $targetDateFormatted,
                 $targetDateFormatted,

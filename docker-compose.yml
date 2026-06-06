@@ -39,6 +39,7 @@ services:
       - ./database/migrations/20260413_suppliers_email_subject_template.sql:/docker-entrypoint-initdb.d/09-migrate-suppliers-email-subject.sql:ro
       - ./database/migrations/20260415_user_roles.sql:/docker-entrypoint-initdb.d/10-migrate-user-roles.sql:ro
       - ./database/migrations/20260601_items_valuation_price.sql:/docker-entrypoint-initdb.d/11-migrate-items-valuation-price.sql:ro
+      - ./database/migrations/20260605_users_display_name.sql:/docker-entrypoint-initdb.d/12-migrate-users-display-name.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s

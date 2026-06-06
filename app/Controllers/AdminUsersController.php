@@ -68,42 +68,44 @@ final class AdminUsersController
         }
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $username = trim((string) ($_POST['username'] ?? ''));
+        $displayName = trim((string) ($_POST['display_name'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
         $role = trim((string) ($_POST['role'] ?? ''));
         $pass = (string) ($_POST['password'] ?? '');
         $pass2 = (string) ($_POST['password_confirm'] ?? '');
 
         if (!UserRole::isValid($role)) {
-            $this->formError($id, $username, $email, $role, 'Ungültige Rolle.');
+            $this->formError($id, $username, $displayName, $email, $role, 'Ungültige Rolle.');
             return;
         }
 
         $err = $email !== '' ? Validator::email($email) : null;
         if ($err) {
-            $this->formError($id, $username, $email, $role, $err);
+            $this->formError($id, $username, $displayName, $email, $role, $err);
             return;
         }
 
         if ($id <= 0) {
             $err = $this->validateUsername($username);
             if ($err) {
-                $this->formError(0, $username, $email, $role, $err);
+                $this->formError(0, $username, $displayName, $email, $role, $err);
                 return;
             }
             if ($this->users->usernameExists($username)) {
-                $this->formError(0, $username, $email, $role, 'Dieser Benutzername ist bereits vergeben.');
+                $this->formError(0, $username, $displayName, $email, $role, 'Dieser Benutzername ist bereits vergeben.');
                 return;
             }
             if (strlen($pass) < 8) {
-                $this->formError(0, $username, $email, $role, 'Passwort mindestens 8 Zeichen.');
+                $this->formError(0, $username, $displayName, $email, $role, 'Passwort mindestens 8 Zeichen.');
                 return;
             }
             if ($pass !== $pass2) {
-                $this->formError(0, $username, $email, $role, 'Passwörter stimmen nicht überein.');
+                $this->formError(0, $username, $displayName, $email, $role, 'Passwörter stimmen nicht überein.');
                 return;
             }
             $this->users->create(
                 $username,
+                $displayName === '' ? null : $displayName,
                 $email === '' ? null : $email,
                 $role,
                 password_hash($pass, PASSWORD_DEFAULT)
@@ -121,17 +123,17 @@ final class AdminUsersController
 
         if ($existing['role'] === UserRole::ADMIN && $role !== UserRole::ADMIN
             && $this->users->countAdmins() === 1) {
-            $this->formError($id, $existing['username'], $email, $role, 'Der letzte Administrator kann nicht herabgestuft werden.');
+            $this->formError($id, $existing['username'], $displayName, $email, $role, 'Der letzte Administrator kann nicht herabgestuft werden.');
             return;
         }
 
         if ($pass !== '' || $pass2 !== '') {
             if (strlen($pass) < 8) {
-                $this->formError($id, $existing['username'], $email, $role, 'Passwort mindestens 8 Zeichen.');
+                $this->formError($id, $existing['username'], $displayName, $email, $role, 'Passwort mindestens 8 Zeichen.');
                 return;
             }
             if ($pass !== $pass2) {
-                $this->formError($id, $existing['username'], $email, $role, 'Passwörter stimmen nicht überein.');
+                $this->formError($id, $existing['username'], $displayName, $email, $role, 'Passwörter stimmen nicht überein.');
                 return;
             }
             $hash = password_hash($pass, PASSWORD_DEFAULT);
@@ -141,6 +143,7 @@ final class AdminUsersController
 
         $this->users->update(
             $id,
+            $displayName === '' ? null : $displayName,
             $email === '' ? null : $email,
             $role,
             $hash
@@ -201,14 +204,20 @@ final class AdminUsersController
     }
 
     /** @param array<string, string>|null $userRow */
-    private function formError(int $id, string $username, string $email, string $role, string $message): void
-    {
+    private function formError(
+        int $id,
+        string $username,
+        string $displayName,
+        string $email,
+        string $role,
+        string $message
+    ): void {
         $row = $id > 0 ? $this->users->findById($id) : null;
         View::layout('layout', 'pages/admin/users-form', [
             'title' => $row ? 'Benutzer bearbeiten' : 'Benutzer anlegen',
             'user' => $row
-                ? array_merge($row, ['email' => $email, 'role' => $role])
-                : ['username' => $username, 'email' => $email, 'role' => $role],
+                ? array_merge($row, ['email' => $email, 'role' => $role, 'display_name' => $displayName])
+                : ['username' => $username, 'email' => $email, 'role' => $role, 'display_name' => $displayName],
             'error' => $message,
             'csrf' => Csrf::token(),
             'roleLabels' => [

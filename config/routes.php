@@ -69,6 +69,7 @@ return [
         '/items/save' => [ItemController::class, 'save'],
         '/settings/save' => [SettingsController::class, 'save'],
         '/settings/smtp-test' => [SettingsController::class, 'smtpTest'],
+        '/profile/save' => [ProfileController::class, 'save'],
         '/profile/password' => [ProfileController::class, 'password'],
         '/admin/users/save' => [AdminUsersController::class, 'save'],
         '/admin/users/delete' => [AdminUsersController::class, 'delete'],

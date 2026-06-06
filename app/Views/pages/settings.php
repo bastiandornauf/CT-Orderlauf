@@ -68,7 +68,7 @@
                 <input class="input" id="order_email_subject_template" name="order_email_subject_template"
                        value="<?= htmlspecialchars($order_email_subject_template ?? 'Bestellung {{COMPANY}} {{TARGET_DATE}}', ENT_QUOTES, 'UTF-8') ?>"
                        autocomplete="off">
-                <p class="form-hint"><code>{{COMPANY}}</code> · <code>{{SUPPLIER}}</code> · <code>{{TARGET_DATE}}</code> · <code>{{DATE_TODAY}}</code></p>
+                <p class="form-hint"><code>{{COMPANY}}</code> · <code>{{USER}}</code> · <code>{{SUPPLIER}}</code> · <code>{{TARGET_DATE}}</code> · <code>{{DATE_TODAY}}</code></p>
             </div>
             <div class="form-group">
                 <label class="checkbox-label">

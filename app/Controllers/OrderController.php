@@ -40,11 +40,14 @@ final class OrderController
     {
         AuthMiddleware::requireAuth();
         $settings = new SettingsRepository();
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $user = (new \App\Repositories\UserRepository())->findById($userId);
         View::layout('layout', 'pages/order/output', [
             'title' => 'Ausgabe',
             'csrf' => Csrf::token(),
             'output_show_outlook' => $settings->get('ui_show_outlook_export', '1') === '1',
             'output_show_pdf' => $settings->get('ui_show_pdf', '1') === '1',
+            'mail_user_name' => \App\Helpers\UserDisplay::mailName($user),
         ]);
     }
 }

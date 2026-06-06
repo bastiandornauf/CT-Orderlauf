@@ -1,6 +1,7 @@
 <?php
 $isEdit = !empty($user['id']);
 $uname = (string) ($user['username'] ?? '');
+$displayName = (string) ($user['display_name'] ?? '');
 $email = (string) ($user['email'] ?? '');
 $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
 ?>
@@ -25,6 +26,13 @@ $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
                        pattern="[a-zA-Z0-9._\-]{2,64}"
                        title="2–64 Zeichen: Buchstaben, Ziffern, . _ -">
             <?php endif; ?>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="display_name">Anzeigename (Bestell-Mails)</label>
+            <input class="input" type="text" id="display_name" name="display_name" maxlength="128"
+                   value="<?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>"
+                   placeholder="z. B. Maria Schmidt">
+            <p class="form-hint">Platzhalter <code>{{USER}}</code> in E-Mail-Vorlagen. Leer = Benutzername.</p>
         </div>
         <div class="form-group">
             <label class="form-label" for="email">E-Mail (optional)</label>

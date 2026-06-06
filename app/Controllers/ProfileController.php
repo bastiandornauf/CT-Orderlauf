@@ -29,8 +29,33 @@ final class ProfileController
         View::layout('layout', 'pages/profile', [
             'title' => 'Mein Konto',
             'username' => $user['username'],
+            'display_name' => (string) ($user['display_name'] ?? ''),
             'csrf' => Csrf::token(),
         ]);
+    }
+
+    public function save(): void
+    {
+        AuthMiddleware::requireAuth();
+        if (!Csrf::validate($_POST['_csrf'] ?? null)) {
+            Response::redirect('/profile');
+            return;
+        }
+        $id = (int) ($_SESSION['user_id'] ?? 0);
+        $displayName = trim((string) ($_POST['display_name'] ?? ''));
+        if (strlen($displayName) > 128) {
+            View::layout('layout', 'pages/profile', [
+                'title' => 'Mein Konto',
+                'username' => (string) ($_SESSION['username'] ?? ''),
+                'display_name' => $displayName,
+                'error' => 'Anzeigename max. 128 Zeichen.',
+                'csrf' => Csrf::token(),
+            ]);
+            return;
+        }
+        $this->users->updateDisplayName($id, $displayName === '' ? null : $displayName);
+        $_SESSION['flash_ok'] = 'Profil gespeichert.';
+        Response::redirect('/profile?saved=1');
     }
 
     public function password(): void
@@ -47,18 +72,22 @@ final class ProfileController
 
         $row = $this->users->findByUsername((string) ($_SESSION['username'] ?? ''));
         if ($row === null || !password_verify($current, $row['password_hash'])) {
+            $u = $this->users->findById($id);
             View::layout('layout', 'pages/profile', [
                 'title' => 'Mein Konto',
                 'username' => (string) ($_SESSION['username'] ?? ''),
+                'display_name' => (string) ($u['display_name'] ?? ''),
                 'error' => 'Aktuelles Passwort ist falsch.',
                 'csrf' => Csrf::token(),
             ]);
             return;
         }
+        $profileUser = $this->users->findById($id);
         if (strlen($pass) < 8) {
             View::layout('layout', 'pages/profile', [
                 'title' => 'Mein Konto',
                 'username' => (string) ($_SESSION['username'] ?? ''),
+                'display_name' => (string) ($profileUser['display_name'] ?? ''),
                 'error' => 'Neues Passwort mindestens 8 Zeichen.',
                 'csrf' => Csrf::token(),
             ]);
@@ -68,6 +97,7 @@ final class ProfileController
             View::layout('layout', 'pages/profile', [
                 'title' => 'Mein Konto',
                 'username' => (string) ($_SESSION['username'] ?? ''),
+                'display_name' => (string) ($profileUser['display_name'] ?? ''),
                 'error' => 'Die neuen Passwörter stimmen nicht überein.',
                 'csrf' => Csrf::token(),
             ]);

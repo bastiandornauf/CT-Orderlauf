@@ -13,7 +13,7 @@ export function formatCatalogMailLine(l) {
 }
 
 /**
- * @param {{ subjectTemplate?: string, supplierName: string, targetDateFormatted: string, companyName?: string, appName?: string }} p
+ * @param {{ subjectTemplate?: string, supplierName: string, targetDateFormatted: string, companyName?: string, appName?: string, userName?: string }} p
  */
 export function buildMailSubject(p) {
   const tplRaw = p.subjectTemplate != null && String(p.subjectTemplate).trim() !== ''
@@ -24,10 +24,12 @@ export function buildMailSubject(p) {
   const appName = String(p.appName ?? '').trim();
   const supplier = String(p.supplierName ?? '').trim();
   const date = String(p.targetDateFormatted ?? '').trim();
+  const user = String(p.userName ?? '').trim();
   let s = tplRaw
     .replaceAll('{{COMPANY}}', company)
     .replaceAll('{{APP_NAME}}', appName)
     .replaceAll('{{SUPPLIER}}', supplier)
+    .replaceAll('{{USER}}', user)
     .replaceAll('{{TARGET_DATE}}', date)
     .replaceAll('{{DATE_TODAY}}', date)
     .replaceAll('[DATE_TODAY]', date);
@@ -50,6 +52,7 @@ export function buildMailPreview(opts) {
     subjectTemplate,
     companyName,
     appName,
+    userName,
   } = opts;
 
   const defaultBody = `Bestellung für {{TARGET_DATE}}\n\n{{LINES}}\n\n{{IF ADDONS}}Zusätzlich:\n{{ADDONS}}\n{{ENDIF}}\n{{SUPPLIER_NOTE}}`;
@@ -70,11 +73,13 @@ export function buildMailPreview(opts) {
 
   const noteBlock = supplierNote ? `Hinweis:\n${supplierNote}\n` : '';
 
+  const user = String(userName ?? '').trim();
   let body = tpl
     .replaceAll('{{TARGET_DATE}}', targetDateFormatted)
     .replaceAll('{{DATE_TODAY}}', targetDateFormatted)
     .replaceAll('[DATE_TODAY]', targetDateFormatted)
     .replaceAll('{{SUPPLIER}}', supplierName)
+    .replaceAll('{{USER}}', user)
     .replaceAll('{{LINES}}', linesBlock)
     .replaceAll('{{ADDONS}}', freeBlock)
     .replaceAll('{{SUPPLIER_NOTE}}', noteBlock);
@@ -91,6 +96,7 @@ export function buildMailPreview(opts) {
     targetDateFormatted,
     companyName,
     appName,
+    userName: user,
   });
   return { subject, body: body.trim() };
 }
