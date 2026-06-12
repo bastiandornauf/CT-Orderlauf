@@ -20,9 +20,7 @@ final class UserRepository
 
     public function findById(int $id): ?array
     {
-        $stmt = Database::pdo()->prepare(
-            'SELECT id, username, display_name, email, role, created_at FROM users WHERE id = ?'
-        );
+        $stmt = Database::pdo()->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -32,7 +30,7 @@ final class UserRepository
     public function allOrdered(): array
     {
         $rows = Database::pdo()->query(
-            'SELECT id, username, display_name, email, role, created_at FROM users ORDER BY username ASC'
+            'SELECT * FROM users ORDER BY username ASC'
         )->fetchAll(PDO::FETCH_ASSOC);
         return $rows ?: [];
     }

@@ -1,4 +1,8 @@
-<section class="page-section" x-data="outputPage({ showOutlookExport: <?= !empty($output_show_outlook) ? 'true' : 'false' ?>, showPdfDownload: <?= !empty($output_show_pdf) ? 'true' : 'false' ?>, mailUserName: <?= json_encode((string) ($mail_user_name ?? ''), JSON_UNESCAPED_UNICODE) ?> })">
+<section class="page-section"
+         x-data="outputPage"
+         data-show-outlook-export="<?= !empty($output_show_outlook) ? '1' : '0' ?>"
+         data-show-pdf-download="<?= !empty($output_show_pdf) ? '1' : '0' ?>"
+         data-mail-user-name="<?= htmlspecialchars((string) ($mail_user_name ?? ''), ENT_QUOTES, 'UTF-8') ?>">
     <?php $order_step = 4;
     require __DIR__ . '/../../partials/order-stepper.php'; ?>
     <h1 class="page-title">Ausgabe</h1>

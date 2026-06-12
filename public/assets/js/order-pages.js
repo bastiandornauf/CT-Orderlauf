@@ -714,10 +714,10 @@ export function registerOrderAlpine(Alpine) {
     },
   }));
 
-  Alpine.data('outputPage', (config = {}) => ({
-    showOutlookExport: config.showOutlookExport !== false,
-    showPdfDownload: config.showPdfDownload !== false,
-    mailUserName: String(config.mailUserName ?? '').trim(),
+  Alpine.data('outputPage', () => ({
+    showOutlookExport: true,
+    showPdfDownload: true,
+    mailUserName: '',
     blocks: [],
     cc: '',
     devMode: false,
@@ -976,6 +976,9 @@ export function registerOrderAlpine(Alpine) {
       }
     },
     async init() {
+      this.showOutlookExport = this.$el?.dataset?.showOutlookExport !== '0';
+      this.showPdfDownload = this.$el?.dataset?.showPdfDownload !== '0';
+      this.mailUserName = String(this.$el?.dataset?.mailUserName ?? '').trim();
       const round = await storage.getOrderRound();
       if (!round) {
         window.location.href = '/?open=bestellen';
