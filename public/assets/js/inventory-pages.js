@@ -20,65 +20,92 @@ function formatDeDate(iso) {
 }
 
 /**
- * Alle noch offenen Freitext-Positionen aus Inventur (lokaler Store) und
- * Bestellung (order_entries) einsammeln – Quelle für die Sammelliste „Neue Artikel".
+ * Freitext-Positionen der aktuellen Runde/Inventur einmalig in die dauerhafte
+ * Sammelliste nachtragen. Nötig für Daten, die vor Einführung von `pending_items`
+ * entstanden sind. Nachgetragene Zeilen werden mit `pending_synced` markiert,
+ * damit der Zähler bei jedem Seitenaufruf nicht erneut hochläuft.
+ *
+ * Als Erfassungszeit wird ein Wert aus der Vergangenheit verwendet, damit bereits
+ * verworfene Artikel nicht wieder auftauchen.
+ */
+async function backfillPendingFromCurrentRounds() {
+  const LEGACY_SEEN_AT = '1970-01-01T00:00:00.000Z';
+
+  for (const f of await invStorage.getInventoryFreeItems()) {
+    if (Number(f.pending_synced) === 1) continue;
+    // Im alten Ablauf bereits übernommen/ausgeblendet – nicht erneut vorschlagen.
+    if (Number(f.transferred) === 1) {
+      await invStorage.updateInventoryFreeItem(f.id, { pending_synced: 1 });
+      continue;
+    }
+    await orderStorage.recordPendingItem(
+      {
+        name: f.name || '',
+        unit: f.unit || '',
+        quantity: f.quantity,
+        location_id: f.location_id ?? null,
+        source: 'inventory',
+      },
+      f.created_at || f.updated_at || LEGACY_SEEN_AT,
+    );
+    await invStorage.updateInventoryFreeItem(f.id, { pending_synced: 1 });
+  }
+
+  const round = await orderStorage.getOrderRound();
+  const roundSeenAt = round?.prepared_at || round?.created_at || LEGACY_SEEN_AT;
+  for (const e of await orderStorage.getOrderEntries()) {
+    if (!e.is_free_item || Number(e.pending_synced) === 1) continue;
+    if (e.transferred_to_item_id) {
+      await orderStorage.updateOrderEntry(e.id, { pending_synced: 1 });
+      continue;
+    }
+    const rawSid = e.free_supplier_id ?? e.selected_supplier_id;
+    await orderStorage.recordPendingItem(
+      {
+        name: e.free_label || '',
+        unit: e.free_unit || '',
+        quantity: e.quantity,
+        location_id: e.location_id ?? null,
+        supplier_id: rawSid ?? null,
+        source: 'order',
+      },
+      e.created_at || roundSeenAt,
+    );
+    await orderStorage.updateOrderEntry(e.id, { pending_synced: 1 });
+  }
+}
+
+const PENDING_SOURCE_LABELS = { order: 'Bestellung', inventory: 'Inventur' };
+
+/**
+ * Offene Einträge der dauerhaften Sammelliste „Neue Artikel“ aufbereiten.
  * @returns {Promise<object[]>}
  */
 async function collectPendingFreeItems() {
-  const list = [];
   const suppliers = await orderStorage.getAllSuppliers();
   const supById = new Map(suppliers.map((s) => [Number(s.id), String(s.name || '')]));
+  const rows = await orderStorage.getOpenPendingItems();
 
-  const invFree = await invStorage.getInventoryFreeItems();
-  for (const f of invFree) {
-    if (Number(f.transferred) === 1) continue;
-    list.push({
-      key: `inv-${f.id}`,
-      source: 'inventory',
-      sourceId: f.id,
-      sourceLabel: 'Inventur',
-      name: f.name || '',
-      unit: f.unit || '',
-      quantity: f.quantity,
-      location_id: f.location_id != null ? Number(f.location_id) : null,
-      supplier_id: null,
-      busy: false,
-    });
-  }
-
-  const entries = await orderStorage.getOrderEntries();
-  for (const e of entries) {
-    if (!e.is_free_item || e.transferred_to_item_id) continue;
-    const label = String(e.free_label || '').trim();
-    if (label === '') continue;
-    const rawSid = e.free_supplier_id ?? e.selected_supplier_id;
-    const supplierId =
-      rawSid != null && rawSid !== '' && Number(rawSid) > 0 ? Number(rawSid) : null;
-    list.push({
-      key: `ord-${e.id}`,
-      source: 'order',
-      sourceId: e.id,
-      sourceLabel: 'Bestellung',
-      name: label,
-      unit: '',
-      quantity: e.quantity,
-      location_id: e.location_id != null ? Number(e.location_id) : null,
+  return rows.map((r) => {
+    const sources = Array.isArray(r.sources) && r.sources.length ? r.sources : ['order'];
+    const supplierId = r.supplier_id != null && Number(r.supplier_id) > 0 ? Number(r.supplier_id) : null;
+    return {
+      key: `pend-${r.id}`,
+      pendingId: r.id,
+      source: sources.includes('order') ? 'order' : 'inventory',
+      sourceLabel: sources.map((s) => PENDING_SOURCE_LABELS[s] || s).join(' + '),
+      seenCount: Number(r.seen_count) || 1,
+      firstSeenAt: r.first_seen_at || '',
+      lastSeenAt: r.last_seen_at || '',
+      name: r.name || '',
+      unit: r.unit || '',
+      quantity: r.last_quantity ?? '',
+      location_id: r.location_id != null ? Number(r.location_id) : null,
       supplier_id: supplierId,
       supplier_label: supplierId ? supById.get(supplierId) || '' : '',
       busy: false,
-    });
-  }
-
-  return list;
-}
-
-/** @param {object} entry Quelle als erledigt markieren (übernommen/ausgeblendet) */
-async function markPendingFreeItemDone(entry) {
-  if (entry.source === 'inventory') {
-    await invStorage.updateInventoryFreeItem(entry.sourceId, { transferred: 1 });
-  } else {
-    await orderStorage.updateOrderEntry(entry.sourceId, { transferred_to_item_id: 1 });
-  }
+    };
+  });
 }
 
 /** @param {object} session */
@@ -575,6 +602,11 @@ export function registerInventoryAlpine(Alpine) {
         );
     },
     async countNewItems() {
+      try {
+        await backfillPendingFromCurrentRounds();
+      } catch {
+        /* Zähler darf den Abschluss nicht blockieren */
+      }
       const items = await collectPendingFreeItems();
       this.newItemCount = items.length;
       this.hasNewItems = items.length > 0;
@@ -766,6 +798,11 @@ export function registerInventoryAlpine(Alpine) {
       } catch {
         this.transferSuppliers = [];
       }
+      try {
+        await backfillPendingFromCurrentRounds();
+      } catch {
+        /* Sammelliste bleibt nutzbar, auch wenn der Nachtrag scheitert */
+      }
       await this.loadNewItems();
       this.ready = true;
     },
@@ -821,7 +858,7 @@ export function registerInventoryAlpine(Alpine) {
           body.supplier_links = [{ supplier_id: sid, priority: 10 }];
         }
         await api.createItem(body);
-        await markPendingFreeItemDone(entry);
+        await orderStorage.deletePendingItem(entry.pendingId);
         showToast(`„${name}" als Artikel angelegt.`, 3500);
         await this.loadNewItems();
         return true;
@@ -853,11 +890,15 @@ export function registerInventoryAlpine(Alpine) {
     },
     async dismissNewItem(entry) {
       try {
-        await markPendingFreeItemDone(entry);
+        await orderStorage.dismissPendingItem(entry.pendingId);
         await this.loadNewItems();
       } catch (e) {
-        showToast(e?.message || 'Konnte nicht ausblenden', 5000, true);
+        showToast(e?.message || 'Konnte nicht verwerfen', 5000, true);
       }
+    },
+    formatSeen(iso) {
+      if (!iso) return '';
+      return formatDeDate(String(iso).slice(0, 10));
     },
   }));
 }

@@ -117,6 +117,10 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             <input class="input" x-model="freeQty" inputmode="decimal">
         </div>
         <div class="form-group">
+            <label class="form-label">Gebinde / Einheit (optional)</label>
+            <input class="input" x-model="freeUnit" placeholder="z. B. Kiste, Bund, kg">
+        </div>
+        <div class="form-group">
             <label class="form-label">Lieferant (optional)</label>
             <select class="select" x-model="freeSupplierId">
                 <option value="">— später in Kontrolle —</option>

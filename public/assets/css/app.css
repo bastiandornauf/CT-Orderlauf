@@ -642,6 +642,11 @@ body.app-body--nav-open {
   color: var(--color-accent);
 }
 
+.list-item--delivery-on-target {
+  border-color: #b8ddd2;
+  background: #f4faf8;
+}
+
 .item-suppliers {
   display: flex;
   flex-wrap: wrap;

@@ -28,24 +28,24 @@
                        value="<?= htmlspecialchars($default_target_date ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        x-model="targetDate">
             </div>
-            <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
-                <span class="button__label" x-text="loading ? 'Lade...' : 'Bestellrunde laden'">Bestellrunde laden</span>
-            </button>
-            <p class="toast toast--error" x-show="error && String(error).trim()" x-text="error" x-cloak></p>
-        </div>
 
-        <template x-if="suppliersWithDates.length">
-            <div style="margin-top: var(--space-4);">
-                <h3 class="section-header">Liefertermine dieser Runde</h3>
-                <ul class="card-list">
-                    <template x-for="s in suppliersWithDates" :key="s.id">
-                        <li class="list-item">
+            <div class="delivery-preview" x-show="initialized" x-cloak style="margin-top: var(--space-2);">
+                <h3 class="section-header">Liefertermine zum gewählten Datum</h3>
+                <p class="text-muted" x-show="previewOffline">Vorschau nur bei Internetverbindung verfügbar.</p>
+                <p class="text-muted" x-show="previewLoading && !previewOffline">Lade Liefertermine …</p>
+                <p class="toast toast--error" x-show="previewError && String(previewError).trim()" x-text="previewError"></p>
+                <ul class="card-list" x-show="deliveryPreview.length && !previewLoading">
+                    <template x-for="s in deliveryPreview" :key="s.id">
+                        <li class="list-item" :class="s.onTarget ? 'list-item--delivery-on-target' : ''">
                             <div class="list-item__main">
                                 <strong x-text="s.name"></strong>
                                 <span class="text-muted" x-text="s.order_type === 'webshop' ? 'Webshop' : 'E-Mail'"></span>
                             </div>
-                            <template x-if="s.deliveryDate">
-                                <span class="delivery-badge" x-text="'Lieferung ' + formatDate(s.deliveryDate)"></span>
+                            <template x-if="s.onTarget">
+                                <span class="status-badge status-badge--ok" x-text="'Liefert am Zieltag · ' + formatDate(s.deliveryDate)"></span>
+                            </template>
+                            <template x-if="s.deliveryDate && !s.onTarget">
+                                <span class="delivery-badge" x-text="'Nächste Lieferung · ' + formatDate(s.deliveryDate)"></span>
                             </template>
                             <template x-if="!s.deliveryDate">
                                 <span class="status-badge status-badge--warn">Kein Liefertag</span>
@@ -54,7 +54,13 @@
                     </template>
                 </ul>
             </div>
-        </template>
+
+            <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
+                <span class="button__label" x-text="loading ? 'Lade...' : 'Bestellrunde laden'">Bestellrunde laden</span>
+            </button>
+            <p class="toast toast--error" x-show="error && String(error).trim()" x-text="error" x-cloak></p>
+        </div>
+
     </div>
 
     <?php if (!empty($canEditMaster)): ?>

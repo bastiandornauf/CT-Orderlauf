@@ -30,6 +30,20 @@ export async function fetchInventoryPayload(stichtag, label = '') {
   return { ...data, label: String(label || '').trim() };
 }
 
+export async function fetchDeliveryPreview(targetDate) {
+  const u = new URL('/api/order/delivery-preview', window.location.origin);
+  u.searchParams.set('target_date', targetDate);
+  const res = await fetch(u.toString(), {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Liefer-Vorschau fehlgeschlagen');
+  }
+  return data;
+}
+
 export async function fetchPayload(targetDate) {
   const u = new URL('/api/order/payload', window.location.origin);
   u.searchParams.set('target_date', targetDate);

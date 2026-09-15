@@ -25,9 +25,13 @@ foreach ($suppliers ?? [] as $sup) {
     </div>
 
     <p class="text-muted">
-        Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong>.
+        Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong> –
+        dauerhaft über Bestellrunden und Inventuren hinweg. Häufig getippte Artikel stehen oben.
         <span x-show="canTransfer">Lagerort und ggf. Lieferant werden aus der Erfassung übernommen – bitte prüfen und in die Stammdaten übernehmen (online).</span>
         <span x-show="!canTransfer">Übernahme in die Stammdaten benötigt Stammdaten-Recht.</span>
+    </p>
+    <p class="text-muted">
+        <strong>Verwerfen</strong> entfernt einen Eintrag aus der Liste. Wird derselbe Artikel später erneut per Freitext erfasst, erscheint er wieder.
     </p>
 
     <p class="toast toast--warn" x-show="ready && newItems.length === 0" x-cloak>
@@ -47,8 +51,15 @@ foreach ($suppliers ?? [] as $sup) {
             <li class="card card--pad list-item--stack inventory-newitems__item">
                 <div class="inventory-newitems__head">
                     <span class="status-badge status-badge--neutral" x-text="ni.sourceLabel"></span>
+                    <span class="status-badge status-badge--ok" x-show="ni.seenCount > 1"
+                          x-text="ni.seenCount + '× erfasst'"></span>
                     <span class="text-muted" x-show="ni.quantity" x-text="'Menge: ' + String(ni.quantity).replace('.', ',')"></span>
                 </div>
+                <p class="text-muted" x-show="ni.firstSeenAt">
+                    <span x-text="'Zuerst: ' + formatSeen(ni.firstSeenAt)"></span>
+                    <span x-show="ni.lastSeenAt && ni.lastSeenAt !== ni.firstSeenAt"
+                          x-text="' · Zuletzt: ' + formatSeen(ni.lastSeenAt)"></span>
+                </p>
                 <div class="form-group">
                     <label class="form-label">Bezeichnung</label>
                     <input class="input" x-model="ni.name" :disabled="!canTransfer || ni.busy">
@@ -86,7 +97,7 @@ foreach ($suppliers ?? [] as $sup) {
                     </button>
                     <button type="button" class="button button--ghost button--small"
                             :disabled="ni.busy"
-                            @click.prevent="dismissNewItem(ni)">Ausblenden</button>
+                            @click.prevent="dismissNewItem(ni)">Verwerfen</button>
                 </div>
             </li>
         </template>

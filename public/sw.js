@@ -1,5 +1,5 @@
 /* global self, caches, fetch */
-const CACHE = 'ct-orderlauf-assets-v35';
+const CACHE = 'ct-orderlauf-assets-v37';
 const PRECACHE = [
   '/assets/css/app.css',
   '/assets/js/main.js',

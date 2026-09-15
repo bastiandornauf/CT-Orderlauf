@@ -33,20 +33,34 @@ export async function saveCatalogQuantity(itemId, rawQty, note = '') {
   await storage.saveOrderEntry(row);
 }
 
-export async function addFreeLine(locationId, label, rawQty, freeSupplierId) {
+export async function addFreeLine(locationId, label, rawQty, freeSupplierId, unit = '') {
   // Free items allow any non-empty quantity string (e.g. "2 Stück", "1 Karton")
   const qty = String(rawQty ?? '').trim();
   if (!label?.trim() || qty === '') return;
   const sid =
     freeSupplierId != null && freeSupplierId !== '' ? Number(freeSupplierId) : null;
+  const name = label.trim();
+  const freeUnit = String(unit ?? '').trim();
   await storage.saveOrderEntry({
     item_id: null,
     quantity: qty,
     note: '',
     selected_supplier_id: sid,
     is_free_item: true,
-    free_label: label.trim(),
+    free_label: name,
+    free_unit: freeUnit,
     free_supplier_id: sid,
     location_id: locationId,
+    created_at: new Date().toISOString(),
+    // direkt in der Sammelliste vermerkt – kein Nachtrag nötig
+    pending_synced: 1,
+  });
+  await storage.recordPendingItem({
+    name,
+    unit: freeUnit,
+    quantity: qty,
+    location_id: locationId,
+    supplier_id: sid,
+    source: 'order',
   });
 }

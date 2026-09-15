@@ -53,6 +53,7 @@ return [
         '/inventory/round' => [InventoryController::class, 'round'],
         '/inventory/finalize' => [InventoryController::class, 'finalize'],
         '/api/order/payload' => [OrderApiController::class, 'payload'],
+        '/api/order/delivery-preview' => [OrderApiController::class, 'deliveryPreview'],
         '/api/inventory/payload' => [InventoryApiController::class, 'payload'],
         '/export/locations' => [ExportController::class, 'locations'],
         '/export/suppliers' => [ExportController::class, 'suppliers'],

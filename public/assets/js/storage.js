@@ -3,7 +3,7 @@
  */
 
 const DB_NAME = 'ct-orderlauf';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 /** @returns {Promise<IDBDatabase>} */
 function openDb() {
@@ -11,6 +11,11 @@ function openDb() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
     req.onsuccess = () => resolve(req.result);
+    // Ein anderer offener Tab blockiert sonst still das Schema-Update.
+    req.onblocked = () =>
+      reject(
+        new Error('Bitte alle anderen Tabs dieser App schließen und die Seite neu laden.'),
+      );
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('meta')) {
@@ -60,9 +65,19 @@ function openDb() {
         const s = db.createObjectStore('inventory_free_items', { keyPath: 'id', autoIncrement: true });
         s.createIndex('by_location', 'location_id', { unique: false });
       }
+      if (!db.objectStoreNames.contains('pending_items')) {
+        const s = db.createObjectStore('pending_items', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('by_key', 'dedupe_key', { unique: true });
+      }
     };
   });
 }
+
+/**
+ * Sammelt Freitext-Artikel über Bestellrunden und Inventuren hinweg.
+ * Wird bewusst von keinem Reset geleert – nur Übernehmen/Verwerfen entfernt Einträge.
+ */
+export const PENDING_ITEMS_STORE = 'pending_items';
 
 /** Inventur-Stores (inventory_*) werden von savePreparedSnapshot/clearOrderRound nicht geleert. */
 export const INVENTORY_ONLY_STORES = [
@@ -526,6 +541,123 @@ export async function clearOrderRound() {
   for (const s of stores) {
     await clearStore(s);
   }
+}
+
+/* ─── Sammelliste neuer Artikel (überdauert Runden und Inventuren) ─────────── */
+
+/** @param {string} name */
+function pendingDedupeKey(name) {
+  return String(name || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+/** @param {string} key */
+async function findPendingItemByKey(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PENDING_ITEMS_STORE, 'readonly');
+    const req = tx.objectStore(PENDING_ITEMS_STORE).index('by_key').get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Freitext-Artikel in die Sammelliste aufnehmen (idempotent je Bezeichnung).
+ * Mehrfache Sichtungen erhöhen nur `seen_count` – so werden aus Freitext-Notizen
+ * über Wochen erkennbare „Regulars“.
+ *
+ * @param {{
+ *   name: string, unit?: string, quantity?: unknown,
+ *   location_id?: number|null, supplier_id?: number|null,
+ *   source?: 'order'|'inventory'
+ * }} data
+ * @param {string} [seenAt] ISO-Zeitpunkt der Erfassung (für Nachträge aus Altdaten)
+ */
+export async function recordPendingItem(data, seenAt) {
+  const name = String(data.name || '').trim().replace(/\s+/g, ' ');
+  if (name === '') return;
+  const key = pendingDedupeKey(name);
+  const at = seenAt || new Date().toISOString();
+  const source = data.source === 'inventory' ? 'inventory' : 'order';
+  const unit = String(data.unit || '').trim();
+  const qty = String(data.quantity ?? '').trim();
+  const locId = data.location_id != null && data.location_id !== '' ? Number(data.location_id) : null;
+  const supId = data.supplier_id != null && data.supplier_id !== '' ? Number(data.supplier_id) : null;
+
+  const existing = await findPendingItemByKey(key);
+  if (!existing) {
+    await putRow(PENDING_ITEMS_STORE, {
+      dedupe_key: key,
+      name,
+      unit,
+      last_quantity: qty,
+      location_id: locId,
+      supplier_id: supId && supId > 0 ? supId : null,
+      sources: [source],
+      seen_count: 1,
+      first_seen_at: at,
+      last_seen_at: at,
+      status: 'open',
+      dismissed_at: null,
+    });
+    return;
+  }
+
+  const sources = new Set(Array.isArray(existing.sources) ? existing.sources : []);
+  sources.add(source);
+  const next = {
+    ...existing,
+    name: existing.name || name,
+    unit: existing.unit || unit,
+    last_quantity: qty || existing.last_quantity || '',
+    location_id: existing.location_id ?? locId,
+    supplier_id: existing.supplier_id ?? (supId && supId > 0 ? supId : null),
+    sources: [...sources],
+    seen_count: (Number(existing.seen_count) || 0) + 1,
+    first_seen_at: existing.first_seen_at && existing.first_seen_at < at ? existing.first_seen_at : at,
+    last_seen_at: existing.last_seen_at && existing.last_seen_at > at ? existing.last_seen_at : at,
+  };
+  // Verworfene Artikel kommen zurück, wenn sie danach erneut getippt wurden.
+  if (existing.status === 'dismissed' && existing.dismissed_at && at > existing.dismissed_at) {
+    next.status = 'open';
+    next.dismissed_at = null;
+  }
+  await putRow(PENDING_ITEMS_STORE, next);
+}
+
+/** @returns {Promise<object[]>} offene Einträge, häufigste zuerst */
+export async function getOpenPendingItems() {
+  const rows = await getAll(PENDING_ITEMS_STORE);
+  return rows
+    .filter((r) => r.status !== 'dismissed')
+    .sort(
+      (a, b) =>
+        (Number(b.seen_count) || 0) - (Number(a.seen_count) || 0) ||
+        String(a.name || '').localeCompare(String(b.name || ''), 'de'),
+    );
+}
+
+/** @param {number} id @param {object} patch */
+export async function updatePendingItem(id, patch) {
+  const row = await getOne(PENDING_ITEMS_STORE, Number(id));
+  if (!row) return;
+  await putRow(PENDING_ITEMS_STORE, { ...row, ...patch, id: row.id });
+}
+
+/** Übernommen – Eintrag ist erledigt und verschwindet aus der Sammelliste. */
+export async function deletePendingItem(id) {
+  await deleteRow(PENDING_ITEMS_STORE, Number(id));
+}
+
+/** Verworfen – bleibt als Merker liegen, taucht bei erneuter Erfassung wieder auf. */
+export async function dismissPendingItem(id) {
+  await updatePendingItem(id, {
+    status: 'dismissed',
+    dismissed_at: new Date().toISOString(),
+  });
 }
 
 export { openDb, putRow, getAll, getOne, deleteRow, clearStore };
