@@ -4,7 +4,7 @@ $step = isset($order_step) ? (int) $order_step : 0;
 if ($step < 1 || $step > 4) {
     return;
 }
-$labels = ['Vorbereiten', 'Rundgang', 'Kontrolle', 'Ausgabe'];
+$labels = ['Vorbereiten', 'Rundgang', 'Kontrolle', 'Versand'];
 $urls = [
     1 => '/?open=bestellen',
     2 => '/order/round',
@@ -34,5 +34,5 @@ $urls = [
             </li>
         <?php endfor; ?>
     </ol>
-    <p class="order-stepper__hint text-muted">Schritte antippen zum Wechseln (laufende Daten bleiben im Browser gespeichert).</p>
+    <p class="order-stepper__hint text-muted">Schritt antippen zum Wechseln.</p>
 </nav>

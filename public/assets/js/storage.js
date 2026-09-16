@@ -160,7 +160,7 @@ async function getOne(store, key) {
 }
 
 /**
- * Ob „Bestellrunde laden“ (savePreparedSnapshot) lokale Fortschritte zerstören würde.
+ * Ob „Bestellung beginnen“ (savePreparedSnapshot) lokale Fortschritte zerstören würde.
  * @returns {Promise<boolean>}
  */
 export async function prepareReloadWouldEraseLocalProgress() {

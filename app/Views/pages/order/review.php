@@ -9,7 +9,7 @@
             <span x-show="syncBusy">…</span>
         </button>
     </div>
-    <p class="text-muted order-stammdaten-hint">Nur bestellte Positionen. Bei mehreren Lieferanten am gleichen Tag erscheinen Auswahlkacheln.</p>
+    <p class="text-muted order-stammdaten-hint">Nur bestellte Positionen.</p>
 
     <template x-if="loading">
         <p class="text-muted">Lade…</p>
@@ -34,12 +34,12 @@
         </div>
     </template>
 
-    <!-- Freie Positionen ohne Lieferant -->
+    <!-- Freie Artikel ohne Lieferant -->
     <template x-if="!loading && pendingFreeLines.length">
         <div class="card card--pad review-block review-block--pending">
             <h2 class="review-block__title">
                 <span class="review-block__icon">!</span>
-                Freie Positionen – Lieferant wählen
+                Freie Artikel ohne Lieferant
                 <span class="review-block__count" x-text="pendingFreeLines.length"></span>
             </h2>
             <ul class="card-list" style="margin-top: var(--space-3)">
@@ -112,7 +112,7 @@
                                     <span class="review-supplier-choice__title">Lieferant wählen</span>
                                     <span class="review-supplier-choice__badge">Alternativen</span>
                                 </div>
-                                <p class="review-supplier-choice__hint">Aktive Zuordnung antippen zum Wechseln.</p>
+                                <p class="review-supplier-choice__hint">Antippen zum Wechseln.</p>
                                 <div class="review-supplier-choice__chips" role="group" :aria-label="'Lieferant für ' + line.label">
                                     <template x-for="(s, cidx) in supplierOptions(line)" :key="s.id">
                                         <button type="button"
@@ -157,9 +157,9 @@
     <div class="button-stack">
         <button type="button" class="button button--primary button--block"
                 :disabled="pendingFreeLines.length > 0 || problemLines.length > 0"
-                @click="goOutput()">Weiter zur Ausgabe</button>
+                @click="goOutput()">Weiter zum Versand</button>
         <p class="form-hint text-muted" style="margin:0" x-show="pendingFreeLines.length > 0 || problemLines.length > 0">
-            Freie Positionen ohne Lieferant oder Problemartikel auflösen um fortzufahren.
+            Freie Artikel ohne Lieferant oder Problemartikel zuerst klären.
         </p>
         <a href="/order/round" class="button button--ghost button--block">Zurück zum Rundgang</a>
     </div>

@@ -5,22 +5,19 @@
          data-mail-user-name="<?= htmlspecialchars((string) ($mail_user_name ?? ''), ENT_QUOTES, 'UTF-8') ?>">
     <?php $order_step = 4;
     require __DIR__ . '/../../partials/order-stepper.php'; ?>
-    <h1 class="page-title">Ausgabe</h1>
+    <h1 class="page-title">Versand</h1>
 
     <template x-if="directSend">
         <p class="text-muted output-disclaimer">
-            Mails werden <strong>direkt vom Server</strong> versendet. Pro Lieferant erscheint ein „Senden"-Button.
-            Bereits gesendete Blöcke werden mit einem Häkchen markiert.
-            Ob CC und Empfang bei Ihnen oder beim Lieferanten ankommen, hängt von Mail-Server und Spam-Filtern ab (die App zeigt nur den SMTP-Versuch).
-            Schlägt ein Versand fehl, erscheint ein <strong>oranger Hinweis</strong> und der Button <strong>„Nochmal senden“</strong>.
+            Mails gehen vom Server. Pro Lieferant: <strong>Senden</strong>.
+            Fehlschlag: oranger Hinweis, dann nochmal.
+            Ob die Mail ankommt, sieht man nur im Postfach.
         </p>
     </template>
     <template x-if="!directSend">
         <p class="text-muted output-disclaimer">
-            Es gibt <strong>keine automatische Rückmeldung</strong>, ob E-Mails wirklich versendet wurden.
-            Pro Lieferant sehen Sie hier nur den vorgeschlagenen Text; „Bestellrunde abschließen" bestätigt nur lokal, dass Sie fertig sind – nicht den Versand.
-            <strong>Mehrere Mails gleichzeitig</strong> kann der Browser technisch nicht zuverlässig – nutzen Sie den Assistenten „Schritt für Schritt“ oder nacheinander die Buttons pro Lieferant.
-            CC und Zustellung (z.&nbsp;B. Microsoft 365, Spam) sind im Mail-Programm bzw. bei der IT zu prüfen.
+            Texte hier sind Vorschläge. Versand läuft über das Mail-Programm oder den Assistenten –
+            die App bestätigt den Empfang nicht. <strong>Bestellung abschließen</strong> ist nur lokal.
         </p>
     </template>
 
@@ -35,9 +32,9 @@
     </template>
 
     <p class="text-muted order-stammdaten-hint">
-        Nach Änderungen an Lieferanten oder Einstellungen (z.&nbsp;B. Betreff-Vorlagen):
+        Stammdaten geändert?
         <button type="button" class="button button--ghost button--small order-stammdaten-hint__btn"
-                :disabled="syncBusy" @click="refreshStammdaten()">Vorschau vom Server aktualisieren</button>
+                :disabled="syncBusy" @click="refreshStammdaten()">Vorschau aktualisieren</button>
         <span x-show="syncBusy" class="text-muted"> …</span>
     </p>
 
@@ -72,8 +69,7 @@
     <template x-if="!directSend && showOutlookExport">
         <div class="card card--pad">
             <p class="text-muted" style="margin-bottom: var(--space-3)">
-                <strong>Outlook-Workflow:</strong> „Für Outlook exportieren" lädt XML + alle PDFs herunter.
-                Dann einmalig das Outlook-Makro ausführen → Entwürfe mit PDF-Anhang werden automatisch erstellt.
+                <strong>Outlook:</strong> „Für Outlook exportieren“ lädt XML und PDFs. Danach einmal das Makro ausführen.
             </p>
             <div class="button-row">
                 <template x-if="sendableBlocks.length > 0">
@@ -117,7 +113,7 @@
                 <strong x-text="mailtoWizardSupplierName"></strong>
             </p>
             <p class="form-hint text-muted" style="margin:0">
-                Öffnen Sie die Mail im Programm, senden oder speichern Sie sie, wechseln Sie zurück in diesen Tab und klicken Sie auf <strong>Weiter</strong> zum nächsten Lieferanten.
+                Mail im Programm öffnen, senden oder speichern, dann hier <strong>Weiter</strong>.
             </p>
             <div class="output-mailto-wizard__actions">
                 <button type="button" class="button button--mailto-urgent button--block"
@@ -187,8 +183,8 @@
                      x-show="!directSend && mailtoNeedsAttention(block) && isSendableBlock(block)">
                     <strong>Mail noch nicht über den Button geöffnet</strong>
                     <p class="output-mailto-alert__hint">
-                        Lieferanten mit orangem Rand: hier oder im Assistenten oben das Mail-Programm öffnen.
-                        Ob Empfang oder CC in Ihrer Firma klappt, sehen Sie nur im Postfach / Junk – die App meldet das nicht zurück.
+                        Lieferanten mit orangem Rand: hier oder im Assistenten das Mail-Programm öffnen.
+                        Ob Empfang oder CC klappt, sieht man nur im Postfach.
                     </p>
                 </div>
 
@@ -230,13 +226,13 @@
     </template>
 
     <div class="button-stack" x-show="!finalized">
-        <button type="button" class="button button--primary button--block" @click="finalizeDone()">Bestellrunde abschließen</button>
-        <p class="form-hint text-muted" style="margin:0">Nur lokale Bestätigung – kein Versandnachweis.</p>
+        <button type="button" class="button button--primary button--block" @click="finalizeDone()">Bestellung abschließen</button>
+        <p class="form-hint text-muted" style="margin:0">Nur lokal – kein Versandnachweis.</p>
     </div>
 
     <div class="card card--pad" x-show="finalized">
-        <p class="toast toast--success">Diese Runde ist abgeschlossen (nur lokal gespeichert, kein Versandnachweis).</p>
-        <button type="button" class="button button--primary button--block" @click="newRound()">Neue Bestellrunde</button>
+        <p class="toast toast--success">Diese Bestellung ist abgeschlossen (nur lokal, kein Versandnachweis).</p>
+        <button type="button" class="button button--primary button--block" @click="newRound()">Neue Bestellung</button>
     </div>
 
     <a href="/" class="button button--ghost button--block">Zum Start</a>

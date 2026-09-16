@@ -18,22 +18,19 @@ foreach ($suppliers ?? [] as $sup) {
          data-locations="<?= htmlspecialchars(json_encode($locJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
          data-suppliers="<?= htmlspecialchars(json_encode($supJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>">
     <div class="page-toolbar">
-        <h1 class="page-title">Neue Artikel</h1>
+        <h1 class="page-title">Artikel-Vorschläge</h1>
         <div class="toolbar-actions">
             <a href="/items" class="button button--ghost button--small">Zur Artikelliste</a>
         </div>
     </div>
 
     <p class="text-muted">
-        Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong> –
-        dauerhaft über Bestellrunden und Inventuren hinweg und <strong>von allen Nutzern gemeinsam</strong>.
-        Häufig getippte Artikel stehen oben.
-        <span x-show="canTransfer">Lagerort und ggf. Lieferant werden aus der Erfassung übernommen – bitte prüfen und in die Stammdaten übernehmen (online).</span>
-        <span x-show="!canTransfer">Übernahme in die Stammdaten benötigt Stammdaten-Recht.</span>
+        Freitext aus <strong>Bestellung</strong> und <strong>Inventur</strong>, von allen Nutzern.
+        Häufig getippte stehen oben.
+        <span x-show="canTransfer">Lagerort und Lieferant aus der Erfassung prüfen, dann übernehmen (online).</span>
     </p>
     <p class="text-muted">
-        <strong>Verwerfen</strong> entfernt einen Eintrag aus der Liste. Wird derselbe Artikel später erneut per Freitext erfasst, erscheint er wieder.
-        Freitext aus dem Rundgang wird beim Öffnen der <strong>Kontrolle</strong> bzw. des <strong>Inventur-Abschlusses</strong> übertragen – dafür ist eine Verbindung nötig.
+        <strong>Verwerfen</strong> blendet aus, bis derselbe Name wieder getippt wird.
     </p>
 
     <p class="toast toast--error" x-show="loadError" x-text="loadError" x-cloak></p>

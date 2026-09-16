@@ -30,7 +30,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
 
     <details class="card card--pad round-supplier-hide" x-show="search === '' && suppliers.length" x-cloak>
         <summary class="round-supplier-hide__summary">Lieferanten ausblenden (nur Anzeige im Rundgang)</summary>
-        <p class="form-hint text-muted" style="margin: var(--space-2) 0;">Ausgewählte Lieferanten erscheinen nicht bei den Artikeln und im Feld „Freier Artikel“. Artikel, die nur bei diesen Lieferanten bestellt werden können, werden im Rundgang ausgeblendet. Kontrolle &amp; Ausgabe bleiben vollständig.</p>
+        <p class="form-hint text-muted" style="margin: var(--space-2) 0;">Ausgewählte Lieferanten und deren Artikel verschwinden nur in diesem Rundgang. Kontrolle und Versand bleiben vollständig.</p>
         <div class="round-supplier-hide__chips">
             <template x-for="s in suppliers.filter(x => x.active)" :key="s.id">
                 <label class="round-supplier-hide__label">
@@ -129,7 +129,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 </template>
             </select>
         </div>
-        <button type="button" class="button button--secondary" @click="addFree()">Freie Position hinzufügen</button>
+        <button type="button" class="button button--secondary" @click="addFree()">Freien Artikel hinzufügen</button>
     </div>
 
     <div class="button-stack">

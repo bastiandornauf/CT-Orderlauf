@@ -398,7 +398,7 @@ export function registerOrderAlpine(Alpine) {
         showToast('Artikel gespeichert.');
         if (!Number(data.item.active) && hadQty) {
           showToast(
-            'Hinweis: Artikel ist deaktiviert; eingetragene Menge bleibt lokal, bis Sie sie leeren oder in der Kontrolle weiterbearbeiten.',
+            'Hinweis: Artikel ist deaktiviert; eingetragene Menge bleibt lokal, bis das Feld geleert oder in der Kontrolle bearbeitet wird.',
             5000,
           );
         }
@@ -815,7 +815,7 @@ export function registerOrderAlpine(Alpine) {
     },
     goOutput() {
       if (this.pendingFreeLines.length > 0) {
-        showToast('Bitte zuerst alle freien Positionen einem Lieferanten zuordnen.');
+        showToast('Bitte zuerst alle freien Artikel einem Lieferanten zuordnen.');
         return;
       }
       if (this.problemLines.length > 0) {
@@ -996,7 +996,7 @@ export function registerOrderAlpine(Alpine) {
         this.mailtoWizardIndex += 1;
       } else {
         this.closeMailtoWizard();
-        showToast('Letzter Schritt. Prüfen Sie die orange markierten Lieferanten, falls eine Mail noch fehlt.', 6000);
+        showToast('Letzter Schritt. Orange markierte Lieferanten prüfen, falls eine Mail noch fehlt.', 6000);
       }
     },
     async copyAllBlocks() {
@@ -1373,14 +1373,14 @@ export function registerOrderAlpine(Alpine) {
       }
     },
     async finalizeDone() {
-      if (!window.confirm('Bestellrunde wirklich abschließen? Es gibt keine automatische Versandbestätigung – dies ist nur eine lokale Bestätigung.')) {
+      if (!window.confirm('Bestellung abschließen? Das ist nur lokal – kein Versandnachweis.')) {
         return;
       }
       await storage.setOrderRoundStatus('finalized');
       this.finalized = true;
     },
     async newRound() {
-      if (!window.confirm('Neue Runde starten? Die aktuelle Bestellrunde und alle lokalen Eingaben werden gelöscht.')) {
+      if (!window.confirm('Neue Bestellung starten? Die aktuelle und alle lokalen Eingaben werden gelöscht.')) {
         return;
       }
       await storage.clearOrderRound();

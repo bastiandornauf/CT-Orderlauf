@@ -6,7 +6,7 @@ Diese Anleitung richtet sich an **Küche, Lager und Büro**: Sie beschreibt den 
 
 ## 1. Worum es geht
 
-Mit **CT-Orderlauf** erfassen Sie eine **Bestellrunde** für mehrere Lieferanten: zuerst den **Rundgang** durch die Lagerorte (Mengen eintragen), dann die **Kontrolle** (Zuordnung, Korrekturen), danach die **Ausgabe** (E-Mails oder PDFs).  
+Mit **CT-Orderlauf** erfassen Sie eine **Bestellung** für mehrere Lieferanten: zuerst den **Rundgang** durch die Lagerorte (Mengen eintragen), dann die **Kontrolle** (Zuordnung, Korrekturen), danach den **Versand** (E-Mails oder PDFs).
 
 Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählung) – **getrennt** von der Bestellung, mit CSV-Export für Excel.
 
@@ -25,18 +25,18 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 
 ## 3. Startseite („Start“)
 
-### Bestellrunde (oben)
+### Laufende Bestellung (oben, nur wenn etwas läuft)
 
-- Hier sehen Sie, ob **bereits eine Runde** läuft (z. B. „Rundgang läuft“ oder „Bereit zur Kontrolle“).
-- **Rundgang fortsetzen** – weiter im Lager erfassen.  
-- **Kontrolle / Abschluss** – Bestellung prüfen und Lieferanten zuordnen.  
-- **Ausgabe** – erscheint, wenn die Runde **zur Kontrolle bereit** ist (nach „Weiter zur Ausgabe“ aus der Kontrolle bzw. entsprechendem Stand).
+- Status z. B. „Rundgang läuft“ oder „Bereit zur Kontrolle“.
+- **Rundgang fortsetzen** bzw. **Rundgang beginnen** – weiter im Lager erfassen.
+- **Kontrolle** – Bestellung prüfen und Lieferanten zuordnen.
+- **Versand** – erscheint, wenn die Bestellung zur Kontrolle bereit ist.
 
-### Neue Bestellrunde (darunter)
+### Neue Bestellung
 
-- **Ziel-Datum** wählen und **Bestellrunde laden** klicken. Dafür müssen Sie **online** sein.
-- **Achtung:** **Bestellrunde laden** startet eine **neue** Runde und **löscht alle bisherigen lokalen Eingaben** dieser Runde im Browser. Wenn Sie nur weitermachen wollen, nutzen Sie **Rundgang fortsetzen** oder **Kontrolle** – nicht erneut „Bestellrunde laden“.
-- Wenn eine Warnung erscheint, dass eine laufende Runde verworfen wird: **Abbrechen**, wenn Sie unsicher sind.
+- **Wunsch-Lieferdatum** wählen und **Bestellung beginnen** (dafür **online**).
+- Das überschreibt eine laufende Bestellung. Weitermachen: oben **Rundgang fortsetzen** oder **Kontrolle**, nicht erneut beginnen.
+- Unter dem Button eine Zeile zu den Lieferterminen; Details klappen auf Klick auf.
 
 ### Stammdaten (unten, einklappbar)
 
@@ -44,20 +44,20 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 
 ### Menü (☰)
 
-- **Start**, **Bestellen**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Import**, **Inventur** (eigene Seite), **Einstellungen**, **Mein Konto**, **Abmelden**.
+- **Start**, **Bestellen**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import**, **Inventur**, **Einstellungen**, **Mein Konto**, **Abmelden**.
 
 ---
 
-## 4. Die vier Schritte (Vorbereiten → Rundgang → Kontrolle → Ausgabe)
+## 4. Die vier Schritte (Vorbereiten → Rundgang → Kontrolle → Versand)
 
-Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die **Zahl oder die Beschriftung antippen**, um direkt zu diesem Schritt zu wechseln (sofern die Seite erreichbar ist). Ihre Daten bleiben im Browser gespeichert.
+Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Zahl oder Beschriftung antippen wechselt den Schritt. Die Daten bleiben im Browser gespeichert.
 
 | Schritt | Bedeutung |
 |--------|-----------|
-| **1 Vorbereiten** | Auf der **Startseite**: Datum wählen, **Bestellrunde laden** (nur für eine **neue** Runde). |
-| **2 Rundgang** | Pro **Lagerort** Tab, **Mengen** eintragen, optional **freie Zeilen** (Text + Menge + Lieferant). |
-| **3 Kontrolle** | Nur bestellte Positionen; **Lieferant wechseln**, wo nötig; **Notizen** pro Lieferant; **Weiter zur Ausgabe**, wenn alles passt. |
-| **4 Ausgabe** | **E-Mail-Texte** je Lieferant, **PDF**, ggf. **Outlook-Export** oder **Direktversand** – je nach Einrichtung. |
+| **1 Vorbereiten** | Auf der **Startseite**: Datum wählen, **Bestellung beginnen** (nur für eine **neue** Bestellung). |
+| **2 Rundgang** | Pro **Lagerort** Tab, **Mengen** eintragen, optional **freier Artikel**. |
+| **3 Kontrolle** | Nur bestellte Positionen; **Lieferant wechseln**, wo nötig; **Notizen** pro Lieferant; **Weiter zum Versand**, wenn alles passt. |
+| **4 Versand** | **E-Mail-Texte** je Lieferant, **PDF**, ggf. **Outlook-Export** oder **Direktversand** – je nach Einrichtung. |
 
 ---
 
@@ -65,7 +65,7 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 
 - **Tabs** oben: Wechsel zwischen den **Lagerorten**.
 - Bei jedem Artikel die **Menge** eintragen (leer lassen = nicht bestellen).
-- **Freie Position**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jede freie Position landet zusätzlich dauerhaft in der Sammelliste **Neue Artikel**.
+- **Freier Artikel**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jeder freie Artikel landet zusätzlich in den **Artikel-Vorschlägen**.
 - Wenn Sie fertig sind: **Weiter zur Kontrolle** (o. ä.) – die Runde wird als **bereit zur Kontrolle** markiert.
 
 *Tipp:* Kurz **offline** arbeiten geht; zum **Laden** einer neuen Runde oder **Synchronisieren** mit geänderten Stammdaten sind Sie **online** nötig.
@@ -75,15 +75,15 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 ## 6. Kontrolle (Schritt 3)
 
 - **Problemartikel** (z. B. kein Lieferant am Tag): zuerst beheben.
-- **Freie Positionen ohne Lieferant**: Lieferant **auswählen**, sonst geht es nicht zur Ausgabe.
+- **Freie Artikel ohne Lieferant**: Lieferant **auswählen**, sonst geht es nicht zum Versand.
 - **Mehrere mögliche Lieferanten**: Kacheln oder Liste nutzen, um den **richtigen** zu wählen.
 - **Zusatz je Lieferant**: Freitextfeld, wird in die Mail übernommen.
 - Wenn Sie **zwischendurch Stammdaten** geändert haben (z. B. Betreff-Vorlage): auf der Kontrollseite **„vom Server aktualisieren“** oder den Tab kurz wechseln – dann werden Vorlagen und Einstellungen neu geladen.
-- **Weiter zur Ausgabe** ist gesperrt, solange noch offene Probleme oder freie Zeilen ohne Lieferant bestehen.
+- **Weiter zum Versand** ist gesperrt, solange noch offene Probleme oder freie Artikel ohne Lieferant bestehen.
 
 ---
 
-## 7. Ausgabe (Schritt 4)
+## 7. Versand (Schritt 4)
 
 - Pro **Lieferant** sehen Sie **Betreff** und **Text** der Mail (Vorschau).
 - **CC** (Kopie an die Küche/Büro): Wenn in den Einstellungen eingetragen, wird die Adresse **auf der Seite angezeigt** – so sehen Sie, wohin die Kopie geht.
@@ -91,8 +91,8 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 - **Direktversand** (falls aktiviert): Mails gehen **vom Server**; pro Lieferant **Senden** – Sie erhalten keine automatische „Zustellbestätigung“ von der App.
 - **PDF**: Bestellung als Datei herunterladen.
 - **Outlook-Export** (falls sichtbar): Dateien für ein **Outlook-Makro** – siehe Ordner `outlook-macro` bzw. die dortige Kurzanleitung.
-- **Bestellrunde abschließen**: Bestätigt **lokal**, dass Sie fertig sind (kein Nachweis beim Lieferanten).
-- **Neue Bestellrunde**: Löscht die **lokale** Runde und alle Eingaben dieser Runde – nur nutzen, wenn Sie wirklich von vorn beginnen wollen.
+- **Bestellung abschließen**: Bestätigt **lokal**, dass Sie fertig sind (kein Nachweis beim Lieferanten).
+- **Neue Bestellung**: Löscht die **lokale** Bestellung und alle Eingaben – nur nutzen, wenn Sie wirklich von vorn beginnen wollen.
 
 ### Unterschrift / Besteller in der Mail
 
@@ -104,7 +104,7 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 
 ## 8. Inventur (Bestandszählung)
 
-Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählungen werden **nur lokal** im Browser gespeichert und beeinflussen **keine** Bestell-Mengen. Eine laufende **Bestellrunde** können Sie parallel fortsetzen.
+Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählungen werden **nur lokal** im Browser gespeichert und beeinflussen **keine** Bestell-Mengen. Eine laufende **Bestellung** können Sie parallel fortsetzen.
 
 ### Start und Unterbrechung
 
@@ -121,7 +121,7 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
   - **Leer lassen** = noch **nicht gezählt** (Status später `offen` in der CSV).
   - **Leer / 0** = bewusst **kein Bestand** (Status `gezaehlt_0`).
   - **Menge eintragen** = gezählter Bestand (Status `gezaehlt`).
-- **Artikel nicht im Bestand**: Unten im jeweiligen Lagerort gibt es den Block **„Artikel nicht im Bestand"** – Bezeichnung, Gebinde/Einheit und Menge eintragen → **Hinzufügen**. Diese freien Artikel kommen in die CSV (Status `frei_gezaehlt`) und in die **Sammelliste** im Abschluss.
+- **Freier Artikel**: Unten im jeweiligen Lagerort Bezeichnung, Gebinde/Einheit und Menge eintragen → **Hinzufügen**. Diese freien Artikel kommen in die CSV (Status `frei_gezaehlt`) und in die **Artikel-Vorschläge**.
 - Sie müssen **nicht** jeden Artikel im Rundgang anfassen. Offene Positionen klären Sie am besten im **Abschluss**.
 
 ### Abschluss (empfohlene Vorgehensweise)
@@ -141,11 +141,11 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 
 **Nach dem Export** ist die Inventur **gesperrt**: keine Änderungen mehr am Rundgang. Sie können die CSV **erneut herunterladen** oder die Session **lokal löschen** (Seite **Inventur** oder Abschluss → **Inventur beenden**). Für die nächste Monats-Inventur: **Neue Inventur starten**.
 
-### Neue Artikel (eigene Seite unter „Artikel")
+### Artikel-Vorschläge (eigene Seite unter „Artikel")
 
-Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** (freie Positionen) – sammeln sich auf der Seite **Neue Artikel** (Menü → **Neue Artikel**, oder im Inventur-Abschluss der Hinweis-Link, oder auf der Artikelliste oben **Neue Artikel**). Adresse: `/items/pending`.
+Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** – sammeln sich unter **Artikel-Vorschläge** (Menü, Hinweis im Inventur-Abschluss, oder auf der Artikelliste). Adresse: `/items/pending`.
 
-Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge bleiben erhalten, wenn Sie eine neue Bestellrunde laden, eine Runde abschließen, eine Inventur abschließen oder lokal löschen. So können Sie alle paar Wochen in Ruhe prüfen, welche Freitext-Artikel zu **Regulars** geworden sind.
+Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge bleiben erhalten, wenn Sie eine neue Bestellung beginnen, eine Bestellung abschließen, eine Inventur abschließen oder lokal löschen. So können Sie alle paar Wochen prüfen, welche Freitext-Artikel zu **Regulars** geworden sind.
 
 - **Alle Nutzer zahlen in denselben Topf ein** – egal wer die Bestellung oder Inventur gemacht hat und auf welchem Gerät. Auch Nutzer mit „Nur Bestellen“ tragen bei, sehen die Liste aber nicht.
 - Gleiche Bezeichnungen werden **über alle Nutzer hinweg zusammengefasst**. Ein Zähler zeigt, wie oft der Artikel erfasst wurde (`3× erfasst`), dazu **Zuerst**- und **Zuletzt**-Datum sowie wer ihn zuletzt getippt hat. Häufigste stehen oben.
@@ -177,7 +177,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 ## 9. Stammdaten (nur mit Berechtigung)
 
 - **Artikel**, **Lieferanten**, **Lagerorte** pflegen Sie über das **Menü** oder die einklappbare Sektion auf der Startseite.
-- Änderungen gelten für **neu geladene** Runden und können auf **Kontrolle/Ausgabe** per **Aktualisieren** oder Tab-Wechsel nachgezogen werden (siehe oben).
+- Änderungen gelten für **neu begonnene** Bestellungen und können auf **Kontrolle/Versand** per **Aktualisieren** oder Tab-Wechsel nachgezogen werden (siehe oben).
 - **CSV Import/Export** (Menü **Import**, auf Listen **↓ CSV**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; für reine Preislisten den schlanken Export **↓ Preise** und Import-Typ **Bewertungspreise**.
 
 ---
@@ -188,7 +188,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 Ohne Netz können Sie im Rundgang oft weiterarbeiten. Zum **Neu laden** der Runde, **Stammdaten vom Server** oder **Versand** brauchen Sie wieder **Online**.
 
 **Meine Runde ist plötzlich weg.**  
-Meist: **Neue Runde geladen** statt **Fortsetzen**, oder Browserdaten gelöscht / anderes Gerät. Bestellrunden liegen **pro Browser** – kein automatisches Backup auf dem Server.
+Meist: **Neue Bestellung begonnen** statt **Fortsetzen**, oder Browserdaten gelöscht / anderes Gerät. Bestellungen liegen **pro Browser** – kein automatisches Backup auf dem Server.
 
 **Ich bekomme meine CC-Mail nicht.**  
 Beim **Direktversand** hängt das vom Mail-Server ab; bei **„Mail öffnen“** prüfen Sie, ob im Programm **CC** gesetzt ist. Bei **Testbetrieb** gehen alle Mails an die Testadresse.
@@ -197,7 +197,7 @@ Beim **Direktversand** hängt das vom Mail-Server ab; bei **„Mail öffnen“**
 Im **Menü** (☰) ganz unten: **Abmelden**.
 
 **Inventur und Bestellung gleichzeitig?**  
-Ja. Die Daten liegen **getrennt** im Browser. Die Bestellrunde wird durch die Inventur **nicht** überschrieben.
+Ja. Die Daten liegen **getrennt** im Browser. Die Bestellung wird durch die Inventur **nicht** überschrieben.
 
 **Warum stehen in der CSV auch „offene“ Artikel?**  
 Damit Sie in Excel sehen, was **noch nicht** gezählt wurde (`status` = `offen`). Sie müssen nicht jeden Artikel vorher einzeln „abfertigen“.
@@ -207,8 +207,8 @@ Damit Sie in Excel sehen, was **noch nicht** gezählt wurde (`status` = `offen`)
 ## 11. Kurz-Checkliste pro Bestelltag
 
 1. **Online** gehen → Startseite.  
-2. Entweder **Rundgang fortsetzen** oder **Neue Bestellrunde** laden (nur wenn wirklich neu).  
-3. **Rundgang** durchgehen → **Kontrolle** → **Ausgabe**.  
-4. Mails/PDFs erledigen → **Bestellrunde abschließen**, wenn alles passt.
+2. Entweder **Rundgang fortsetzen** oder **Bestellung beginnen** (nur wenn wirklich neu).  
+3. **Rundgang** durchgehen → **Kontrolle** → **Versand**.  
+4. Mails/PDFs erledigen → **Bestellung abschließen**, wenn alles passt.
 
 Bei Fragen zur **Einrichtung** (Mail, SMTP, Benutzer) wendet euch an die **IT oder Verwaltung**; diese Anleitung beschreibt nur die **Bedienung** der App.

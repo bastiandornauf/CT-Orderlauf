@@ -10,7 +10,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
     <h1 class="page-title">Inventur – Abschluss</h1>
 
     <p class="toast toast--warn inventory-parallel-hint" x-show="orderRoundActive" x-cloak>
-        Parallel läuft eine <strong>Bestellrunde</strong> – sie wird durch den Inventur-Export nicht verändert.
+        Parallel läuft eine Bestellung – der Export ändert sie nicht.
     </p>
 
     <p class="toast toast--ok" x-show="isLocked" x-cloak>
@@ -40,8 +40,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 Noch nicht gezählt (<span x-text="openItems.length"></span>)
             </summary>
             <p class="text-muted inventory-open-block__lead">
-                Diese Artikel haben im Rundgang keinen Stand. In der CSV stehen sie mit Status <strong>offen</strong>.
-                Noch etwas zählen? Unten „Zurück zum Rundgang“ – oder hier schnell als leer bestätigen.
+                In der CSV mit Status <strong>offen</strong>. Noch zählen: „Zurück zum Rundgang“, oder hier als leer bestätigen.
             </p>
             <button type="button" class="button button--secondary button--block"
                     style="margin-bottom: var(--space-3);"
@@ -90,17 +89,15 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             </button>
         </div>
         <p class="form-hint text-muted" style="margin-top: var(--space-3);">
-            Die CSV enthält <strong>alle</strong> aktiven Artikel mit Spalte <code>status</code>
-            (<code>offen</code>, <code>gezaehlt_0</code>, <code>gezaehlt</code>, <code>frei_gezaehlt</code>). Semikolon, UTF-8 für Excel DE.
+            CSV: alle aktiven Artikel, Spalte <code>status</code>, Semikolon, UTF-8 für Excel DE.
         </p>
     </div>
 
     <div class="card card--pad" x-show="pageReady && hasNewItems" x-cloak>
-        <h2 class="section-header" style="margin-top:0">Neue Artikel sammeln</h2>
+        <h2 class="section-header">Artikel-Vorschläge</h2>
         <p class="text-muted">
-            Es gibt <strong x-text="newItemCount"></strong> per Freitext erfasste Position(en) aus Inventur/Bestellung,
-            die noch nicht im Stamm sind.
+            <strong x-text="newItemCount"></strong> Freitext-Artikel aus Inventur/Bestellung, noch nicht im Stamm.
         </p>
-        <a href="/items/pending" class="button button--secondary button--block">Zur Sammelliste „Neue Artikel"</a>
+        <a href="/items/pending" class="button button--secondary button--block">Zu den Artikel-Vorschlägen</a>
     </div>
 </section>

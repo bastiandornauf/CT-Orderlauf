@@ -33,5 +33,5 @@ $urls = [
             </li>
         <?php endfor; ?>
     </ol>
-    <p class="order-stepper__hint text-muted">Getrennt von der Bestellrunde – lokale Daten nur für die Inventur.</p>
+    <p class="order-stepper__hint text-muted">Getrennt von der Bestellung.</p>
 </nav>

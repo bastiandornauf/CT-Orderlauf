@@ -95,7 +95,7 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
         </fieldset>
         <div class="form-group">
             <label class="form-label" for="email_template">E-Mail-Vorlage (optional)</label>
-            <p class="form-hint">Dieses Feld betrifft nur den <strong>Nachrichtentext</strong>. Den Standard-<strong>Betreff</strong> legen Sie unter <a href="/settings">Einstellungen</a> fest; optional pro Lieferant oben überschreibbar.</p>
+            <p class="form-hint">Nur den Nachrichtentext. Den Standard-Betreff legen die <a href="/settings">Einstellungen</a> fest; optional oben überschreiben.</p>
             <textarea class="textarea" id="email_template" name="email_template" rows="8"><?= htmlspecialchars($supplier['email_template'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
             <div class="placeholder-legend">
                 <p class="placeholder-legend__title">Verfügbare Platzhalter:</p>

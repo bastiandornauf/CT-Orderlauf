@@ -170,7 +170,7 @@ final class AdminUsersController
             return;
         }
         if ($id === (int) ($_SESSION['user_id'] ?? 0)) {
-            $_SESSION['flash_err'] = 'Sie können sich nicht selbst löschen.';
+            $_SESSION['flash_err'] = 'Eigenes Konto kann nicht gelöscht werden.';
             Response::redirect('/admin/users');
             return;
         }

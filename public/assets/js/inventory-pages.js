@@ -166,7 +166,7 @@ export function inventoryHomePageData() {
     async clearLocalInventory() {
       const ok = window.confirm(
         'Lokale Inventur-Daten auf diesem Gerät löschen?\n\n' +
-          'Die CSV in Ihren Downloads bleibt erhalten. Sie können danach eine neue Inventur starten.',
+          'Die CSV in den Downloads bleibt. Danach kann eine neue Inventur starten.',
       );
       if (!ok) return;
       this.clearing = true;
@@ -664,8 +664,8 @@ export function registerInventoryAlpine(Alpine) {
       if (!this.isLocked && this.stats.open > 0) {
         const ok = window.confirm(
           `Noch ${this.stats.open} Artikel sind nicht gezählt (Status „offen“ in der CSV).\n\n` +
-            'Wenn Sie noch etwas nachtragen möchten: Abbrechen und „Zurück zum Rundgang“.\n\n' +
-            'Sonst: CSV jetzt exportieren – alle Artikel sind enthalten, Filter in Excel nach Spalte status.',
+            'Noch nachtragen: Abbrechen und „Zurück zum Rundgang“.\n\n' +
+            'Sonst: CSV jetzt exportieren – alle Artikel sind enthalten, in Excel nach Spalte status filtern.',
         );
         if (!ok) return;
       }
@@ -733,7 +733,7 @@ export function registerInventoryAlpine(Alpine) {
     async finishAndClear() {
       const ok = window.confirm(
         'Lokale Inventur-Daten auf diesem Gerät löschen?\n\n' +
-          'Die CSV-Datei bleibt in Ihren Downloads. Die Bestellrunde wird nicht verändert.',
+          'Die CSV in den Downloads bleibt. Die Bestellung wird nicht verändert.',
       );
       if (!ok) return;
       this.clearing = true;

@@ -15,10 +15,10 @@
     </p>
 
     <p class="toast toast--warn inventory-parallel-hint" x-show="orderRoundActive" x-cloak>
-        Es läuft parallel eine <strong>Bestellrunde</strong>. Ihre Bestell-Mengen bleiben unverändert.
+        Parallel läuft eine Bestellung. Die Bestell-Mengen bleiben unverändert.
     </p>
 
-    <p class="text-muted">Leeres Feld = noch nicht gezählt (ok – offene Artikel klären Sie im Abschluss). „Leer / 0“ = bewusst Bestand null.</p>
+    <p class="text-muted">Leeres Feld = noch nicht gezählt. „Leer / 0“ = bewusst null.</p>
 
     <p class="toast toast--error" role="alert" x-show="pageReady && pageError" x-text="pageError" x-cloak></p>
     <p class="toast toast--warn" x-show="pageReady && !pageError && locations.length === 0 && allItems.length > 0" x-cloak>
@@ -92,8 +92,8 @@
     </ul>
 
     <div class="card card--pad form-stack inventory-free" x-show="search === '' && activeLocId" x-cloak>
-        <h2 class="section-header" style="margin-top:0">Artikel nicht im Bestand (dieser Lagerort)</h2>
-        <p class="text-muted">Hier zählen Sie Artikel, die noch nicht im Stamm sind. Sie kommen in die CSV und in die Sammelliste „Neue Artikel".</p>
+        <h2 class="section-header">Freier Artikel (dieser Lagerort)</h2>
+        <p class="text-muted">Landet in der CSV und in den Artikel-Vorschlägen.</p>
 
         <ul class="card-list inventory-free__list" x-show="freeItems.length > 0">
             <template x-for="fi in freeItems" :key="fi.id">

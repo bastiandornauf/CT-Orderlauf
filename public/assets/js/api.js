@@ -21,7 +21,7 @@ export async function fetchInventoryPayload(stichtag, label = '') {
     }
     throw new Error(
       `Server-Antwort ungültig (HTTP ${res.status}). ` +
-        'Prüfen Sie die Datenbank-Migration oder Server-Logs.',
+        'Datenbank-Migration oder Server-Logs prüfen.',
     );
   }
   if (!res.ok || !data.ok) {

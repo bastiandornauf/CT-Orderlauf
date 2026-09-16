@@ -127,7 +127,7 @@ final class ItemController
     {
         AuthMiddleware::requireEditor();
         View::layout('layout', 'pages/items/pending', [
-            'title' => 'Neue Artikel',
+            'title' => 'Artikel-Vorschläge',
             'locations' => $this->locations->all(true),
             'suppliers' => $this->suppliers->all(true),
             'csrf' => Csrf::token(),
