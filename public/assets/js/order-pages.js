@@ -22,6 +22,13 @@ function formatDeDate(iso) {
   return `${day}.${m}.${y}`;
 }
 
+/** Ohne Jahr – für Fließtext, wo das Jahr aus dem Zusammenhang klar ist. */
+function formatDeDayMonth(iso) {
+  if (!iso) return '';
+  const [, m, day] = iso.split('-');
+  return `${day}.${m}.`;
+}
+
 function orderTypeLabel(raw) {
   if (raw === 'mail') return 'E-Mail';
   if (raw === 'webshop') return 'Webshop';
@@ -56,10 +63,10 @@ async function executeLoadPreparedRound(ctx) {
     }
     if (await storage.prepareReloadWouldEraseLocalProgress()) {
       const ok = window.confirm(
-        'Es gibt bereits eine Bestellrunde mit gespeicherten Eingaben (Rundgang, Kontrolle oder Lieferanten-Notizen).\n\n' +
-          'Wenn Sie jetzt „Bestellrunde laden“ ausführen, werden diese lokalen Daten gelöscht und durch eine neue, leere Runde ersetzt.\n\n' +
-          'Zum Fortsetzen ohne Datenverlust: oben „Rundgang fortsetzen“ oder „Kontrolle / Abschluss“ wählen – nicht erneut laden.\n\n' +
-          'Trotzdem neu laden und alles verwerfen?',
+        'Die laufende Bestellung enthält bereits Eingaben.\n\n' +
+          'Eine neue Bestellung löscht sie. Zum Weiterarbeiten stattdessen ' +
+          'oben „Rundgang fortsetzen“ wählen.\n\n' +
+          'Eingaben verwerfen und neu beginnen?',
       );
       if (!ok) {
         return;
@@ -146,11 +153,47 @@ export function dashboardPageData() {
       const m = {
         prepared: 'Vorbereitet – Rundgang noch nicht begonnen',
         active: 'Rundgang läuft',
-        ready_for_review: 'Bereit zur Kontrolle und Ausgabe',
-        finalized: 'Abgeschlossen – neue Runde möglich',
-        paused: 'Runde pausiert',
+        ready_for_review: 'Bereit zur Kontrolle',
+        finalized: 'Abgeschlossen',
+        paused: 'Rundgang pausiert',
       };
       return m[this.roundStatus] || '';
+    },
+    /** Eine Bestellung, an der noch gearbeitet wird – nicht abgeschlossen. */
+    get roundInProgress() {
+      return this.hasRound && this.roundStatus !== 'finalized' && this.roundStatus !== 'idle';
+    },
+    /**
+     * Nächste Schritte der laufenden Bestellung, wichtigster zuerst.
+     * Aus dem Status abgeleitet, damit die Startseite genau eine
+     * Hauptaktion anbietet statt drei gleichrangiger Buttons.
+     */
+    get roundActions() {
+      const round = { href: '/order/round', label: 'Rundgang fortsetzen' };
+      const review = { href: '/order/review', label: 'Kontrolle' };
+      const output = { href: '/order/output', label: 'Versand' };
+      switch (this.roundStatus) {
+        case 'prepared':
+          return [{ ...round, label: 'Rundgang beginnen' }];
+        case 'active':
+        case 'paused':
+          return [round, review];
+        case 'ready_for_review':
+          return [review, output];
+        default:
+          return [];
+      }
+    },
+    /** Kurzfassung der Liefer-Vorschau für die eingeklappte Zeile. */
+    get deliverySummary() {
+      const total = this.deliveryPreview.length;
+      if (!total) return '';
+      const onTarget = this.deliveryPreview.filter((s) => s.onTarget).length;
+      const datePart = this.targetDate ? ` am ${formatDeDayMonth(this.targetDate)}` : '';
+      if (onTarget === total) {
+        return `Alle ${total} Lieferanten liefern${datePart}`;
+      }
+      return `${onTarget} von ${total} Lieferanten liefern${datePart}`;
     },
     async init() {
       const dateIn = document.getElementById('target_date');

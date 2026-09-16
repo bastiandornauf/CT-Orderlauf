@@ -1621,6 +1621,40 @@ a.order-stepper__item:focus-visible {
   margin-bottom: 0;
 }
 
+/* Liefer-Vorschau: eingeklappt genügt die Kurzfassung, damit der Button
+   „Bestellung beginnen“ nicht unter eine lange Lieferantenliste rutscht. */
+.delivery-preview__details {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.delivery-preview__summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.delivery-preview__summary::-webkit-details-marker {
+  display: none;
+}
+
+.delivery-preview__summary::after {
+  content: ' ▾';
+}
+
+.delivery-preview__details[open] .delivery-preview__summary::after {
+  content: ' ▴';
+}
+
+.delivery-preview__details[open] .card-list {
+  margin-top: var(--space-3);
+}
+
+.dashboard-elsewhere {
+  margin-top: var(--space-4);
+}
+
 .dashboard-stammdaten {
   margin-top: var(--space-4);
 }

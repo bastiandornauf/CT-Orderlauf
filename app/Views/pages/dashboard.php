@@ -1,72 +1,82 @@
 <section class="page-section" x-data="dashboardPage">
     <h1 class="page-title">Start</h1>
-    <p class="page-lead page-lead--compact">Rundgang, Kontrolle, Ausgabe – alles lokal im Browser bis zum Versand.</p>
 
-    <div class="card card--pad dashboard-order-hero">
-        <h2 class="section-header" style="margin-top:0">Bestellrunde</h2>
-        <p class="dashboard-order-hero__status" x-show="initialized" x-cloak>
-            <span x-show="hasRound && roundStatusLabel" x-text="roundStatusLabel"></span>
-            <span x-show="!hasRound">Keine aktive Runde. Zum Starten unten <strong>Neue Bestellrunde</strong> nutzen.</span>
-        </p>
+    <div class="card card--pad dashboard-order-hero" x-show="initialized && roundInProgress" x-cloak>
+        <h2 class="section-header">Laufende Bestellung</h2>
+        <p class="dashboard-order-hero__status" x-text="roundStatusLabel"></p>
 
         <div class="button-stack dashboard-order-hero__actions">
-            <a href="/order/round" class="button button--primary button--block" x-show="hasRound && (roundStatus === 'prepared' || roundStatus === 'active' || roundStatus === 'paused')">Rundgang fortsetzen</a>
-            <a href="/order/review" class="button button--secondary button--block" x-show="hasRound && (roundStatus === 'ready_for_review' || roundStatus === 'active' || roundStatus === 'paused')">Kontrolle / Abschluss</a>
-            <a href="/order/output" class="button button--secondary button--block" x-show="hasRound && roundStatus === 'ready_for_review'">Ausgabe</a>
+            <template x-for="(action, idx) in roundActions" :key="action.href">
+                <a :href="action.href"
+                   class="button button--block"
+                   :class="idx === 0 ? 'button--primary' : 'button--secondary'"
+                   x-text="action.label"></a>
+            </template>
         </div>
     </div>
 
     <div id="bestellen" class="card card--pad dashboard-prepare">
-        <h2 class="section-header" style="margin-top:0">Neue Bestellrunde</h2>
-        <p class="text-muted">Wunsch-Lieferdatum wählen (z.&nbsp;B. Montag für OGA/Pütz). Lieferanten mit anderen Liefertagen erhalten automatisch ihr nächstmögliches Datum.</p>
-        <p class="text-muted"><strong>Bestellrunde laden</strong> startet eine <strong>neue</strong> Runde und löscht dabei alle bisherigen lokalen Eingaben dieser Runde. Laufende Runden setzen Sie mit <strong>Rundgang fortsetzen</strong> oder <strong>Kontrolle</strong> fort – nicht durch erneutes Laden.</p>
+        <h2 class="section-header">Neue Bestellung</h2>
 
-        <div class="form-stack" style="margin-top: var(--space-4);">
+        <div class="form-stack">
             <div class="form-group">
-                <label class="form-label" for="target_date">Ziel-Datum</label>
+                <label class="form-label" for="target_date">Wunsch-Lieferdatum</label>
                 <input class="input" type="date" id="target_date" name="target_date"
                        value="<?= htmlspecialchars($default_target_date ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        x-model="targetDate">
             </div>
 
-            <div class="delivery-preview" x-show="initialized" x-cloak style="margin-top: var(--space-2);">
-                <h3 class="section-header">Liefertermine zum gewählten Datum</h3>
-                <p class="text-muted" x-show="previewOffline">Vorschau nur bei Internetverbindung verfügbar.</p>
+            <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
+                <span class="button__label" x-text="loading ? 'Einen Moment …' : 'Bestellung beginnen'">Bestellung beginnen</span>
+            </button>
+
+            <p class="toast toast--warn" x-show="initialized && roundInProgress" x-cloak>
+                Überschreibt die laufende Bestellung. Zum Weiterarbeiten oben fortsetzen.
+            </p>
+            <p class="toast toast--error" x-show="error && String(error).trim()" x-text="error" x-cloak></p>
+
+            <div class="delivery-preview" x-show="initialized" x-cloak>
+                <p class="text-muted" x-show="previewOffline">Liefertermine nur mit Verbindung.</p>
                 <p class="text-muted" x-show="previewLoading && !previewOffline">Lade Liefertermine …</p>
                 <p class="toast toast--error" x-show="previewError && String(previewError).trim()" x-text="previewError"></p>
-                <ul class="card-list" x-show="deliveryPreview.length && !previewLoading">
-                    <template x-for="s in deliveryPreview" :key="s.id">
-                        <li class="list-item" :class="s.onTarget ? 'list-item--delivery-on-target' : ''">
-                            <div class="list-item__main">
-                                <strong x-text="s.name"></strong>
-                                <span class="text-muted" x-text="s.order_type === 'webshop' ? 'Webshop' : 'E-Mail'"></span>
-                            </div>
-                            <template x-if="s.onTarget">
-                                <span class="status-badge status-badge--ok" x-text="'Liefert am Zieltag · ' + formatDate(s.deliveryDate)"></span>
-                            </template>
-                            <template x-if="s.deliveryDate && !s.onTarget">
-                                <span class="delivery-badge" x-text="'Nächste Lieferung · ' + formatDate(s.deliveryDate)"></span>
-                            </template>
-                            <template x-if="!s.deliveryDate">
-                                <span class="status-badge status-badge--warn">Kein Liefertag</span>
-                            </template>
-                        </li>
-                    </template>
-                </ul>
+
+                <details class="delivery-preview__details" x-show="deliveryPreview.length && !previewLoading">
+                    <summary class="delivery-preview__summary" x-text="deliverySummary"></summary>
+                    <ul class="card-list">
+                        <template x-for="s in deliveryPreview" :key="s.id">
+                            <li class="list-item" :class="s.onTarget ? 'list-item--delivery-on-target' : ''">
+                                <div class="list-item__main">
+                                    <strong x-text="s.name"></strong>
+                                    <span class="text-muted" x-text="s.order_type === 'webshop' ? 'Webshop' : 'E-Mail'"></span>
+                                </div>
+                                <template x-if="s.onTarget">
+                                    <span class="status-badge status-badge--ok" x-text="formatDate(s.deliveryDate)"></span>
+                                </template>
+                                <template x-if="s.deliveryDate && !s.onTarget">
+                                    <span class="delivery-badge" x-text="'erst ' + formatDate(s.deliveryDate)"></span>
+                                </template>
+                                <template x-if="!s.deliveryDate">
+                                    <span class="status-badge status-badge--warn">Kein Liefertag</span>
+                                </template>
+                            </li>
+                        </template>
+                    </ul>
+                </details>
             </div>
-
-            <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
-                <span class="button__label" x-text="loading ? 'Lade...' : 'Bestellrunde laden'">Bestellrunde laden</span>
-            </button>
-            <p class="toast toast--error" x-show="error && String(error).trim()" x-text="error" x-cloak></p>
         </div>
+    </div>
 
+    <div class="card card--pad dashboard-elsewhere">
+        <h2 class="section-header">Weitere Bereiche</h2>
+        <ul class="dashboard-quick__list">
+            <li><a href="/inventory" class="dashboard-quick__link">Inventur</a></li>
+            <li><a href="/help" class="dashboard-quick__link">Hilfe</a></li>
+        </ul>
     </div>
 
     <?php if (!empty($canEditMaster)): ?>
     <details class="dashboard-stammdaten card card--pad">
         <summary class="dashboard-stammdaten__summary">Stammdaten pflegen</summary>
-        <p class="text-muted" style="margin-top:0">Artikel, Lieferanten, Lagerorte – für den Bestellablauf und die Ausgabe.</p>
         <ul class="dashboard-quick__list">
             <li><a href="/items" class="dashboard-quick__link">Artikel <span class="dashboard-quick__count"><?= (int) ($counts['items'] ?? 0) ?></span></a></li>
             <li><a href="/suppliers" class="dashboard-quick__link">Lieferanten <span class="dashboard-quick__count"><?= (int) ($counts['suppliers'] ?? 0) ?></span></a></li>
@@ -74,6 +84,4 @@
         </ul>
     </details>
     <?php endif; ?>
-
-    <p class="text-muted dashboard-hint">Inventur und weitere Bereiche über das <strong>Menü</strong> oben.</p>
 </section>
