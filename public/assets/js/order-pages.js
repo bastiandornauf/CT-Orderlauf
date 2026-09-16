@@ -898,16 +898,12 @@ export function registerOrderAlpine(Alpine) {
     },
     mailtoClientButtonLabel(block) {
       if (this.directSend) {
-        return this.mailtoOpened(block) ? 'Nochmal im Mail-Programm' : 'Im Mail-Client';
+        return this.mailtoOpened(block) ? 'Nochmal' : 'Mail-Programm';
       }
       if (block.supplier.order_type === 'webshop') {
-        if (this.mailtoOpened(block)) return 'Webshop erneut im Mail-Programm';
-        if (this.mailtoNeedsAttention(block)) return 'Webshop jetzt im Mail-Programm';
-        return 'Webshop-Liste mailen';
+        return this.mailtoOpened(block) ? 'Nochmal' : 'Liste mailen';
       }
-      if (this.mailtoOpened(block)) return 'Nochmal im Mail-Programm öffnen';
-      if (this.mailtoNeedsAttention(block)) return 'Jetzt im Mail-Programm öffnen';
-      return 'Mail öffnen';
+      return this.mailtoOpened(block) ? 'Nochmal' : 'Mail öffnen';
     },
     formatDate(iso) {
       return formatDeDate(iso);
@@ -918,10 +914,9 @@ export function registerOrderAlpine(Alpine) {
     /** SMTP-Direktversand: ein Button, Text/Klasse ohne verschachteltes x-text (Alpine/HTML). */
     smtpSendButtonLabel(block) {
       const s = this.blockSendState(block);
-      if (s === 'sent') return 'Erneut senden';
-      if (s === 'sending') return 'Sende...';
-      if (s === 'error') return 'Nochmal senden (Server)';
-      if (block.supplier.order_type === 'webshop') return 'Webshop-Liste senden';
+      if (s === 'sent') return 'Erneut';
+      if (s === 'sending') return 'Sende …';
+      if (s === 'error') return 'Nochmal senden';
       return 'Senden';
     },
     smtpSendButtonClass(block) {
@@ -950,7 +945,21 @@ export function registerOrderAlpine(Alpine) {
       };
     },
     blockCollapseLabel(block) {
-      return this.blockCollapsed(block) ? 'Details anzeigen' : 'Details verbergen';
+      return this.blockCollapsed(block) ? 'Anzeigen' : 'Zuklappen';
+    },
+    blockStatusLabel(block) {
+      const s = this.blockSendState(block);
+      if (s === 'sending') return 'Sende …';
+      if (s === 'sent') return 'Gesendet';
+      if (s === 'error') return 'Fehlgeschlagen';
+      if (this.mailtoOpened(block)) return 'Geöffnet';
+      return '';
+    },
+    blockStatusClass(block) {
+      const s = this.blockSendState(block);
+      if (s === 'error') return 'status-badge--warn';
+      if (s === 'sent' || this.mailtoOpened(block)) return 'status-badge--ok';
+      return 'status-badge--neutral';
     },
     get mailBlocks() {
       return this.blocks.filter((b) => b.supplier.order_type === 'mail' && b.supplier.email);
@@ -996,7 +1005,7 @@ export function registerOrderAlpine(Alpine) {
         this.mailtoWizardIndex += 1;
       } else {
         this.closeMailtoWizard();
-        showToast('Letzter Schritt. Orange markierte Lieferanten prüfen, falls eine Mail noch fehlt.', 6000);
+        showToast('Fertig. Orange markierte Lieferanten prüfen, falls eine Mail fehlt.', 6000);
       }
     },
     async copyAllBlocks() {

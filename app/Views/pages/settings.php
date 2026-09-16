@@ -85,27 +85,27 @@
                 <div class="settings-subsection__body">
                     <p class="form-hint">Leer = PHP <code>mail()</code>. Ausgefüllt = dieser SMTP-Server.</p>
                     <div class="form-row">
-                        <div class="form-group" style="flex:3">
+                        <div class="form-group u-flex-3">
                             <label class="form-label" for="smtp_host">Server</label>
                             <input class="input" id="smtp_host" name="smtp_host"
                                    value="<?= htmlspecialchars($smtp_host ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                    placeholder="z.B. smtp.ionos.de">
                         </div>
-                        <div class="form-group" style="flex:1;min-width:6rem">
+                        <div class="form-group u-w-6rem">
                             <label class="form-label" for="smtp_port">Port</label>
                             <input class="input" id="smtp_port" name="smtp_port" type="number"
                                    value="<?= htmlspecialchars($smtp_port ?? '587', ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group" style="flex:2">
+                        <div class="form-group u-flex-2">
                             <label class="form-label" for="smtp_user">Benutzername</label>
                             <input class="input" id="smtp_user" name="smtp_user" type="email"
                                    value="<?= htmlspecialchars($smtp_user ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                    autocomplete="username" inputmode="email" spellcheck="false"
                                    placeholder="name@domain.de">
                         </div>
-                        <div class="form-group" style="flex:1">
+                        <div class="form-group u-flex">
                             <label class="form-label" for="smtp_pass">Passwort</label>
                             <input class="input" id="smtp_pass" name="smtp_pass" type="password"
                                    value="" autocomplete="new-password"
@@ -131,17 +131,17 @@
                                    placeholder="leer = Firmenname">
                         </div>
                     </div>
-                    <div style="margin-top:var(--space-2)">
+                    <div class="settings-smtp-test">
                         <button type="submit" form="smtp-test-form" class="button button--secondary button--small">Verbindung testen</button>
                     </div>
                     <?php if (isset($smtp_test_ok) && $smtp_test_ok === true): ?>
-                        <p class="toast toast--success" style="margin-top:var(--space-3)"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                        <p class="toast toast--success settings-smtp-result"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                     <?php elseif (isset($smtp_test_ok) && $smtp_test_ok === false): ?>
-                        <p class="toast toast--error" style="margin-top:var(--space-3);white-space:pre-wrap;word-break:break-word"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                        <p class="toast toast--error settings-smtp-result u-pre-wrap"><?= htmlspecialchars((string) ($smtp_test_message ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                     <?php endif; ?>
                     <?php if (!empty($smtp_test_log)): ?>
-                        <details <?= (isset($smtp_test_ok) && $smtp_test_ok === false) ? 'open' : '' ?> style="margin-top:var(--space-2)">
-                            <summary style="cursor:pointer;font-weight:600;font-size:var(--text-sm)">Protokoll</summary>
+                        <details class="settings-smtp-log-wrap" <?= (isset($smtp_test_ok) && $smtp_test_ok === false) ? 'open' : '' ?>>
+                            <summary>Protokoll</summary>
                             <pre class="settings-smtp-log"><?= htmlspecialchars($smtp_test_log, ENT_QUOTES, 'UTF-8') ?></pre>
                         </details>
                     <?php endif; ?>
@@ -189,8 +189,11 @@
 
         <button type="submit" class="button button--primary button--block">Speichern</button>
     </form>
+    <?php if (\App\Helpers\UserRole::isAdmin((string) ($_SESSION['role'] ?? ''))): ?>
+        <p class="form-hint"><a href="/dev/ui">Komponenten-Übersicht</a></p>
+    <?php endif; ?>
 
-    <form id="smtp-test-form" method="post" action="/settings/smtp-test" style="display:none">
+    <form id="smtp-test-form" method="post" action="/settings/smtp-test" hidden>
         <?= \App\Helpers\Csrf::field() ?>
     </form>
 </section>

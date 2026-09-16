@@ -23,7 +23,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
     </p>
 
     <div class="card card--pad" x-show="pageReady && session">
-        <h2 class="section-header" style="margin-top:0">Übersicht</h2>
+        <h2 class="section-header">Übersicht</h2>
         <p><strong x-text="session?.label"></strong></p>
         <p class="text-muted">Stichtag: <span x-text="formatDe(session?.stichtag)"></span></p>
         <ul class="inventory-finalize-stats">
@@ -43,7 +43,6 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 In der CSV mit Status <strong>offen</strong>. Noch zählen: „Zurück zum Rundgang“, oder hier als leer bestätigen.
             </p>
             <button type="button" class="button button--secondary button--block"
-                    style="margin-bottom: var(--space-3);"
                     @click.prevent="markAllOpenAsZero()">
                 Alle offenen als Leer / 0 erfassen
             </button>
@@ -63,7 +62,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             </ul>
         </details>
 
-        <div class="button-stack" style="margin-top: var(--space-4);">
+        <div class="button-stack inventory-finalize-actions">
             <button type="button" class="button button--primary button--block"
                     @click.prevent="downloadExport()" :disabled="exporting">
                 <span class="button__label"
@@ -88,7 +87,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                       x-text="clearing ? 'Lösche …' : 'Inventur beenden (lokal löschen)'">Inventur beenden (lokal löschen)</span>
             </button>
         </div>
-        <p class="form-hint text-muted" style="margin-top: var(--space-3);">
+        <p class="form-hint text-muted inventory-finalize-hint">
             CSV: alle aktiven Artikel, Spalte <code>status</code>, Semikolon, UTF-8 für Excel DE.
         </p>
     </div>

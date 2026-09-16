@@ -33,22 +33,6 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
             <time class="app-header__clock" x-text="clockLabel" :datetime="clockIso" title="Aktuelle Uhrzeit"></time>
             <a href="/profile" class="app-header__user" title="Mein Konto"><?= htmlspecialchars((string) ($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?></a>
             <button type="button"
-                    class="app-header__sleek-btn"
-                    :title="sleek ? 'Kompaktmodus aus' : 'Kompaktmodus an'"
-                    :aria-pressed="String(sleek)"
-                    @click="toggleSleek()">
-                <span x-show="!sleek" aria-hidden="true" class="sleek-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="14" y2="18"/>
-                  </svg>
-                </span>
-                <span x-show="sleek" aria-hidden="true" class="sleek-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/>
-                  </svg>
-                </span>
-            </button>
-            <button type="button"
                     class="app-header__menu-btn"
                     aria-label="Menü"
                     :aria-expanded="navOpen"
@@ -69,28 +53,39 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                 <button type="button" class="app-nav__close" aria-label="Menü schließen" @click="closeNav()">&times;</button>
             </div>
             <div class="app-nav__links">
-                <a href="/" class="app-nav__link<?= $navActive('/', true) ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Start</a>
-                <a href="/?open=bestellen" class="app-nav__link<?= ($navPath === '/' || $navPath === '') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Bestellen</a>
+                <div class="app-nav__group">
+                    <p class="app-nav__label">Bestellung</p>
+                    <a href="/" class="app-nav__link<?= $navActive('/', true) ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Start</a>
+                    <a href="/inventory" class="app-nav__link<?= $navActive('/inventory') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Inventur</a>
+                </div>
                 <?php if ($_canEditMaster): ?>
-                <a href="/locations" class="app-nav__link<?= $navActive('/locations') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lagerorte</a>
-                <a href="/suppliers" class="app-nav__link<?= $navActive('/suppliers') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Lieferanten</a>
-                <a href="/items" class="app-nav__link<?= ($navActive('/items') && !$navActive('/items/pending')) ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Artikel</a>
-                <a href="/items/pending" class="app-nav__link<?= $navActive('/items/pending') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Artikel-Vorschläge</a>
-                <a href="/import" class="app-nav__link<?= $navActive('/import') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Import</a>
+                <div class="app-nav__group">
+                    <p class="app-nav__label">Stammdaten</p>
+                    <a href="/items" class="app-nav__link<?= ($navActive('/items') && !$navActive('/items/pending')) ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Artikel</a>
+                    <a href="/suppliers" class="app-nav__link<?= $navActive('/suppliers') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Lieferanten</a>
+                    <a href="/locations" class="app-nav__link<?= $navActive('/locations') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Lagerorte</a>
+                    <a href="/items/pending" class="app-nav__link<?= $navActive('/items/pending') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Artikel-Vorschläge</a>
+                    <a href="/import" class="app-nav__link<?= $navActive('/import') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Import / Export</a>
+                </div>
                 <?php endif; ?>
-                <a href="/inventory" class="app-nav__link<?= $navActive('/inventory') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Inventur</a>
-                <?php if ($_canEditMaster): ?>
-                <a href="/settings" class="app-nav__link<?= $navActive('/settings') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Einstellungen</a>
-                <?php endif; ?>
-                <?php if ($_isAdmin): ?>
-                <a href="/admin/users" class="app-nav__link<?= $navActive('/admin/users') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Benutzer</a>
-                <?php endif; ?>
-                <a href="/help" class="app-nav__link<?= $navActive('/help') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Hilfe</a>
-                <a href="/profile" class="app-nav__link<?= $navActive('/profile') ? ' app-nav__link--active' : '' ?>" @click="closeNav()">Mein Konto</a>
-                <form method="post" action="/logout" class="app-nav__logout">
-                    <?= \App\Helpers\Csrf::field() ?>
-                    <button type="submit" class="app-nav__link app-nav__link--logout">Abmelden</button>
-                </form>
+                <div class="app-nav__group">
+                    <p class="app-nav__label">Konto</p>
+                    <?php if ($_canEditMaster): ?>
+                    <a href="/settings" class="app-nav__link<?= $navActive('/settings') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Einstellungen</a>
+                    <?php endif; ?>
+                    <?php if ($_isAdmin): ?>
+                    <a href="/admin/users" class="app-nav__link<?= $navActive('/admin/users') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Benutzer</a>
+                    <?php endif; ?>
+                    <a href="/help" class="app-nav__link<?= $navActive('/help') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Hilfe</a>
+                    <a href="/profile" class="app-nav__link<?= $navActive('/profile') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Mein Konto</a>
+                    <button type="button" class="app-nav__link" @click="toggleTheme()">
+                        <span x-text="resolvedDark ? 'Helles Erscheinungsbild' : 'Dunkles Erscheinungsbild'">Erscheinungsbild</span>
+                    </button>
+                    <form method="post" action="/logout" class="app-nav__logout">
+                        <?= \App\Helpers\Csrf::field() ?>
+                        <button type="submit" class="app-nav__link">Abmelden</button>
+                    </form>
+                </div>
             </div>
         </div>
     </nav>

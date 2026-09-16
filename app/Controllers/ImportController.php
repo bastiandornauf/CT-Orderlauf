@@ -16,7 +16,7 @@ final class ImportController
     {
         AuthMiddleware::requireEditor();
         View::layout('layout', 'pages/import', [
-            'title' => 'Import',
+            'title' => 'Import / Export',
             'csrf' => Csrf::token(),
             'result' => null,
         ]);
@@ -44,7 +44,7 @@ final class ImportController
             'items_not_in_csv' => $result['items_not_in_csv'] ?? [],
         ];
         View::layout('layout', 'pages/import', [
-            'title' => 'Import',
+            'title' => 'Import / Export',
             'csrf' => Csrf::token(),
             'result' => $result,
             'import_type' => $type,
@@ -86,7 +86,7 @@ final class ImportController
 
         unset($_SESSION['import_preview']);
         View::layout('layout', 'pages/import', [
-            'title' => 'Import',
+            'title' => 'Import / Export',
             'csrf' => Csrf::token(),
             'done' => array_merge($stats, ['deactivated' => $deactivated]),
         ]);

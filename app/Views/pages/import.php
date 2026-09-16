@@ -1,5 +1,5 @@
 <section class="page-section">
-    <h1 class="page-title">Import</h1>
+    <h1 class="page-title">Import / Export</h1>
 
     <?php if (!empty($done)): ?>
         <p class="toast toast--success">
@@ -47,8 +47,49 @@
         <?php endif; ?>
     <?php endif; ?>
 
+    <section class="card card--pad">
+        <h2 class="section-header">Export</h2>
+        <p class="text-muted">CSV herunterladen, in Excel bearbeiten, danach unten wieder importieren.</p>
+        <ul class="export-list">
+            <li>
+                <a class="export-list__link" href="/export/items">
+                    <span>Artikel</span>
+                    <span class="export-list__hint">inkl. Bewertungspreis</span>
+                </a>
+            </li>
+            <li>
+                <a class="export-list__link" href="/export/item-prices">
+                    <span>Bewertungspreise</span>
+                    <span class="export-list__hint">Massenpflege</span>
+                </a>
+            </li>
+            <li>
+                <a class="export-list__link" href="/export/item-supplier">
+                    <span>Artikel–Lieferant</span>
+                    <span class="export-list__hint">Zuordnungen</span>
+                </a>
+            </li>
+            <li>
+                <a class="export-list__link" href="/export/suppliers">
+                    <span>Lieferanten</span>
+                </a>
+            </li>
+            <li>
+                <a class="export-list__link" href="/export/delivery-days">
+                    <span>Liefertage</span>
+                </a>
+            </li>
+            <li>
+                <a class="export-list__link" href="/export/locations">
+                    <span>Lagerorte</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+
     <form method="post" action="/import/preview" enctype="multipart/form-data" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
+        <h2 class="section-header">Import</h2>
         <div class="form-group">
             <label class="form-label" for="import_type">Datentyp</label>
             <select class="select" id="import_type" name="import_type" required>
@@ -71,6 +112,6 @@
         <summary class="import-format__summary">CSV-Format</summary>
         <p class="text-muted">UTF-8, Semikolon. Ein Export aus dieser App ist direkt wieder importierbar.</p>
         <p class="text-muted">Artikel mit <code>id</code> werden aktualisiert, leere ID legt neu an. Spalte <code>bewertungspreis</code> für die Inventur.</p>
-        <p class="text-muted">Nur Preise: auf der Artikelliste <strong>↓ Preise</strong>, hier Typ <strong>Bewertungspreise</strong>.</p>
+        <p class="text-muted">Nur Preise: oben <strong>Bewertungspreise</strong> exportieren, hier Typ <strong>Bewertungspreise</strong>.</p>
     </details>
 </section>

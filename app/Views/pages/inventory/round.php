@@ -46,7 +46,7 @@
             </button>
         </template>
     </div>
-    <p class="text-muted" x-show="search !== ''" style="margin-bottom: var(--space-2); font-size: var(--text-sm)">
+    <p class="text-muted round-search-count" x-show="search !== ''">
         Alle Lagerorte · <span x-text="filteredItems.length"></span> Treffer
     </p>
 
@@ -108,7 +108,7 @@
             </template>
         </ul>
 
-        <p class="toast toast--error" x-show="freeError" x-text="freeError" x-cloak style="margin:0"></p>
+        <p class="toast toast--error" x-show="freeError" x-text="freeError" x-cloak></p>
         <div class="form-group">
             <label class="form-label">Bezeichnung</label>
             <input class="input" x-model="freeLabel" placeholder="z. B. Tomatenmark">
@@ -135,7 +135,7 @@
     </p>
     <p class="round-search__empty" x-show="pageReady && !pageError && filteredItems.length === 0 && search === '' && allItems.length === 0">
         Keine Artikel geladen.
-        <a href="/inventory" class="button button--secondary button--small" style="margin-top: var(--space-3); display: inline-block;">
+        <a href="/inventory" class="button button--secondary button--small">
             Zur Inventur-Startseite
         </a>
     </p>

@@ -7,8 +7,6 @@
     <div class="page-toolbar">
         <h1 class="page-title">Lieferanten</h1>
         <div class="toolbar-actions">
-            <a href="/export/suppliers" class="button button--ghost button--small" title="CSV-Export Lieferanten">&#8681; CSV</a>
-            <a href="/export/delivery-days" class="button button--ghost button--small" title="CSV-Export Liefertage">&#8681; Liefertage</a>
             <a href="/suppliers/new" class="button button--primary button--small">Neu</a>
         </div>
     </div>
@@ -17,7 +15,7 @@
     ?>
     <?php if (empty($suppliers)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Noch keine Lieferanten. <a href="/suppliers/new">Ersten Lieferanten anlegen</a>.</p>
+            <p class="text-muted u-m-0">Noch keine Lieferanten. <a href="/suppliers/new">Ersten Lieferanten anlegen</a>.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">

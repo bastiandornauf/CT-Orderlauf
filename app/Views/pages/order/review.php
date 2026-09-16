@@ -42,7 +42,7 @@
                 Freie Artikel ohne Lieferant
                 <span class="review-block__count" x-text="pendingFreeLines.length"></span>
             </h2>
-            <ul class="card-list" style="margin-top: var(--space-3)">
+            <ul class="card-list">
                 <template x-for="line in pendingFreeLines" :key="line.entryId">
                     <li class="list-item list-item--stack card card--pad">
                         <div class="list-item__row">
@@ -51,7 +51,7 @@
                                    @change="updateQty(line, $event)">
                             <button type="button" class="button button--small button--ghost" @click="removeLine(line)">Entfernen</button>
                         </div>
-                        <div class="form-group" style="margin-top: var(--space-2); margin-bottom: 0;">
+                        <div class="form-group">
                             <label class="form-label" :for="'pending-sup-' + line.entryId">Lieferant</label>
                             <select class="select" :id="'pending-sup-' + line.entryId"
                                     @change="assignPendingFreeSupplier(line, $event.target.value)">
@@ -158,7 +158,7 @@
         <button type="button" class="button button--primary button--block"
                 :disabled="pendingFreeLines.length > 0 || problemLines.length > 0"
                 @click="goOutput()">Weiter zum Versand</button>
-        <p class="form-hint text-muted" style="margin:0" x-show="pendingFreeLines.length > 0 || problemLines.length > 0">
+        <p class="form-hint text-muted" x-show="pendingFreeLines.length > 0 || problemLines.length > 0">
             Freie Artikel ohne Lieferant oder Problemartikel zuerst klären.
         </p>
         <a href="/order/round" class="button button--ghost button--block">Zurück zum Rundgang</a>

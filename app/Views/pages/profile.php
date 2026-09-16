@@ -12,7 +12,7 @@
     <?php if (!empty($error)): ?>
         <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
-    <form method="post" action="/profile/save" class="form-stack card card--pad" style="margin-bottom: var(--space-4);">
+    <form method="post" action="/profile/save" class="form-stack card card--pad u-mb-4">
         <?= \App\Helpers\Csrf::field() ?>
         <fieldset class="form-fieldset">
             <legend class="form-legend">Profil</legend>

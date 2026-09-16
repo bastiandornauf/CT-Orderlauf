@@ -23,9 +23,6 @@
     <div class="page-toolbar">
         <h1 class="page-title">Artikel</h1>
         <div class="toolbar-actions">
-            <a href="/export/items" class="button button--ghost button--small" title="CSV-Export Artikel inkl. Bewertungspreis">&#8681; CSV</a>
-            <a href="/export/item-prices" class="button button--ghost button--small" title="CSV nur Bewertungspreise (Massenpflege)">&#8681; Preise</a>
-            <a href="/export/item-supplier" class="button button--ghost button--small" title="CSV-Export Zuordnungen">&#8681; Zuordnungen</a>
             <a href="/items/pending" class="button button--secondary button--small" title="Freitext aus Bestellung und Inventur">Artikel-Vorschläge</a>
             <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>" class="button button--primary button--small">Neu</a>
         </div>
@@ -83,11 +80,11 @@
         </form>
     </div>
 
-    <p class="text-muted" style="margin:0 0 var(--space-2)"><?= count($items) ?> Artikel<?= (($filter_loc ?? 0) > 0 || ($filter_supplier ?? 0) > 0 || ($filter_active ?? 'all') !== 'all' || (($filter_q ?? '') !== '')) ? ' (gefiltert)' : '' ?></p>
+    <p class="text-muted u-m-0 u-mb-2"><?= count($items) ?> Artikel<?= (($filter_loc ?? 0) > 0 || ($filter_supplier ?? 0) > 0 || ($filter_active ?? 'all') !== 'all' || (($filter_q ?? '') !== '')) ? ' (gefiltert)' : '' ?></p>
 
     <?php if (empty($items)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Keine Artikel für diese Filter. <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>">Ersten Artikel anlegen</a> oder Filter zurücksetzen.</p>
+            <p class="text-muted u-m-0">Keine Artikel für diese Filter. <a href="/items/new<?= $listQuery !== '' ? '?' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>">Ersten Artikel anlegen</a> oder Filter zurücksetzen.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">

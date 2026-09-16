@@ -17,7 +17,7 @@
     </div>
     <?php if (empty($users)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Noch keine Benutzer.</p>
+            <p class="text-muted u-m-0">Noch keine Benutzer.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">
@@ -37,7 +37,7 @@
                           onsubmit="return confirm('Benutzer wirklich löschen?');">
                         <?= \App\Helpers\Csrf::field() ?>
                         <input type="hidden" name="id" value="<?= (int) $u['id'] ?>">
-                        <button type="submit" class="button button--ghost button--small" style="color:var(--danger,#b00020)">Löschen</button>
+                        <button type="submit" class="button button--ghost button--small button--danger">Löschen</button>
                     </form>
                     <?php endif; ?>
                 </div>

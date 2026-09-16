@@ -39,7 +39,7 @@ foreach ($suppliers ?? [] as $sup) {
         Keine offenen Freitext-Artikel. Neue entstehen im <a href="/inventory/round">Inventur-Rundgang</a> oder in der <a href="/order/round">Bestellung</a>.
     </p>
 
-    <div class="button-row" x-show="ready && canTransfer && newItems.length > 1" x-cloak style="margin-bottom: var(--space-3);">
+    <div class="button-row u-mb-3" x-show="ready && canTransfer && newItems.length > 1" x-cloak>
         <button type="button" class="button button--secondary button--small"
                 :disabled="bulkBusy"
                 @click.prevent="transferAll()">

@@ -9,6 +9,7 @@ declare(strict_types=1);
 use App\Controllers\AdminUsersController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\DevUiController;
 use App\Controllers\ExportController;
 use App\Controllers\HelpController;
 use App\Controllers\ImportController;
@@ -41,6 +42,7 @@ return [
         '/settings' => [SettingsController::class, 'index'],
         '/profile' => [ProfileController::class, 'index'],
         '/help' => [HelpController::class, 'index'],
+        '/dev/ui' => [DevUiController::class, 'index'],
         '/admin/users' => [AdminUsersController::class, 'index'],
         '/admin/users/new' => [AdminUsersController::class, 'form'],
         '/admin/users/edit' => [AdminUsersController::class, 'form'],

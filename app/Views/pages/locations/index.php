@@ -7,13 +7,12 @@
     <div class="page-toolbar">
         <h1 class="page-title">Lagerorte</h1>
         <div class="toolbar-actions">
-            <a href="/export/locations" class="button button--ghost button--small" title="CSV-Export">&#8681; CSV</a>
             <a href="/locations/new" class="button button--primary button--small">Neu</a>
         </div>
     </div>
     <?php if (empty($locations)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Noch keine Lagerorte. <a href="/locations/new">Ersten Lagerort anlegen</a>.</p>
+            <p class="text-muted u-m-0">Noch keine Lagerorte. <a href="/locations/new">Ersten Lagerort anlegen</a>.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">

@@ -22,7 +22,15 @@ $assetVersion = static function (string $publicPath): string {
     <link rel="apple-touch-icon" href="/assets/icons/icon.svg">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="/assets/css/app.css?v=<?= $assetVersion('/assets/css/app.css') ?>">
-    <script>document.documentElement.classList.add('js');</script>
+    <script>
+      document.documentElement.classList.add('js');
+      (function () {
+        var t = localStorage.getItem('uiTheme');
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      })();
+    </script>
 </head>
 <body class="app-body">
 <?php require __DIR__ . '/partials/header.php'; ?>

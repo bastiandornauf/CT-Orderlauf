@@ -5,125 +5,66 @@
          data-mail-user-name="<?= htmlspecialchars((string) ($mail_user_name ?? ''), ENT_QUOTES, 'UTF-8') ?>">
     <?php $order_step = 4;
     require __DIR__ . '/../../partials/order-stepper.php'; ?>
-    <h1 class="page-title">Versand</h1>
+    <div class="page-toolbar page-toolbar--compact">
+        <h1 class="page-title">Versand</h1>
+        <div class="toolbar-actions">
+            <button type="button" class="button button--ghost button--small"
+                    :disabled="syncBusy" @click="refreshStammdaten()">
+                <span x-show="!syncBusy">↻ Aktualisieren</span>
+                <span x-show="syncBusy">…</span>
+            </button>
+        </div>
+    </div>
 
-    <template x-if="directSend">
-        <p class="text-muted output-disclaimer">
-            Mails gehen vom Server. Pro Lieferant: <strong>Senden</strong>.
-            Fehlschlag: oranger Hinweis, dann nochmal.
-            Ob die Mail ankommt, sieht man nur im Postfach.
-        </p>
-    </template>
-    <template x-if="!directSend">
-        <p class="text-muted output-disclaimer">
-            Texte hier sind Vorschläge. Versand läuft über das Mail-Programm oder den Assistenten –
-            die App bestätigt den Empfang nicht. <strong>Bestellung abschließen</strong> ist nur lokal.
-        </p>
-    </template>
-
-    <template x-if="devMode">
-        <p class="toast toast--warn">Testbetrieb aktiv – Alle Mails gehen an <strong x-text="devEmail"></strong></p>
-    </template>
-
-    <template x-if="cc && String(cc).trim()">
-        <p class="text-muted output-cc-line">
-            <strong>CC</strong> für Bestellmails (Lieferanten per E-Mail / Serverversand): <span class="output-cc-line__addr" x-text="cc"></span>
-        </p>
-    </template>
-
-    <p class="text-muted order-stammdaten-hint">
-        Stammdaten geändert?
-        <button type="button" class="button button--ghost button--small order-stammdaten-hint__btn"
-                :disabled="syncBusy" @click="refreshStammdaten()">Vorschau aktualisieren</button>
-        <span x-show="syncBusy" class="text-muted"> …</span>
+    <p class="toast toast--warn" x-show="devMode" x-cloak>
+        Testbetrieb – alle Mails an <strong x-text="devEmail"></strong>
+    </p>
+    <p class="text-muted output-cc-line" x-show="cc && String(cc).trim()" x-cloak>
+        CC: <span class="output-cc-line__addr" x-text="cc"></span>
     </p>
 
-    <!-- Bulk actions: Direct send mode -->
-    <template x-if="directSend">
-        <div class="card card--pad">
-            <div class="button-row">
-                <template x-if="sendableBlocks.length > 0">
-                    <button type="button" class="button button--primary"
-                            :disabled="sendingAll"
-                            @click="sendAllBlocks()">
-                        <span class="button__label"
-                              x-text="sendingAll ? 'Sende...' : 'Alle senden (' + sendableBlocks.length + ')'">Alle senden</span>
-                    </button>
-                </template>
-                <template x-if="sendableBlocks.length > 0">
-                    <button type="button" class="button button--ghost" @click="startMailtoWizard()">
-                        <span class="button__label"
-                              x-text="'Mail-Assistent (' + sendableBlocks.length + ')'">Mail-Assistent</span>
-                    </button>
-                </template>
-                <button type="button" class="button button--ghost" @click="copyAllBlocks()">Alles kopieren</button>
-                <template x-if="showOutlookExport">
-                    <button type="button" class="button button--ghost" @click="exportForOutlook()"
-                            title="XML-Datei + alle PDFs herunterladen">Outlook-Export</button>
-                </template>
-            </div>
+    <div class="button-stack output-bulk" x-show="!finalized && sendableBlocks.length" x-cloak>
+        <button type="button" class="button button--primary button--block"
+                x-show="directSend"
+                :disabled="sendingAll"
+                @click="sendAllBlocks()">
+            <span class="button__label"
+                  x-text="sendingAll ? 'Sende …' : 'Alle senden (' + sendableBlocks.length + ')'">Alle senden</span>
+        </button>
+        <button type="button"
+                class="button button--block"
+                :class="directSend ? 'button--secondary' : 'button--primary'"
+                @click="startMailtoWizard()">
+            Mail-Assistent
+        </button>
+        <div class="button-row output-bulk__secondary">
+            <button type="button" class="button button--ghost button--small" @click="copyAllBlocks()">Alles kopieren</button>
+            <button type="button" class="button button--ghost button--small"
+                    x-show="showOutlookExport"
+                    @click="exportForOutlook()">Outlook-Export</button>
         </div>
-    </template>
-
-    <!-- Bulk actions: Mailto mode with Outlook -->
-    <template x-if="!directSend && showOutlookExport">
-        <div class="card card--pad">
-            <p class="text-muted" style="margin-bottom: var(--space-3)">
-                <strong>Outlook:</strong> „Für Outlook exportieren“ lädt XML und PDFs. Danach einmal das Makro ausführen.
-            </p>
-            <div class="button-row">
-                <template x-if="sendableBlocks.length > 0">
-                    <button type="button" class="button button--primary" @click="startMailtoWizard()">
-                        <span class="button__label"
-                              x-text="'Mail-Assistent (' + sendableBlocks.length + ')'">Mail-Assistent</span>
-                    </button>
-                </template>
-                <button type="button" class="button button--secondary" @click="exportForOutlook()"
-                        title="XML-Datei + alle PDFs herunterladen, dann Outlook-Makro ausführen">
-                    Für Outlook exportieren
-                </button>
-                <button type="button" class="button button--ghost" @click="copyAllBlocks()">Alles kopieren</button>
-            </div>
-        </div>
-    </template>
-
-    <!-- Bulk actions: Mailto mode without Outlook -->
-    <template x-if="!directSend && !showOutlookExport">
-        <div class="card card--pad">
-            <div class="button-row">
-                <template x-if="sendableBlocks.length > 0">
-                    <button type="button" class="button button--primary" @click="startMailtoWizard()">
-                        <span class="button__label"
-                              x-text="'Mail-Assistent (' + sendableBlocks.length + ')'">Mail-Assistent</span>
-                    </button>
-                </template>
-                <button type="button" class="button button--ghost" @click="copyAllBlocks()">Alles kopieren</button>
-            </div>
-        </div>
-    </template>
+    </div>
 
     <dialog class="output-mailto-wizard"
             x-ref="mailtoWizardDialog"
             aria-labelledby="mailto-wizard-title"
             @click="if ($event.target === $refs.mailtoWizardDialog) closeMailtoWizard()">
         <div class="output-mailto-wizard__panel form-stack">
-            <h2 id="mailto-wizard-title" class="section-header" style="margin-top:0">Schritt für Schritt: Mail-Programm</h2>
-            <p class="text-muted" style="margin:0">
-                Schritt <strong x-text="mailtoWizardStepLabel"></strong> · Lieferant
-                <strong x-text="mailtoWizardSupplierName"></strong>
+            <h2 id="mailto-wizard-title" class="section-header">Mail-Assistent</h2>
+            <p class="text-muted u-m-0">
+                <strong x-text="mailtoWizardStepLabel"></strong>
+                · <strong x-text="mailtoWizardSupplierName"></strong>
             </p>
-            <p class="form-hint text-muted" style="margin:0">
-                Mail im Programm öffnen, senden oder speichern, dann hier <strong>Weiter</strong>.
+            <p class="form-hint text-muted">
+                Öffnen, senden oder speichern, dann <strong>Weiter</strong>.
             </p>
             <div class="output-mailto-wizard__actions">
                 <button type="button" class="button button--mailto-urgent button--block"
                         @click="mailtoWizardOpenCurrent()">
-                    Diese Mail im Programm öffnen
+                    Im Mail-Programm öffnen
                 </button>
-                <div class="button-row" style="margin-top: var(--space-2)">
-                    <button type="button" class="button button--secondary" @click="mailtoWizardNext()">
-                        Weiter zum nächsten
-                    </button>
+                <div class="button-row output-mailto-wizard__nav">
+                    <button type="button" class="button button--secondary" @click="mailtoWizardNext()">Weiter</button>
                     <button type="button" class="button button--ghost" @click="closeMailtoWizard()">Schließen</button>
                 </div>
             </div>
@@ -131,72 +72,44 @@
     </dialog>
 
     <template x-for="block in blocks" :key="block.supplier.id">
-        <div class="card card--pad"
+        <div class="card card--pad output-supplier"
              :class="{
                 'output-supplier-mail-pending': mailtoNeedsAttention(block),
                 'output-supplier-mailto-opened': mailtoOpened(block) && isSendableBlock(block),
                 'output-supplier--collapsed': blockCollapsed(block)
              }">
-            <div class="page-toolbar">
-                <div>
-                    <h2 class="section-header" x-text="block.supplier.name"></h2>
-                    <template x-if="isSendableBlock(block) && mailtoOpened(block) && directSend">
-                        <span class="status-badge status-badge--ok">Mail-Programm geöffnet (lokal)</span>
-                    </template>
-                    <template x-if="isSendableBlock(block) && mailtoOpened(block) && !directSend">
-                        <span class="status-badge status-badge--ok">Mail-Programm geöffnet</span>
-                    </template>
-                    <template x-if="directSend && blockSendState(block) === 'sent'">
-                        <span class="status-badge status-badge--ok">Gesendet</span>
-                    </template>
-                    <template x-if="directSend && blockSendState(block) === 'error'">
-                        <span class="status-badge status-badge--warn">Senden fehlgeschlagen – erneut mit hervorgehobenem Button</span>
-                    </template>
-                    <template x-if="directSend && blockSendState(block) === 'sending'">
-                        <span class="status-badge status-badge--neutral">Sende…</span>
-                    </template>
+            <div class="output-supplier__head">
+                <div class="output-supplier__identity">
+                    <h2 class="section-header output-supplier__name" x-text="block.supplier.name"></h2>
+                    <p class="text-muted output-supplier__meta">
+                        <span x-text="block.supplier.order_type === 'webshop' ? 'Webshop' : (block.supplier.email || '—')"></span>
+                        <span x-show="block.deliveryDate" x-text="' · ' + formatDate(block.deliveryDate)"></span>
+                    </p>
                 </div>
-                <div class="output-supplier-meta">
-                    <span class="delivery-badge" x-text="'Lieferung ' + formatDate(block.deliveryDate)"></span>
-                    <template x-if="blockIsDone(block)">
-                        <button type="button"
-                                class="button button--ghost button--small output-supplier-toggle"
-                                :aria-expanded="String(!blockCollapsed(block))"
-                                @click="toggleBlockCollapse(block)">
-                            <span class="button__label" x-text="blockCollapseLabel(block)">Details verbergen</span>
-                        </button>
-                    </template>
+                <div class="output-supplier__status">
+                    <span class="status-badge"
+                          :class="blockStatusClass(block)"
+                          x-show="blockStatusLabel(block)"
+                          x-text="blockStatusLabel(block)"></span>
+                    <button type="button"
+                            class="button button--ghost button--small"
+                            x-show="blockIsDone(block)"
+                            :aria-expanded="String(!blockCollapsed(block))"
+                            @click="toggleBlockCollapse(block)"
+                            x-text="blockCollapsed(block) ? 'Anzeigen' : 'Zuklappen'">Anzeigen</button>
                 </div>
             </div>
 
             <div class="output-supplier-body" x-show="!blockCollapsed(block)">
-                <p class="text-muted">
-                    <template x-if="block.supplier.order_type === 'webshop'">
-                        <span>Webshop · Liste an <span x-text="cc || '(keine CC-Adresse)'"></span></span>
-                    </template>
-                    <template x-if="block.supplier.order_type !== 'webshop'">
-                        <span x-text="block.supplier.email || '—'"></span>
-                    </template>
-                </p>
-
-                <div class="output-mailto-alert" role="status"
-                     x-show="!directSend && mailtoNeedsAttention(block) && isSendableBlock(block)">
-                    <strong>Mail noch nicht über den Button geöffnet</strong>
-                    <p class="output-mailto-alert__hint">
-                        Lieferanten mit orangem Rand: hier oder im Assistenten das Mail-Programm öffnen.
-                        Ob Empfang oder CC klappt, sieht man nur im Postfach.
-                    </p>
-                </div>
-
-                <div class="mail-preview">
-                    <p class="mail-preview__subj"><strong>Betreff:</strong> <span x-text="block.subject"></span></p>
+                <details class="mail-preview">
+                    <summary class="mail-preview__summary">
+                        <span class="mail-preview__subj-label">Betreff</span>
+                        <span x-text="block.subject"></span>
+                    </summary>
                     <pre class="mail-preview__body" x-text="block.body"></pre>
-                </div>
+                </details>
 
-                <div class="button-row">
-                    <button type="button" class="button button--secondary" @click="copyBlock(block)">Kopieren</button>
-
-                    <!-- Direct send (SMTP): ein Button, Label aus Alpine-Methode -->
+                <div class="button-row output-supplier__actions">
                     <template x-if="directSend && (block.supplier.order_type === 'webshop' || (block.supplier.order_type === 'mail' && block.supplier.email))">
                         <button type="button"
                                 :class="smtpSendButtonClass(block)"
@@ -205,21 +118,19 @@
                             <span class="button__label" x-text="smtpSendButtonLabel(block)">Senden</span>
                         </button>
                     </template>
-
-                    <!-- Mailto fallback buttons (also shown alongside direct send as secondary option) -->
                     <template x-if="block.supplier.order_type === 'mail' && block.supplier.email">
                         <button type="button" :class="mailtoClientButtonClass(block)" @click="mailtoBlock(block)">
-                            <span class="button__label" x-text="mailtoClientButtonLabel(block)">Mail</span>
+                            <span class="button__label" x-text="mailtoClientButtonLabel(block)">Mail öffnen</span>
                         </button>
                     </template>
                     <template x-if="!directSend && block.supplier.order_type === 'webshop'">
                         <button type="button" :class="mailtoNeedsAttention(block) ? 'button button--mailto-urgent' : 'button button--primary'"
                                 @click="mailtoBlock(block)">
-                            <span class="button__label" x-text="mailtoClientButtonLabel(block)">Webshop</span>
+                            <span class="button__label" x-text="mailtoClientButtonLabel(block)">Liste mailen</span>
                         </button>
                     </template>
-
-                    <button type="button" class="button button--secondary" x-show="showPdfDownload" @click="pdfBlock(block)">PDF</button>
+                    <button type="button" class="button button--ghost" @click="copyBlock(block)">Kopieren</button>
+                    <button type="button" class="button button--ghost" x-show="showPdfDownload" @click="pdfBlock(block)">PDF</button>
                 </div>
             </div>
         </div>
@@ -227,11 +138,11 @@
 
     <div class="button-stack" x-show="!finalized">
         <button type="button" class="button button--primary button--block" @click="finalizeDone()">Bestellung abschließen</button>
-        <p class="form-hint text-muted" style="margin:0">Nur lokal – kein Versandnachweis.</p>
+        <p class="form-hint text-muted">Nur lokal – kein Versandnachweis.</p>
     </div>
 
-    <div class="card card--pad" x-show="finalized">
-        <p class="toast toast--success">Diese Bestellung ist abgeschlossen (nur lokal, kein Versandnachweis).</p>
+    <div class="card card--pad" x-show="finalized" x-cloak>
+        <p class="toast toast--success">Bestellung abgeschlossen (nur lokal).</p>
         <button type="button" class="button button--primary button--block" @click="newRound()">Neue Bestellung</button>
     </div>
 

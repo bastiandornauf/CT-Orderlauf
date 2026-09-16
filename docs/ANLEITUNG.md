@@ -17,7 +17,7 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 ## 2. Anmeldung und Oberfläche
 
 - **Anmelden** mit Benutzername und Passwort (vergeben von der Verwaltung).
-- Oben: **Name der App**, **Offline**-Hinweis (wenn keine Netzverbindung), Ihr **Konto**, ggf. **Kompaktmodus** (weniger Hilfstexte), **Menü** (☰ auf dem Handy).
+- Oben: **Name der App**, **Offline**-Hinweis (wenn keine Netzverbindung), Ihr **Konto**, **Menü** (☰).
 - **Abmelden** finden Sie im **Menü** unten.
 - Steht über der Seite ein gelber Balken **„Testbetrieb“**, werden E-Mails **nicht** an die echten Lieferanten geschickt, sondern an die Testadresse aus den Einstellungen – das ist Absicht.
 
@@ -44,7 +44,7 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 
 ### Menü (☰)
 
-- **Start**, **Bestellen**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import**, **Inventur**, **Einstellungen**, **Mein Konto**, **Abmelden**.
+- Über **☰**: **Start**, **Inventur**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import / Export**, **Einstellungen**, **Mein Konto**, **Abmelden**.
 
 ---
 
@@ -85,10 +85,11 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Zahl oder Beschri
 
 ## 7. Versand (Schritt 4)
 
-- Pro **Lieferant** sehen Sie **Betreff** und **Text** der Mail (Vorschau).
-- **CC** (Kopie an die Küche/Büro): Wenn in den Einstellungen eingetragen, wird die Adresse **auf der Seite angezeigt** – so sehen Sie, wohin die Kopie geht.
+- Oben: **Alle senden** (nur bei Direktversand) bzw. **Mail-Assistent**, plus **Alles kopieren** und ggf. **Outlook-Export**.
+- Pro **Lieferant**: Empfänger/Webshop und Lieferdatum; der **Mailtext** klappt erst auf Klick auf den Betreff auf.
+- **CC** (Kopie an die Küche/Büro): Wenn in den Einstellungen eingetragen, wird die Adresse **auf der Seite angezeigt**.
 - **Kopieren** / **Mail öffnen**: Öffnet Ihr **E-Mail-Programm** mit vorausgefülltem Empfänger, Betreff und Text (und CC, sofern gesetzt).
-- **Direktversand** (falls aktiviert): Mails gehen **vom Server**; pro Lieferant **Senden** – Sie erhalten keine automatische „Zustellbestätigung“ von der App.
+- **Direktversand** (falls aktiviert): Mails gehen **vom Server**; pro Lieferant **Senden** – die App liefert keine Zustellbestätigung.
 - **PDF**: Bestellung als Datei herunterladen.
 - **Outlook-Export** (falls sichtbar): Dateien für ein **Outlook-Makro** – siehe Ordner `outlook-macro` bzw. die dortige Kurzanleitung.
 - **Bestellung abschließen**: Bestätigt **lokal**, dass Sie fertig sind (kein Nachweis beim Lieferanten).
@@ -115,7 +116,7 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 ### Rundgang
 
 - Wie bei der Bestellung: **Tabs** nach **Lagerort**, **Suche** nach Artikelname **und Gebinde/Einheit**.
-- Die **Gebindegröße/Einheit** steht immer sichtbar unter dem Artikelnamen (auch im Kompaktmodus).
+- Die **Gebindegröße/Einheit** steht unter dem Artikelnamen.
 - Es erscheinen nur **aktive** Artikel (inaktive Artikel sind ausgeschlossen).
 - Pro Artikel:
   - **Leer lassen** = noch **nicht gezählt** (Status später `offen` in der CSV).
@@ -163,7 +164,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 
 - Rollen mit Stammdaten-Recht: am **Artikel** Feld **Bewertungspreis pro Einheit** (nur für Inventur).
 - Die **Bestellung** nutzt diesen Preis nicht.
-- **Massenpflege per CSV:** Auf **Artikel** → **↓ Preise** exportieren, Preise in Excel eintragen, unter **Import** den Typ **Bewertungspreise** wählen.
+- **Massenpflege per CSV:** Unter **Import / Export** **Bewertungspreise** herunterladen, in Excel eintragen, denselben Typ wieder importieren.
 
 ### Kurz-Checkliste Inventur (monatlich)
 
@@ -178,7 +179,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 
 - **Artikel**, **Lieferanten**, **Lagerorte** pflegen Sie über das **Menü** oder die einklappbare Sektion auf der Startseite.
 - Änderungen gelten für **neu begonnene** Bestellungen und können auf **Kontrolle/Versand** per **Aktualisieren** oder Tab-Wechsel nachgezogen werden (siehe oben).
-- **CSV Import/Export** (Menü **Import**, auf Listen **↓ CSV**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; für reine Preislisten den schlanken Export **↓ Preise** und Import-Typ **Bewertungspreise**.
+- **CSV Import/Export** (Menü **Import / Export**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; für reine Preislisten den Export **Bewertungspreise** und denselben Import-Typ.
 
 ---
 

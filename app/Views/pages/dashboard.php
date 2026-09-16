@@ -1,5 +1,5 @@
-<section class="page-section" x-data="dashboardPage">
-    <h1 class="page-title">Start</h1>
+<section class="page-section dashboard" x-data="dashboardPage">
+    <h1 class="visually-hidden">Start</h1>
 
     <div class="card card--pad dashboard-order-hero" x-show="initialized && roundInProgress" x-cloak>
         <h2 class="section-header">Laufende Bestellung</h2>
@@ -26,7 +26,7 @@
                        x-model="targetDate">
             </div>
 
-            <button type="button" class="button button--primary" @click="loadRound()" :disabled="loading">
+            <button type="button" class="button button--primary button--block" @click="loadRound()" :disabled="loading">
                 <span class="button__label" x-text="loading ? 'Einen Moment …' : 'Bestellung beginnen'">Bestellung beginnen</span>
             </button>
 
@@ -81,6 +81,7 @@
             <li><a href="/items" class="dashboard-quick__link">Artikel <span class="dashboard-quick__count"><?= (int) ($counts['items'] ?? 0) ?></span></a></li>
             <li><a href="/suppliers" class="dashboard-quick__link">Lieferanten <span class="dashboard-quick__count"><?= (int) ($counts['suppliers'] ?? 0) ?></span></a></li>
             <li><a href="/locations" class="dashboard-quick__link">Lagerorte <span class="dashboard-quick__count"><?= (int) ($counts['locations'] ?? 0) ?></span></a></li>
+            <li><a href="/import" class="dashboard-quick__link">Import / Export</a></li>
         </ul>
     </details>
     <?php endif; ?>

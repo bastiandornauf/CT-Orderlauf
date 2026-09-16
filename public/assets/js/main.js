@@ -9,12 +9,13 @@ Alpine.data('dashboardPage', () => dashboardPageData());
 
 Alpine.data('appHeader', () => ({
   navOpen: false,
-  sleek: false,
+  theme: 'system',
+  resolvedDark: false,
   clockLabel: '',
   clockIso: '',
   init() {
-    this.sleek = localStorage.getItem('sleekMode') === '1';
-    document.body.classList.toggle('sleek', this.sleek);
+    this.theme = localStorage.getItem('uiTheme') || 'system';
+    this.applyTheme();
     this.tickClock();
     setInterval(() => this.tickClock(), 30000);
 
@@ -25,6 +26,24 @@ Alpine.data('appHeader', () => ({
     window.addEventListener('pageshow', (e) => {
       if (e.persisted) this.navOpen = false;
     });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (this.theme === 'system') this.applyTheme();
+    });
+  },
+  applyTheme() {
+    if (this.theme === 'dark' || this.theme === 'light') {
+      document.documentElement.setAttribute('data-theme', this.theme);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    this.resolvedDark =
+      this.theme === 'dark' ||
+      (this.theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  },
+  toggleTheme() {
+    this.theme = this.resolvedDark ? 'light' : 'dark';
+    localStorage.setItem('uiTheme', this.theme);
+    this.applyTheme();
   },
   toggleNav() {
     this.navOpen = !this.navOpen;
@@ -32,10 +51,8 @@ Alpine.data('appHeader', () => ({
   closeNav() {
     this.navOpen = false;
   },
-  toggleSleek() {
-    this.sleek = !this.sleek;
-    localStorage.setItem('sleekMode', this.sleek ? '1' : '0');
-    document.body.classList.toggle('sleek', this.sleek);
+  closeNavLater() {
+    setTimeout(() => { this.navOpen = false; }, 50);
   },
   tickClock() {
     const d = new Date();

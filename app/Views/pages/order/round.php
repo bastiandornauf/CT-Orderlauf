@@ -30,7 +30,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
 
     <details class="card card--pad round-supplier-hide" x-show="search === '' && suppliers.length" x-cloak>
         <summary class="round-supplier-hide__summary">Lieferanten ausblenden (nur Anzeige im Rundgang)</summary>
-        <p class="form-hint text-muted" style="margin: var(--space-2) 0;">Ausgewählte Lieferanten und deren Artikel verschwinden nur in diesem Rundgang. Kontrolle und Versand bleiben vollständig.</p>
+        <p class="form-hint text-muted round-filter-hint">Ausgewählte Lieferanten und deren Artikel verschwinden nur in diesem Rundgang. Kontrolle und Versand bleiben vollständig.</p>
         <div class="round-supplier-hide__chips">
             <template x-for="s in suppliers.filter(x => x.active)" :key="s.id">
                 <label class="round-supplier-hide__label">
@@ -50,7 +50,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             </button>
         </template>
     </div>
-    <p class="text-muted" x-show="search !== ''" style="margin-bottom: var(--space-2); font-size: var(--text-sm)">
+    <p class="text-muted round-search-count" x-show="search !== ''">
         Alle Lagerorte · <span x-text="filteredItems.length"></span> Treffer
     </p>
 
@@ -143,9 +143,9 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             @click="if ($event.target === $refs.quickEditDialog) closeQuickEdit()"
             @close="editError = ''">
         <form class="item-quick-edit__panel form-stack" @submit.prevent="submitQuickEdit()">
-            <h2 id="item-quick-edit-title" class="section-header" style="margin-top:0">Artikel bearbeiten</h2>
-            <p class="text-muted" style="margin:0">Änderungen werden auf dem Server gespeichert und lokal übernommen.</p>
-            <p class="toast toast--error" x-show="editError" x-text="editError" style="margin:0"></p>
+            <h2 id="item-quick-edit-title" class="section-header">Artikel bearbeiten</h2>
+            <p class="text-muted u-m-0">Änderungen werden auf dem Server gespeichert und lokal übernommen.</p>
+            <p class="toast toast--error" x-show="editError" x-text="editError"></p>
 
             <div class="form-group">
                 <label class="form-label" for="qe-name">Name</label>
@@ -178,11 +178,11 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 <input class="input" id="qe-max" type="number" x-model="editDraft.max_stock">
             </div>
 
-            <h3 class="section-header" style="margin-bottom:0">Lieferanten &amp; Priorität</h3>
-            <p class="form-hint text-muted" style="margin-top:0">Höhere Zahl = bevorzugt bei mehreren Lieferanten am Zieltag.</p>
+            <h3 class="section-header u-mb-0">Lieferanten &amp; Priorität</h3>
+            <p class="form-hint text-muted">Höhere Zahl = bevorzugt bei mehreren Lieferanten am Zieltag.</p>
             <template x-for="(row, idx) in editSupplierRows" :key="idx">
                 <div class="form-row item-quick-edit__supplier-row">
-                    <div class="form-group" style="flex:1;min-width:0">
+                    <div class="form-group">
                         <label class="form-label" :for="'qe-sup-' + idx">Lieferant</label>
                         <select class="select" :id="'qe-sup-' + idx" x-model="row.supplier_id">
                             <option value="">—</option>
@@ -191,7 +191,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                             </template>
                         </select>
                     </div>
-                    <div class="form-group" style="width:6rem;flex-shrink:0">
+                    <div class="form-group item-quick-edit__prio">
                         <label class="form-label" :for="'qe-prio-' + idx">Priorität</label>
                         <input class="input" :id="'qe-prio-' + idx" type="number" x-model.number="row.priority">
                     </div>
