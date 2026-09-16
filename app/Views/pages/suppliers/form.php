@@ -105,6 +105,10 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
                         <dd>Lieferdatum (z.&thinsp;B. <em>14.04.2026</em>)</dd>
                     </div>
                     <div class="placeholder-legend__row">
+                        <dt><code>{{USER}}</code></dt>
+                        <dd>Name des angemeldeten Nutzers (Anzeigename aus Mein Konto, sonst Benutzername)</dd>
+                    </div>
+                    <div class="placeholder-legend__row">
                         <dt><code>{{SUPPLIER}}</code></dt>
                         <dd>Name des Lieferanten</dd>
                     </div>
