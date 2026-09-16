@@ -59,14 +59,14 @@ async function executeLoadPreparedRound(ctx) {
   ctx.loading = true;
   try {
     if (!navigator.onLine) {
-      throw new Error('Vorbereitung nur online möglich.');
+      throw new Error('Bestellung beginnen geht nur online.');
     }
     if (await storage.prepareReloadWouldEraseLocalProgress()) {
       const ok = window.confirm(
-        'Die laufende Bestellung enthält bereits Eingaben.\n\n' +
-          'Eine neue Bestellung löscht sie. Zum Weiterarbeiten stattdessen ' +
-          'oben „Rundgang fortsetzen“ wählen.\n\n' +
-          'Eingaben verwerfen und neu beginnen?',
+        'Es läuft schon eine Bestellung.\n\n' +
+          'Neu beginnen löscht alle Eingaben.\n' +
+          'Zum Weitermachen den Button oben nutzen.\n\n' +
+          'Trotzdem neu beginnen?',
       );
       if (!ok) {
         return;
