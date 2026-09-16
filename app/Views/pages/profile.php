@@ -17,11 +17,11 @@
         <fieldset class="form-fieldset">
             <legend class="form-legend">Profil</legend>
             <div class="form-group">
-                <label class="form-label" for="display_name">Anzeigename (für Bestell-Mails)</label>
+                <label class="form-label" for="display_name">Anzeigename</label>
                 <input class="input" type="text" id="display_name" name="display_name" maxlength="128"
                        value="<?= htmlspecialchars($display_name ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        placeholder="z. B. Bastian Dornauf">
-                <p class="form-hint">Wird in E-Mail-Vorlagen als <code>{{USER}}</code> eingesetzt. Leer = Benutzername.</p>
+                <p class="form-hint"><code>{{USER}}</code> in den Mail-Vorlagen. Leer = Benutzername.</p>
             </div>
         </fieldset>
         <button type="submit" class="button button--secondary">Profil speichern</button>

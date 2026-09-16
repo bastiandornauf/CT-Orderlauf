@@ -76,14 +76,14 @@
                            <?= ($send_email_direct ?? '0') === '1' ? 'checked' : '' ?>>
                     Mails direkt vom Server senden
                 </label>
-                <p class="form-hint">Sonst werden mailto-Links geöffnet.</p>
+                <p class="form-hint">Sonst öffnet das Mail-Programm.</p>
             </div>
 
             <!-- SMTP -->
             <details class="settings-subsection" <?= (!empty($smtp_host) || isset($smtp_test_ok)) ? 'open' : '' ?>>
                 <summary class="settings-subsection__summary">SMTP-Server konfigurieren</summary>
                 <div class="settings-subsection__body">
-                    <p class="form-hint">Leer = PHP <code>mail()</code> verwenden. Ausgefüllt = Versand über diesen SMTP-Server.</p>
+                    <p class="form-hint">Leer = PHP <code>mail()</code>. Ausgefüllt = dieser SMTP-Server.</p>
                     <div class="form-row">
                         <div class="form-group" style="flex:3">
                             <label class="form-label" for="smtp_host">Server</label>
@@ -118,7 +118,11 @@
                             <input class="input" id="smtp_from_email" name="smtp_from_email" type="email"
                                    value="<?= htmlspecialchars($smtp_from_email ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                    placeholder="z. B. bestellung@ihre-domain.de" autocomplete="email">
-                            <p class="form-hint"><strong>Pflichtfeld</strong>, sobald ein SMTP-Server eingetragen ist: dieselbe Adresse wie der SMTP-Benutzer, eine noreply@-Adresse Ihrer Domain o. ä. – nicht die CC-Kopf-Adresse als Absender wählen (Microsoft 365 kann sonst Ihre CC unterdrücken). Ausnahme: bei Ionos wird der Absender automatisch auf den SMTP-Benutzer gesetzt. Ohne Eintrag liefert der Direktversand eine <strong>Fehlermeldung</strong>.</p>
+                            <p class="form-hint">Pflicht, sobald SMTP eingetragen ist. Nicht die CC-Adresse.</p>
+                            <details class="settings-hint-more">
+                                <summary>Absender und Microsoft 365</summary>
+                                <p class="form-hint">Dieselbe Adresse wie der SMTP-Benutzer oder eine noreply@-Adresse der Domain. Die CC-Adresse als Absender kann bei Microsoft 365 die Kopie unterdrücken. Bei Ionos setzt der Server den Absender selbst auf den SMTP-Benutzer. Ohne Eintrag schlägt der Direktversand fehl.</p>
+                            </details>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="smtp_from_name">Absendername</label>
@@ -147,7 +151,7 @@
 
         <!-- ── Ausgabe ────────────────────────────────────── -->
         <div class="card card--pad settings-section">
-            <h2 class="settings-section__title">Ausgabe-Seite</h2>
+            <h2 class="settings-section__title">Versand</h2>
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="ui_show_outlook_export" value="1"
@@ -173,10 +177,10 @@
                            <?= ($dev_mode ?? '0') === '1' ? 'checked' : '' ?>>
                     Testbetrieb aktiv
                 </label>
-                <p class="form-hint">Alle Mails gehen nur an die Dev-E-Mail.</p>
+                <p class="form-hint">Mails gehen nur an die Testadresse, nicht an Lieferanten.</p>
             </div>
             <div class="form-group">
-                <label class="form-label" for="dev_email">Dev-E-Mail</label>
+                <label class="form-label" for="dev_email">Testadresse</label>
                 <input class="input" id="dev_email" name="dev_email" type="email"
                        value="<?= htmlspecialchars($dev_email ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        placeholder="z.B. dev@example.com">

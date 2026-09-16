@@ -15,10 +15,9 @@
             <a href="/admin/users/new" class="button button--primary button--small">Neu</a>
         </div>
     </div>
-    <p class="text-muted">Administrator: Nutzer anlegen und Rollen vergeben. <strong>Stammdaten</strong> bearbeiten Lagerorte, Lieferanten und Artikel. <strong>Nur Bestellen</strong> sieht den Bestellablauf ohne Stammdaten-Menü.</p>
     <?php if (empty($users)): ?>
         <div class="card card--pad">
-            <p class="text-muted" style="margin:0">Noch keine Benutzer außer dem System.</p>
+            <p class="text-muted" style="margin:0">Noch keine Benutzer.</p>
         </div>
     <?php else: ?>
     <ul class="card-list">

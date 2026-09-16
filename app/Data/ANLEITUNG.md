@@ -163,7 +163,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 
 - Rollen mit Stammdaten-Recht: am **Artikel** Feld **Bewertungspreis pro Einheit** (nur für Inventur).
 - Die **Bestellung** nutzt diesen Preis nicht.
-- **Massenpflege per CSV:** Auf **Artikel** → **↓ Preise** exportieren (`artikel_bewertungspreise.csv`), Preise in Excel eintragen (Spalte `bewertungspreis`, Komma als Dezimaltrenner), unter **Import** den Typ **Bewertungspreise (nur Preise)** wählen und importieren. Der vollständige Artikel-Export (**↓ CSV**) enthält die Spalte `bewertungspreis` ebenfalls.
+- **Massenpflege per CSV:** Auf **Artikel** → **↓ Preise** exportieren, Preise in Excel eintragen, unter **Import** den Typ **Bewertungspreise** wählen.
 
 ### Kurz-Checkliste Inventur (monatlich)
 

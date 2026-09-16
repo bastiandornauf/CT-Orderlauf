@@ -19,7 +19,7 @@ $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
             <label class="form-label" for="username">Benutzername</label>
             <?php if ($isEdit): ?>
                 <input class="input" id="username" name="username" readonly value="<?= htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') ?>">
-                <p class="form-hint">Benutzername kann nicht geändert werden.</p>
+                <p class="form-hint">Benutzername bleibt.</p>
             <?php else: ?>
                 <input class="input" id="username" name="username" required autocomplete="username"
                        value="<?= htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') ?>"
@@ -28,11 +28,11 @@ $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
             <?php endif; ?>
         </div>
         <div class="form-group">
-            <label class="form-label" for="display_name">Anzeigename (Bestell-Mails)</label>
+            <label class="form-label" for="display_name">Anzeigename</label>
             <input class="input" type="text" id="display_name" name="display_name" maxlength="128"
                    value="<?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>"
                    placeholder="z. B. Maria Schmidt">
-            <p class="form-hint">Platzhalter <code>{{USER}}</code> in E-Mail-Vorlagen. Leer = Benutzername.</p>
+            <p class="form-hint"><code>{{USER}}</code> in den Mail-Vorlagen. Leer = Benutzername.</p>
         </div>
         <div class="form-group">
             <label class="form-label" for="email">E-Mail (optional)</label>
@@ -48,11 +48,12 @@ $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
                     </option>
                 <?php endforeach; ?>
             </select>
+            <p class="form-hint">Administrator: alles. Stammdaten: Katalog. Nur Bestellen: Rundgang ohne Stammdaten-Menü.</p>
         </div>
         <fieldset class="form-fieldset">
             <legend class="form-legend">Passwort</legend>
             <?php if ($isEdit): ?>
-                <p class="form-hint" style="margin-top:0">Leer lassen, um das bestehende Passwort beizubehalten.</p>
+            <p class="form-hint">Leer = bestehendes Passwort bleibt.</p>
             <?php endif; ?>
             <div class="form-group">
                 <label class="form-label" for="password"><?= $isEdit ? 'Neues Passwort' : 'Passwort' ?></label>

@@ -1835,6 +1835,59 @@ a.order-stepper__item:focus-visible {
   gap: var(--space-3);
 }
 
+.settings-hint-more {
+  margin-top: var(--space-1);
+}
+
+.settings-hint-more > summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.settings-hint-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-hint-more > summary::after {
+  content: ' ▾';
+}
+
+.settings-hint-more[open] > summary::after {
+  content: ' ▴';
+}
+
+.import-format {
+  margin-top: var(--space-4);
+}
+
+.import-format__summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.import-format__summary::-webkit-details-marker {
+  display: none;
+}
+
+.import-format__summary::after {
+  content: ' ▾';
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.import-format[open] .import-format__summary::after {
+  content: ' ▴';
+}
+
+.import-missing-list {
+  max-height: 12rem;
+  overflow: auto;
+  font-size: var(--text-sm);
+}
+
 .settings-smtp-log {
   background: #1e1e2e;
   color: #cdd6f4;
