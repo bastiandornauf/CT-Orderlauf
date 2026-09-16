@@ -205,4 +205,49 @@ Regelmäßig **MySQL-Dump** der Datenbank und eine Kopie von **`.env`** (ohne im
 
 ---
 
+## 10. Rollback: zurück auf einen bekannten Stand
+
+Es gibt keinen atomaren Deploy – hochgeladen wird per SFTP, Datei für Datei. Ein Rollback ist deshalb ein bewusster Ablauf und keine einzelne Aktion.
+
+### Rückkehrpunkte
+
+Jeder verifizierte Produktionsstand wird als Git-Tag `live-JJJJ-MM-TT` festgehalten. „Verifiziert“ heißt: Datei für Datei gegen den Webspace verglichen, nicht nur committet.
+
+```bash
+git tag -n99 -l 'live-*'          # vorhandene Rückkehrpunkte
+```
+
+Vor jedem größeren Deploy einen neuen Tag setzen und **vorher** prüfen, dass der lokale Stand dem Server entspricht:
+
+```bash
+T="…/www/bdornauf/orderlauf"
+for d in app config public/assets/js public/assets/css; do
+  diff -rq -x '.DS_Store' -x '._*' "$d" "$T/$d"
+done
+```
+
+Leere Ausgabe = lokaler Stand und Produktion sind identisch, der Tag ist belastbar.
+
+### Ablauf
+
+1. Dateien des Zielstands in einen separaten Ordner auspacken – der Arbeitsbaum bleibt dabei unangetastet:
+
+   ```bash
+   mkdir -p /tmp/rollback && git archive live-2026-09-16 | tar -x -C /tmp/rollback
+   ```
+
+2. `app/`, `config/` und `public/` aus `/tmp/rollback` auf den Webspace kopieren. **`.env` niemals überschreiben** – die liegt nur auf dem Server.
+
+3. **`CACHE`-Version in `public/sw.js` erhöhen, auch beim Rollback.** Das ist der unintuitive Teil: der alte Stand trägt eine niedrigere Cache-Version, und der bereits installierte Service Worker auf den Handys sieht darin keinen Grund, sein Bundle zu erneuern. Ohne Bump behalten die Geräte das fehlerhafte JavaScript. Also nicht auf `v39` zurück, sondern auf `v41` hoch.
+
+4. Auf einem Gerät prüfen: Seite neu laden, danach Rundgang und Kontrolle öffnen.
+
+### Zwei Fallen
+
+**Datenbank-Migrationen sind nicht umkehrbar.** Migrationen fügen Spalten und Tabellen hinzu; älterer Code stört sich nicht daran und ignoriert sie einfach. Ein Rollback des Codes braucht deshalb **keinen** Rückbau der Datenbank – und sollte ihn auch nicht versuchen, sonst gehen Daten verloren.
+
+**`DB_VERSION` in `public/assets/js/storage.js` darf bei UI-Arbeiten nicht steigen.** IndexedDB kann nicht heruntergestuft werden. Wird die Version erhöht und der Code später zurückgerollt, stehen die Geräte mit einer Datenbank da, die der ältere Code nicht mehr öffnen kann – das wäre ein Rollback, der die lokalen Erfassungen mitnimmt. Änderungen an `DB_VERSION` gehören ausschließlich in Commits, die auch fachlich ein Schema brauchen, niemals in reine UI-Änderungen.
+
+---
+
 *Stand: Projekt CT-Orderlauf – bei Abweichungen in `config/` oder Router bitte diese Datei anpassen.*
