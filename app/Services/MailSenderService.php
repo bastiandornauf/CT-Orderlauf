@@ -168,6 +168,29 @@ final class MailSenderService
     }
 
     /**
+     * Gültige Adressen und Anzahl verworfener Tokens aus einem CC-String.
+     *
+     * @return array{valid: list<string>, discarded: int}
+     */
+    public function inspectCc(string $raw): array
+    {
+        $valid = $this->parseRecipientAddresses($raw);
+        $raw = trim($raw);
+        if ($raw === '') {
+            return ['valid' => [], 'discarded' => 0];
+        }
+        $parts = preg_split('/[,;]/', $raw) ?: [];
+        $tokens = 0;
+        foreach ($parts as $p) {
+            if (trim((string) $p) !== '') {
+                $tokens++;
+            }
+        }
+
+        return ['valid' => $valid, 'discarded' => max(0, $tokens - count($valid))];
+    }
+
+    /**
      * Liefert einzelne E-Mail-Adressen aus einem freien CC-String (Komma, Semikolon, „Name <mail>“).
      *
      * @return list<string>

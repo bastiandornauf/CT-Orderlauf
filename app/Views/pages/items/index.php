@@ -18,7 +18,7 @@
     <?php if (!empty($_SESSION['flash_ok'])): ?>
         <?php $flashOk = $_SESSION['flash_ok'];
         unset($_SESSION['flash_ok']); ?>
-        <p class="toast toast--success"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--success" role="status"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <div class="page-toolbar">
         <h1 class="page-title">Artikel</h1>

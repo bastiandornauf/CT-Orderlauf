@@ -2,15 +2,15 @@
     <h1 class="page-title">Mein Konto</h1>
     <p class="text-muted">Angemeldet als <strong><?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></strong>.</p>
     <?php if (!empty($_GET['saved'])): ?>
-        <p class="toast toast--success">Gespeichert.</p>
+        <p class="toast toast--success" role="status">Gespeichert.</p>
     <?php endif; ?>
     <?php if (!empty($_SESSION['flash_ok'])): ?>
         <?php $flashOk = $_SESSION['flash_ok'];
         unset($_SESSION['flash_ok']); ?>
-        <p class="toast toast--success"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--success" role="status"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <?php if (!empty($error)): ?>
-        <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <form method="post" action="/profile/save" class="form-stack card card--pad u-mb-4">
         <?= \App\Helpers\Csrf::field() ?>

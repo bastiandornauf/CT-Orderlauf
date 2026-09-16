@@ -51,6 +51,32 @@ function formatStockHint(it) {
   return `max ${max}`;
 }
 
+const MAILTO_SOFT_LIMIT = 1800;
+
+/** Anzahl ungültiger Tokens in einem CC-String (Komma/Semikolon). */
+function countDiscardedCc(raw) {
+  const s = String(raw ?? '').trim();
+  if (s === '') return 0;
+  const parts = s.split(/[,;]/).map((p) => p.trim()).filter(Boolean);
+  let discarded = 0;
+  for (const p of parts) {
+    const m = p.match(/<([^>]+)>/);
+    const e = (m ? m[1] : p).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) discarded += 1;
+  }
+  return discarded;
+}
+
+function warnIfMailtoLong(href) {
+  if (String(href).length > MAILTO_SOFT_LIMIT) {
+    showToast(
+      'Der Mail-Text ist sehr lang. Falls das Programm nichts öffnet: Kopieren und selbst einfügen.',
+      8000,
+      'warn',
+    );
+  }
+}
+
 /**
  * @param {{ targetDate: string, loading: boolean, error: string }} ctx
  */
@@ -249,6 +275,9 @@ export function registerOrderAlpine(Alpine) {
     supplierNameById: new Map(),
     /** Lieferanten heute ausblenden (nur Anzeige) */
     hiddenSupplierIds: [],
+    targetDate: '',
+    orderedCount: 0,
+    roundReady: false,
     canEditMaster: false,
     editDraft: {
       id: null,
@@ -278,12 +307,26 @@ export function registerOrderAlpine(Alpine) {
         (it) => Number(it.active) !== 0 && this.isItemVisibleForRound(it.id, hid),
       );
     },
+    get emptyRoundKind() {
+      if (this.filteredItems.length > 0) return '';
+      if (String(this.search || '').trim() !== '') return 'search';
+      if (!this.locations.length) return 'no-loc';
+      if (this.activeLocId && this.hiddenSupplierIds.length > 0) {
+        const locId = Number(this.activeLocId);
+        const inLoc = this.allItems.filter(
+          (i) => Number(i.location_id) === locId && Number(i.active) !== 0,
+        );
+        if (inLoc.length > 0) return 'hidden';
+      }
+      return 'empty-loc';
+    },
     async init() {
       const round = await storage.getOrderRound();
       if (!round) {
         window.location.href = '/?open=bestellen';
         return;
       }
+      this.targetDate = round.target_date || '';
       this.canEditMaster = this.$el.dataset.canEditMaster === '1';
       if (round.status === 'prepared') {
         await storage.setOrderRoundStatus('active');
@@ -300,6 +343,7 @@ export function registerOrderAlpine(Alpine) {
       await this.reloadEntries();
       this.$watch('activeLocId', () => this.loadItemsForTab());
       await this.loadItemsForTab();
+      this.roundReady = true;
     },
     async rebuildSupplierLinksMap() {
       const links = await storage.getItemSupplierLinks();
@@ -400,6 +444,7 @@ export function registerOrderAlpine(Alpine) {
           showToast(
             'Hinweis: Artikel ist deaktiviert; eingetragene Menge bleibt lokal, bis das Feld geleert oder in der Kontrolle bearbeitet wird.',
             5000,
+            'warn',
           );
         }
       } catch (e) {
@@ -502,11 +547,16 @@ export function registerOrderAlpine(Alpine) {
     async reloadEntries() {
       const entries = await storage.getOrderEntries();
       this.quantities = {};
+      let n = 0;
       for (const e of entries) {
         if (!e.is_free_item && e.item_id != null) {
           this.quantities[e.item_id] = String(e.quantity);
+          if (orch.parseQuantity(e.quantity) != null) n += 1;
+        } else if (e.is_free_item && String(e.quantity ?? '').trim() !== '') {
+          n += 1;
         }
       }
+      this.orderedCount = n;
     },
     async loadItemsForTab() {
       if (!this.activeLocId) {
@@ -532,6 +582,10 @@ export function registerOrderAlpine(Alpine) {
       await this.reloadEntries();
     },
     async addFree() {
+      if (!String(this.freeLabel || '').trim() || !String(this.freeQty || '').trim()) {
+        showToast('Bezeichnung und Menge angeben.', 2500, 'warn');
+        return;
+      }
       await orch.addFreeLine(
         this.activeLocId,
         this.freeLabel,
@@ -543,6 +597,11 @@ export function registerOrderAlpine(Alpine) {
       this.freeQty = '';
       this.freeUnit = '';
       this.freeSupplierId = '';
+      await this.reloadEntries();
+      showToast('Freier Artikel hinzugefügt.');
+    },
+    formatDate(iso) {
+      return formatDeDate(iso);
     },
     async goReview() {
       await storage.setOrderRoundStatus('ready_for_review');
@@ -559,12 +618,24 @@ export function registerOrderAlpine(Alpine) {
     meta: null,
     allSuppliers: [],
     deliveryMap: new Map(),
+    targetDate: '',
+    positionCount: 0,
+    freeDraftOpen: null,
+    freeDraft: { label: '', qty: '', unit: '' },
+    get reviewIsEmpty() {
+      return (
+        this.problemLines.length === 0 &&
+        this.pendingFreeLines.length === 0 &&
+        this.groups.length === 0
+      );
+    },
     async init() {
       const round = await storage.getOrderRound();
       if (!round) {
         window.location.href = '/?open=bestellen';
         return;
       }
+      this.targetDate = round.target_date || '';
       this.loading = true;
       try {
         await this._mergeServerIfOnline(round.target_date);
@@ -614,6 +685,7 @@ export function registerOrderAlpine(Alpine) {
       const entries = (await storage.getOrderEntries()).filter((e) =>
         e.is_free_item ? String(e.quantity ?? '').trim() !== '' : orch.parseQuantity(e.quantity) != null
       );
+      this.positionCount = entries.length;
       const items = await storage.getAllItems();
       const itemMap = new Map(items.map((i) => [i.id, i]));
       const suppliers = await storage.getAllSuppliers();
@@ -673,6 +745,7 @@ export function registerOrderAlpine(Alpine) {
         if (pick.supplierId == null) {
           problem.push({
             entry: e,
+            entryId: e.id,
             itemLabel: item.name,
             reason: 'Kein Lieferant zugeordnet – bitte manuell ergänzen',
           });
@@ -734,7 +807,7 @@ export function registerOrderAlpine(Alpine) {
     },
     async refreshStammdaten() {
       if (!navigator.onLine) {
-        showToast('Nur online möglich.');
+        showToast('Nur online möglich.', 2500, 'warn');
         return;
       }
       const round = await storage.getOrderRound();
@@ -766,6 +839,16 @@ export function registerOrderAlpine(Alpine) {
           return { id: s.id, name: s.name, label, dateLabel };
         })
         .filter(Boolean);
+    },
+    activeSupplierOptions() {
+      return this.allSuppliers
+        .filter((s) => Number(s.active) !== 0)
+        .map((s) => {
+          const date = this.deliveryMap.get(Number(s.id));
+          const dateLabel = date ? `Lieferung ${formatDeDate(date)}` : '';
+          const label = dateLabel ? `${s.name} (${formatDeDate(date)})` : s.name;
+          return { id: s.id, name: s.name, label, dateLabel };
+        });
     },
     async onSupplierChange(line, newSid) {
       line.supplierId = Number(newSid);
@@ -805,21 +888,50 @@ export function registerOrderAlpine(Alpine) {
     async saveNote(supplierId, text) {
       await storage.setSupplierNote(supplierId, text);
     },
-    async addFreeToSupplier(supplierId) {
-      const label = window.prompt('Freier Artikel (Bezeichnung)');
-      if (!label?.trim()) return;
-      const qty = window.prompt('Menge');
-      const unit = window.prompt('Gebinde / Einheit (optional)') || '';
-      await orch.addFreeLine(null, label, qty, supplierId, unit);
+    toggleFreeDraft(supplierId) {
+      if (this.freeDraftOpen === supplierId) {
+        this.freeDraftOpen = null;
+        return;
+      }
+      this.freeDraftOpen = supplierId;
+      this.freeDraft = { label: '', qty: '', unit: '' };
+    },
+    async submitFreeDraft(supplierId) {
+      if (!String(this.freeDraft.label || '').trim() || !String(this.freeDraft.qty || '').trim()) {
+        showToast('Bezeichnung und Menge angeben.', 2500, 'warn');
+        return;
+      }
+      await orch.addFreeLine(
+        null,
+        this.freeDraft.label,
+        this.freeDraft.qty,
+        supplierId,
+        this.freeDraft.unit,
+      );
+      this.freeDraftOpen = null;
+      this.freeDraft = { label: '', qty: '', unit: '' };
+      showToast('Freier Artikel hinzugefügt.');
+      await this.rebuildLocal();
+    },
+    async assignProblemSupplier(p, sid) {
+      const v = String(sid ?? '').trim();
+      if (!v || p?.entry?.id == null) return;
+      await storage.updateOrderEntry(p.entry.id, { selected_supplier_id: Number(v) });
+      await this.rebuildLocal();
+    },
+    async removeProblem(p) {
+      const id = p?.entryId ?? p?.entry?.id;
+      if (id == null) return;
+      await storage.deleteOrderEntry(id);
       await this.rebuildLocal();
     },
     goOutput() {
       if (this.pendingFreeLines.length > 0) {
-        showToast('Bitte zuerst alle freien Artikel einem Lieferanten zuordnen.');
+        showToast('Bitte zuerst alle freien Artikel einem Lieferanten zuordnen.', 2500, 'warn');
         return;
       }
       if (this.problemLines.length > 0) {
-        showToast('Bitte zuerst die Problemartikel beheben.');
+        showToast('Bitte zuerst die Problemartikel beheben.', 2500, 'warn');
         return;
       }
       window.location.href = '/order/output';
@@ -840,6 +952,10 @@ export function registerOrderAlpine(Alpine) {
     sendStatus: {},
     sendingAll: false,
     syncBusy: false,
+    ccDiscardWarned: false,
+    hasUnresolved: false,
+    positionCount: 0,
+    outputReady: false,
     /** @type {Record<number, true>} Lieferant: mailto wurde mindestens einmal ausgelöst (persistiert pro Zieltag in sessionStorage) */
     mailtoOpenedMap: {},
     /** @type {Record<number, true>} Erledigte Blöcke werden automatisch eingeklappt; per Klick auf „Anzeigen" lässt sich der Block wieder ausklappen. */
@@ -1005,7 +1121,7 @@ export function registerOrderAlpine(Alpine) {
         this.mailtoWizardIndex += 1;
       } else {
         this.closeMailtoWizard();
-        showToast('Fertig. Orange markierte Lieferanten prüfen, falls eine Mail fehlt.', 6000);
+        showToast('Fertig. Orange markierte Lieferanten prüfen, falls eine Mail fehlt.', 6000, 'warn');
       }
     },
     async copyAllBlocks() {
@@ -1019,7 +1135,7 @@ export function registerOrderAlpine(Alpine) {
         await navigator.clipboard.writeText(text);
         showToast('Kopiert!');
       } catch {
-        showToast('Kopieren fehlgeschlagen');
+        showToast('Kopieren fehlgeschlagen', 2500, 'error');
       }
     },
     /** Export XML manifest + all PDFs for the Outlook macro */
@@ -1109,6 +1225,11 @@ export function registerOrderAlpine(Alpine) {
       this.finalized = round.status === 'finalized';
       await this._mergeOutputServerIfOnline();
       await this._rebuildOutputBlocks();
+      if (this.hasUnresolved && !this.finalized) {
+        window.location.replace('/order/review');
+        return;
+      }
+      this.outputReady = true;
       window.addEventListener('pageshow', () => {
         this.loadMailtoOpened();
       });
@@ -1151,6 +1272,19 @@ export function registerOrderAlpine(Alpine) {
       this.devMode = !!meta?.settings?.dev_mode;
       this.devEmail = meta?.settings?.dev_email || '';
       this.directSend = !!meta?.settings?.send_email_direct;
+      if (!this.ccDiscardWarned) {
+        const discarded = countDiscardedCc(this.cc);
+        if (discarded > 0) {
+          this.ccDiscardWarned = true;
+          showToast(
+            discarded === 1
+              ? 'Eine CC-Adresse ist ungültig und wird nicht mitgeschickt.'
+              : `${discarded} CC-Adressen sind ungültig und werden nicht mitgeschickt.`,
+            2500,
+            'warn',
+          );
+        }
+      }
 
       const entries = (await storage.getOrderEntries()).filter((e) =>
         e.is_free_item ? String(e.quantity ?? '').trim() !== '' : orch.parseQuantity(e.quantity) != null
@@ -1168,10 +1302,14 @@ export function registerOrderAlpine(Alpine) {
 
       const bySup = new Map();     // supplierId -> regular lines[]
       const freesBySup = new Map(); // supplierId -> free line strings[]
+      let unresolved = 0;
       for (const e of entries) {
         if (e.is_free_item) {
           const sid = e.free_supplier_id || e.selected_supplier_id;
-          if (!sid) continue;
+          if (!sid) {
+            unresolved += 1;
+            continue;
+          }
           if (!bySup.has(sid)) bySup.set(sid, []);
           if (!freesBySup.has(sid)) freesBySup.set(sid, []);
           const freeUnit = String(e.free_unit ?? '').trim();
@@ -1188,7 +1326,10 @@ export function registerOrderAlpine(Alpine) {
         const itemLinks = byItem.get(e.item_id) || [];
         const pick = pickSupplierForItem(e.item_id, itemLinks, delivering, e.selected_supplier_id);
         const sid = pick.supplierId;
-        if (sid == null) continue;
+        if (sid == null) {
+          unresolved += 1;
+          continue;
+        }
         if (!bySup.has(sid)) bySup.set(sid, []);
         bySup.get(sid).push({
           label: item.name,
@@ -1252,10 +1393,15 @@ export function registerOrderAlpine(Alpine) {
           body: prev.body,
         });
       }
+      this.hasUnresolved = unresolved > 0;
+      this.positionCount = this.blocks.reduce(
+        (n, b) => n + (b.lines?.length || 0) + (b.freeLines?.length || 0),
+        0,
+      );
     },
     async refreshStammdaten() {
       if (!navigator.onLine) {
-        showToast('Nur online möglich.');
+        showToast('Nur online möglich.', 2500, 'warn');
         return;
       }
       if (!this.targetDate) return;
@@ -1273,31 +1419,35 @@ export function registerOrderAlpine(Alpine) {
         await navigator.clipboard.writeText(`${block.subject}\n\n${block.body}`);
         showToast('Kopiert!');
       } catch {
-        showToast('Kopieren fehlgeschlagen');
+        showToast('Kopieren fehlgeschlagen', 2500, 'error');
       }
     },
     async mailtoBlock(block) {
       if (block.supplier.order_type === 'webshop') {
         if (!this.cc) {
-          showToast('Keine CC-Adresse für Webshop-Mail konfiguriert');
+          showToast('Keine CC-Adresse für Webshop-Mail konfiguriert', 2500, 'warn');
           return;
         }
         const subj = `[Webshop] ${block.subject} – ${block.supplier.name}`;
         this.touchMailtoOpened(block.supplier.id);
         await this.$nextTick();
-        window.location.href = mailtoLink(this.cc, subj, block.body, '', {
+        const href = mailtoLink(this.cc, subj, block.body, '', {
           devMode: this.devMode,
           devEmail: this.devEmail,
         });
+        warnIfMailtoLong(href);
+        window.location.href = href;
         return;
       }
       if (!block.supplier.email) return;
       this.touchMailtoOpened(block.supplier.id);
       await this.$nextTick();
-      window.location.href = mailtoLink(block.supplier.email, block.subject, block.body, this.cc, {
+      const href = mailtoLink(block.supplier.email, block.subject, block.body, this.cc, {
         devMode: this.devMode,
         devEmail: this.devEmail,
       });
+      warnIfMailtoLong(href);
+      window.location.href = href;
     },
     resolveMailParams(block) {
       const isWebshop = block.supplier.order_type === 'webshop';
@@ -1322,43 +1472,52 @@ export function registerOrderAlpine(Alpine) {
       if (this.sendStatus[sid] === 'sending') return;
       const params = this.resolveMailParams(block);
       if (!params.to) {
-        showToast('Kein Empfänger');
+        showToast('Kein Empfänger', 2500, 'warn');
         return;
       }
       this.sendStatus[sid] = 'sending';
       try {
-        await api.sendMail(params);
+        const data = await api.sendMail(params);
         this.sendStatus[sid] = 'sent';
         const ccStr = String(params.cc || '').trim();
-        showToast(
-          ccStr
-            ? `Server hat angenommen: an ${params.to}, CC ${ccStr}`
-            : `Server hat angenommen: an ${params.to}`,
-        );
+        const discarded = Number(data.cc_discarded || 0);
+        let msg = ccStr
+          ? `Server hat angenommen: an ${params.to}, CC ${ccStr}`
+          : `Server hat angenommen: an ${params.to}`;
+        if (discarded > 0) {
+          msg += discarded === 1
+            ? ' · eine CC-Adresse nicht übernommen'
+            : ` · ${discarded} CC-Adressen nicht übernommen`;
+        }
+        showToast(msg, 2500, discarded > 0 ? 'warn' : 'success');
       } catch (e) {
         this.sendStatus[sid] = 'error';
-        showToast(e.message || 'Versand fehlgeschlagen', 60000, true);
+        showToast(e.message || 'Versand fehlgeschlagen', 60000, 'error');
       }
     },
     async sendAllBlocks() {
+      if (this.sendingAll) return;
       this.sendingAll = true;
       let ok = 0;
       let fail = 0;
-      for (const block of this.sendableBlocks) {
-        if (this.sendStatus[block.supplier.id] === 'sent') {
-          ok++;
-          continue;
+      try {
+        for (const block of this.sendableBlocks) {
+          if (this.sendStatus[block.supplier.id] === 'sent') {
+            ok++;
+            continue;
+          }
+          await this.sendBlock(block);
+          if (this.sendStatus[block.supplier.id] === 'sent') ok++;
+          else fail++;
+          await new Promise((r) => setTimeout(r, 300));
         }
-        await this.sendBlock(block);
-        if (this.sendStatus[block.supplier.id] === 'sent') ok++;
-        else fail++;
-        await new Promise((r) => setTimeout(r, 300));
+      } finally {
+        this.sendingAll = false;
       }
-      this.sendingAll = false;
       if (fail === 0) {
         showToast(`Alle ${ok} Mails gesendet!`);
       } else if (ok > 0) {
-        showToast(`${ok} gesendet, ${fail} fehlgeschlagen.`, 15000, true);
+        showToast(`${ok} gesendet, ${fail} fehlgeschlagen.`, 15000, 'error');
       }
       /* Wenn alle fehlschlagen: keine kurze End-Meldung — die letzte ausführliche Fehlermeldung bleibt sichtbar (60s). */
     },

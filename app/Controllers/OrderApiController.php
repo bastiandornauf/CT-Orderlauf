@@ -262,9 +262,13 @@ final class OrderApiController
             }
         }
 
+        $ccInspect = $mailer->inspectCc($cc);
         $result = $mailer->send($to, $subject, $body, $cc, $attachment);
         if ($result['ok']) {
-            Response::jsonOk(['message' => 'Mail gesendet.']);
+            Response::jsonOk([
+                'message' => 'Mail gesendet.',
+                'cc_discarded' => $ccInspect['discarded'],
+            ]);
         } else {
             Response::jsonError($result['error'] ?? 'Versand fehlgeschlagen.', 500);
         }

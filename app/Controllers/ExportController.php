@@ -74,32 +74,6 @@ final class ExportController
         );
     }
 
-    public function itemPrices(): void
-    {
-        AuthMiddleware::requireEditor();
-        $priceCol = $this->hasValuationPriceColumn()
-            ? 'i.valuation_price AS bewertungspreis'
-            : 'NULL AS bewertungspreis';
-        $rows = Database::pdo()->query(
-            "SELECT i.id, i.name, l.name AS location, i.unit, {$priceCol}
-             FROM items i
-             JOIN locations l ON l.id = i.location_id
-             WHERE i.active = 1
-             ORDER BY l.sort_order, i.sort_order, i.name"
-        )->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($rows as &$row) {
-            if ($row['bewertungspreis'] !== null && $row['bewertungspreis'] !== '') {
-                $row['bewertungspreis'] = number_format((float) $row['bewertungspreis'], 2, ',', '');
-            } else {
-                $row['bewertungspreis'] = '';
-            }
-        }
-        unset($row);
-
-        $this->sendCsv('artikel_bewertungspreise.csv', ['id', 'name', 'location', 'unit', 'bewertungspreis'], $rows);
-    }
-
     public function itemSupplier(): void
     {
         AuthMiddleware::requireEditor();

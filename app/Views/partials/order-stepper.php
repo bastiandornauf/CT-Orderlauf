@@ -11,6 +11,7 @@ $urls = [
     3 => '/order/review',
     4 => '/order/output',
 ];
+$guardOutput = !empty($stepper_guard_output);
 ?>
 <nav class="order-stepper" aria-label="Bestellablauf">
     <ol class="order-stepper__list">
@@ -25,9 +26,12 @@ $urls = [
             }
             $href = $urls[$i];
             $ariaCurrent = $i === $step ? ' aria-current="step"' : '';
+            $outputGuardAttr = ($i === 4 && $guardOutput)
+                ? ' @click.prevent="goOutput()"'
+                : '';
             ?>
             <li class="order-stepper__cell">
-                <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>" class="<?= htmlspecialchars($itemClass, ENT_QUOTES, 'UTF-8') ?>"<?= $ariaCurrent ?>>
+                <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>" class="<?= htmlspecialchars($itemClass, ENT_QUOTES, 'UTF-8') ?>"<?= $ariaCurrent ?><?= $outputGuardAttr ?>>
                     <span class="order-stepper__num" aria-hidden="true"><?= $i ?></span>
                     <span class="order-stepper__label"><?= htmlspecialchars($labels[$i - 1], ENT_QUOTES, 'UTF-8') ?></span>
                 </a>

@@ -1,4 +1,6 @@
 <section class="page-section dashboard" x-data="dashboardPage">
+    <?php $order_step = 1;
+    require __DIR__ . '/../partials/order-stepper.php'; ?>
     <h1 class="visually-hidden">Start</h1>
 
     <div class="card card--pad dashboard-order-hero" x-show="initialized && roundInProgress" x-cloak>
@@ -12,6 +14,14 @@
                    :class="idx === 0 ? 'button--primary' : 'button--secondary'"
                    x-text="action.label"></a>
             </template>
+        </div>
+    </div>
+
+    <div class="card card--pad dashboard-order-hero" x-show="initialized && hasRound && roundStatus === 'finalized'" x-cloak>
+        <h2 class="section-header">Letzte Bestellung abgeschlossen</h2>
+        <p class="dashboard-order-hero__status">Nur lokal auf diesem Gerät – kein Versandnachweis.</p>
+        <div class="button-stack dashboard-order-hero__actions">
+            <a href="/order/output" class="button button--secondary button--block">Zum Versand</a>
         </div>
     </div>
 
@@ -79,6 +89,7 @@
         <summary class="dashboard-stammdaten__summary">Stammdaten pflegen</summary>
         <ul class="dashboard-quick__list">
             <li><a href="/items" class="dashboard-quick__link">Artikel <span class="dashboard-quick__count"><?= (int) ($counts['items'] ?? 0) ?></span></a></li>
+            <li><a href="/items/pending" class="dashboard-quick__link">Artikel-Vorschläge</a></li>
             <li><a href="/suppliers" class="dashboard-quick__link">Lieferanten <span class="dashboard-quick__count"><?= (int) ($counts['suppliers'] ?? 0) ?></span></a></li>
             <li><a href="/locations" class="dashboard-quick__link">Lagerorte <span class="dashboard-quick__count"><?= (int) ($counts['locations'] ?? 0) ?></span></a></li>
             <li><a href="/import" class="dashboard-quick__link">Import / Export</a></li>

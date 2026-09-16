@@ -15,6 +15,10 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         </div>
     </div>
     <p class="text-muted">Eingaben werden lokal gespeichert. Leere Felder = keine Bestellung.</p>
+    <p class="order-context text-muted" x-show="targetDate">
+        Wunsch-Lieferung <span x-text="formatDate(targetDate)"></span>
+        <span x-show="orderedCount > 0" x-text="' · ' + orderedCount + ' Positionen'"></span>
+    </p>
 
     <div class="round-search">
         <span class="round-search__icon" aria-hidden="true">⌕</span>
@@ -45,6 +49,8 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
+                    :aria-selected="activeLocId === loc.id"
+                    :tabindex="activeLocId === loc.id ? 0 : -1"
                     @click="selectLocation(loc.id)">
                 <span class="button__label" x-text="tabLabel(loc)">Lager</span>
             </button>
@@ -102,27 +108,36 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         </button>
     </div>
 
-    <p class="round-search__empty" x-show="filteredItems.length === 0 && search !== ''">
+    <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'search'" x-cloak>
         Kein Artikel gefunden für „<span x-text="search"></span>"
+    </p>
+    <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'no-loc'" x-cloak>
+        Keine Lagerorte geladen. Bestellung neu beginnen.
+    </p>
+    <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'hidden'" x-cloak>
+        Keine Artikel sichtbar – Lieferanten sind ausgeblendet.
+    </p>
+    <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'empty-loc'" x-cloak>
+        Keine Artikel an diesem Lagerort.
     </p>
 
     <div class="card card--pad form-stack" x-show="search === ''">
         <h2 class="section-header">Freier Artikel (dieser Lagerort)</h2>
         <div class="form-group">
-            <label class="form-label">Bezeichnung</label>
-            <input class="input" x-model="freeLabel">
+            <label class="form-label" for="free-label">Bezeichnung</label>
+            <input class="input" id="free-label" x-model="freeLabel">
         </div>
         <div class="form-group">
-            <label class="form-label">Menge</label>
-            <input class="input" x-model="freeQty" inputmode="decimal">
+            <label class="form-label" for="free-qty">Menge</label>
+            <input class="input" id="free-qty" x-model="freeQty" inputmode="decimal">
         </div>
         <div class="form-group">
-            <label class="form-label">Gebinde / Einheit (optional)</label>
-            <input class="input" x-model="freeUnit" placeholder="z. B. Kiste, Bund, kg">
+            <label class="form-label" for="free-unit">Gebinde / Einheit (optional)</label>
+            <input class="input" id="free-unit" x-model="freeUnit" placeholder="z. B. Kiste, Bund, kg">
         </div>
         <div class="form-group">
-            <label class="form-label">Lieferant (optional)</label>
-            <select class="select" x-model="freeSupplierId">
+            <label class="form-label" for="free-supplier">Lieferant (optional)</label>
+            <select class="select" id="free-supplier" x-model="freeSupplierId">
                 <option value="">— später in Kontrolle —</option>
                 <template x-for="s in suppliersForFree" :key="s.id">
                     <option :value="String(s.id)" x-text="s.name"></option>

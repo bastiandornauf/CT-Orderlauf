@@ -171,7 +171,7 @@ Die Inventur braucht **mehr als den Ordner `app/`**. Mindestens hochladen:
 | `app/Data/ANLEITUNG.md` | Hilfe-Seite (Kopie der Anleitung, mit `app/` deployen) |
 | `docs/ANLEITUNG.md` | optional, falls vorhanden |
 | `app/Services/CsvImportService.php` | Import inkl. `bewertungspreis`, Typ **Bewertungspreise** |
-| `app/Controllers/ExportController.php` | Export `/export/items`, `/export/item-prices` |
+| `app/Controllers/ExportController.php` | Export `/export/items` (inkl. Spalte `bewertungspreis`) |
 
 **Schnelltest auf dem Server:** In `config/routes.php` muss die Zeile `'/inventory' =>` vorkommen.  
 Wenn `/order/round` geht, `/inventory` aber 404 liefert, fehlen fast immer die neuen Routen-Dateien.

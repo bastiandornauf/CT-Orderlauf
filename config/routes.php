@@ -63,7 +63,6 @@ return [
         '/export/suppliers' => [ExportController::class, 'suppliers'],
         '/export/delivery-days' => [ExportController::class, 'deliveryDays'],
         '/export/items' => [ExportController::class, 'items'],
-        '/export/item-prices' => [ExportController::class, 'itemPrices'],
         '/export/item-supplier' => [ExportController::class, 'itemSupplier'],
     ],
     'POST' => [

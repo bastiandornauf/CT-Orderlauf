@@ -2,7 +2,7 @@
     <h1 class="page-title">Import / Export</h1>
 
     <?php if (!empty($done)): ?>
-        <p class="toast toast--success">
+        <p class="toast toast--success" role="status">
             Fertig. Neu: <?= (int) $done['inserted'] ?>,
             aktualisiert: <?= (int) $done['updated'] ?>.
             <?php if (!empty($done['deactivated'])): ?>
@@ -41,6 +41,48 @@
                             Fehlende Artikel auf inaktiv setzen
                         </label>
                     <?php endif; ?>
+                    <?php
+                    $previewRows = $result['preview'] ?? [];
+                    $previewCols = [];
+                    foreach ($previewRows as $prow) {
+                        if (!is_array($prow)) {
+                            continue;
+                        }
+                        foreach ($prow as $pk => $pv) {
+                            if (is_array($pv) || in_array($pk, $previewCols, true)) {
+                                continue;
+                            }
+                            $previewCols[] = (string) $pk;
+                        }
+                    }
+                    $previewCols = array_slice($previewCols, 0, 10);
+                    $previewShow = array_slice($previewRows, 0, 25);
+                    ?>
+                    <?php if ($previewCols !== [] && $previewShow !== []): ?>
+                        <div class="import-preview-wrap">
+                            <table class="import-preview">
+                                <thead>
+                                    <tr>
+                                        <?php foreach ($previewCols as $col): ?>
+                                            <th><?= htmlspecialchars($col, ENT_QUOTES, 'UTF-8') ?></th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($previewShow as $prow): ?>
+                                        <tr>
+                                            <?php foreach ($previewCols as $col): ?>
+                                                <td><?= htmlspecialchars((string) ($prow[$col] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <?php if (count($previewRows) > count($previewShow)): ?>
+                            <p class="form-hint text-muted">Erste <?= count($previewShow) ?> von <?= count($previewRows) ?> Zeilen.</p>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <button type="submit" class="button button--primary">Import ausführen</button>
                 </form>
             </div>
@@ -55,12 +97,6 @@
                 <a class="export-list__link" href="/export/items">
                     <span>Artikel</span>
                     <span class="export-list__hint">inkl. Bewertungspreis</span>
-                </a>
-            </li>
-            <li>
-                <a class="export-list__link" href="/export/item-prices">
-                    <span>Bewertungspreise</span>
-                    <span class="export-list__hint">Massenpflege</span>
                 </a>
             </li>
             <li>
@@ -112,6 +148,6 @@
         <summary class="import-format__summary">CSV-Format</summary>
         <p class="text-muted">UTF-8, Semikolon. Ein Export aus dieser App ist direkt wieder importierbar.</p>
         <p class="text-muted">Artikel mit <code>id</code> werden aktualisiert, leere ID legt neu an. Spalte <code>bewertungspreis</code> für die Inventur.</p>
-        <p class="text-muted">Nur Preise: oben <strong>Bewertungspreise</strong> exportieren, hier Typ <strong>Bewertungspreise</strong>.</p>
+        <p class="text-muted">Nur Preise: Artikel exportieren, Spalte <code>bewertungspreis</code> ändern, als <strong>Artikel</strong> oder <strong>Bewertungspreise</strong> wieder einspielen.</p>
     </details>
 </section>

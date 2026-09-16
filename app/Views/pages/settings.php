@@ -1,10 +1,10 @@
 <section class="page-section">
     <h1 class="page-title">Einstellungen</h1>
     <?php if (!empty($_GET['saved'])): ?>
-        <p class="toast toast--success">Gespeichert.</p>
+        <p class="toast toast--success" role="status">Gespeichert.</p>
     <?php endif; ?>
     <?php if (!empty($error)): ?>
-        <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
     <form method="post" action="/settings/save" class="settings-form">

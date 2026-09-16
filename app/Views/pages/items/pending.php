@@ -33,7 +33,7 @@ foreach ($suppliers ?? [] as $sup) {
         <strong>Verwerfen</strong> blendet aus, bis derselbe Name wieder getippt wird.
     </p>
 
-    <p class="toast toast--error" x-show="loadError" x-text="loadError" x-cloak></p>
+    <p class="toast toast--error" role="alert" x-show="loadError" x-text="loadError" x-cloak></p>
 
     <p class="toast toast--warn" x-show="ready && !loadError && newItems.length === 0" x-cloak>
         Keine offenen Freitext-Artikel. Neue entstehen im <a href="/inventory/round">Inventur-Rundgang</a> oder in der <a href="/order/round">Bestellung</a>.
@@ -63,16 +63,16 @@ foreach ($suppliers ?? [] as $sup) {
                     <span x-show="ni.lastSeenByName" x-text="' · von ' + ni.lastSeenByName"></span>
                 </p>
                 <div class="form-group">
-                    <label class="form-label">Bezeichnung</label>
-                    <input class="input" x-model="ni.name" :disabled="!canTransfer || ni.busy">
+                    <label class="form-label" :for="'ni-name-' + ni.key">Bezeichnung</label>
+                    <input class="input" :id="'ni-name-' + ni.key" x-model="ni.name" :disabled="!canTransfer || ni.busy">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Gebinde / Einheit</label>
-                    <input class="input" x-model="ni.unit" :disabled="!canTransfer || ni.busy" placeholder="optional">
+                    <label class="form-label" :for="'ni-unit-' + ni.key">Gebinde / Einheit</label>
+                    <input class="input" :id="'ni-unit-' + ni.key" x-model="ni.unit" :disabled="!canTransfer || ni.busy" placeholder="optional">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Lagerort</label>
-                    <select class="select" x-model.number="ni.location_id" :disabled="!canTransfer || ni.busy">
+                    <label class="form-label" :for="'ni-loc-' + ni.key">Lagerort</label>
+                    <select class="select" :id="'ni-loc-' + ni.key" x-model.number="ni.location_id" :disabled="!canTransfer || ni.busy">
                         <option value="">— wählen —</option>
                         <template x-for="loc in transferLocations" :key="loc.id">
                             <option :value="loc.id" x-text="loc.name"></option>
@@ -81,8 +81,8 @@ foreach ($suppliers ?? [] as $sup) {
                     <p class="form-hint text-muted" x-show="ni.location_from_source" x-text="'Aus Erfassung: ' + ni.location_from_source"></p>
                 </div>
                 <div class="form-group" x-show="ni.source === 'order' || ni.supplier_id">
-                    <label class="form-label">Lieferant</label>
-                    <select class="select" x-model.number="ni.supplier_id" :disabled="!canTransfer || ni.busy">
+                    <label class="form-label" :for="'ni-sup-' + ni.key">Lieferant</label>
+                    <select class="select" :id="'ni-sup-' + ni.key" x-model.number="ni.supplier_id" :disabled="!canTransfer || ni.busy">
                         <option value="">— keiner —</option>
                         <template x-for="sup in transferSuppliers" :key="sup.id">
                             <option :value="sup.id" x-text="sup.name"></option>

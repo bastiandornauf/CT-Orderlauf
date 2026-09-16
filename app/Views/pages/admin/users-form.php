@@ -8,7 +8,7 @@ $role = (string) ($user['role'] ?? \App\Helpers\UserRole::ORDER);
 <section class="page-section">
     <h1 class="page-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
     <?php if (!empty($error)): ?>
-        <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <form method="post" action="/admin/users/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>

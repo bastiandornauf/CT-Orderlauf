@@ -6,7 +6,7 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
 <section class="page-section" x-data="<?= $xDataJson ?>">
     <h1 class="page-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
     <?php if (!empty($error)): ?>
-        <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <form method="post" action="/suppliers/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
@@ -140,6 +140,9 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
             <input type="checkbox" name="active" <?= !isset($supplier['active']) || (int) $supplier['active'] ? 'checked' : '' ?>>
             aktiv
         </label>
-        <button type="submit" class="button button--primary">Speichern</button>
+        <div class="form-actions">
+            <button type="submit" class="button button--primary">Speichern</button>
+            <a href="/suppliers" class="button button--ghost">Abbrechen</a>
+        </div>
     </form>
 </section>

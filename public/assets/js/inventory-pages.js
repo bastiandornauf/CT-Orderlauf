@@ -152,13 +152,13 @@ export function inventoryHomePageData() {
           showToast(
             'Eine defekte Inventur (ohne Artikel) wurde entfernt. Bitte erneut „Inventur starten“.',
             7000,
-            true,
+            'error',
           );
         }
       } catch (e) {
         this.invError =
           e?.message || 'Inventur-Status konnte nicht gelesen werden. Seite neu laden (F5).';
-        showToast(this.invError, 6000, true);
+        showToast(this.invError, 6000, 'error');
       } finally {
         this.initialized = true;
       }
@@ -179,7 +179,7 @@ export function inventoryHomePageData() {
       } catch (e) {
         const msg = e?.message || 'Löschen fehlgeschlagen';
         this.invError = msg;
-        showToast(msg, 6000, true);
+        showToast(msg, 6000, 'error');
       } finally {
         this.clearing = false;
       }
@@ -234,7 +234,7 @@ export function inventoryHomePageData() {
           } else {
             this.invError = msg;
           }
-          showToast(this.invError, 6000, true);
+          showToast(this.invError, 6000, 'error');
         } finally {
           this.invLoading = false;
         }
@@ -279,7 +279,7 @@ export function registerInventoryAlpine(Alpine) {
               ? 'Inventur ohne Artikelkatalog. Bitte auf der Startseite neu starten.'
               : 'Keine Inventur aktiv.',
             6000,
-            true,
+            'error',
           );
           window.location.href = '/inventory';
           return;
@@ -316,7 +316,7 @@ export function registerInventoryAlpine(Alpine) {
       } catch (e) {
         this.pageError =
           e?.message || 'Rundgang konnte nicht geladen werden. Seite neu laden (F5).';
-        showToast(this.pageError, 6000, true);
+        showToast(this.pageError, 6000, 'error');
       } finally {
         this.pageReady = true;
       }
@@ -469,7 +469,7 @@ export function registerInventoryAlpine(Alpine) {
         }
         await this.reloadLines();
       } catch (e) {
-        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, true);
+        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, 'error');
       }
     },
     async onQtyBlur(itemId, event) {
@@ -520,7 +520,7 @@ export function registerInventoryAlpine(Alpine) {
         const ui = await invStorage.loadInventorySessionForUi();
         const session = await resolveInventorySessionForPage(ui);
         if (!session) {
-          showToast('Keine gültige Inventur – bitte neu starten.', 6000, true);
+          showToast('Keine gültige Inventur – bitte neu starten.', 6000, 'error');
           window.location.href = '/inventory';
           return;
         }
@@ -543,7 +543,7 @@ export function registerInventoryAlpine(Alpine) {
       } catch (e) {
         this.pageError =
           e?.message || 'Abschluss konnte nicht geladen werden. Seite neu laden (F5).';
-        showToast(this.pageError, 6000, true);
+        showToast(this.pageError, 6000, 'error');
       } finally {
         this.pageReady = true;
       }
@@ -628,7 +628,7 @@ export function registerInventoryAlpine(Alpine) {
         await this.loadOpenItems();
         showToast('Als leer (0) erfasst.');
       } catch (e) {
-        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, true);
+        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, 'error');
       }
     },
     async markAllOpenAsZero() {
@@ -646,7 +646,7 @@ export function registerInventoryAlpine(Alpine) {
         await this.loadOpenItems();
         showToast(`${n} Artikel als leer (0) erfasst.`);
       } catch (e) {
-        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, true);
+        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, 'error');
       }
     },
     revokeCsvFallback() {
@@ -658,7 +658,7 @@ export function registerInventoryAlpine(Alpine) {
     },
     async downloadExport() {
       if (!this.session) {
-        showToast('Keine Inventur-Session – bitte neu starten.', 6000, true);
+        showToast('Keine Inventur-Session – bitte neu starten.', 6000, 'error');
         return;
       }
       if (!this.isLocked && this.stats.open > 0) {
@@ -704,7 +704,7 @@ export function registerInventoryAlpine(Alpine) {
           showToast(
             'Automatischer Download blockiert. Bitte den Link „CSV-Datei speichern“ unten tippen.',
             8000,
-            true,
+            'warn',
           );
         }
         if (!this.isLocked) {
@@ -715,17 +715,17 @@ export function registerInventoryAlpine(Alpine) {
               ? 'CSV gespeichert – Inventur abgeschlossen.'
               : 'Inventur abgeschlossen – CSV über den Link unten speichern.',
             dl.opened ? 4000 : 8000,
-            !dl.opened,
+            dl.opened ? 'success' : 'warn',
           );
         } else {
           showToast(
             dl.opened ? 'CSV erneut heruntergeladen.' : 'CSV über den Link unten speichern.',
             6000,
-            !dl.opened,
+            dl.opened ? 'success' : 'warn',
           );
         }
       } catch (e) {
-        showToast(e?.message || 'Export fehlgeschlagen', 6000, true);
+        showToast(e?.message || 'Export fehlgeschlagen', 6000, 'error');
       } finally {
         this.exporting = false;
       }
@@ -743,7 +743,7 @@ export function registerInventoryAlpine(Alpine) {
         showToast('Inventur lokal beendet.');
         window.location.href = '/inventory';
       } catch (e) {
-        showToast(e?.message || 'Löschen fehlgeschlagen', 6000, true);
+        showToast(e?.message || 'Löschen fehlgeschlagen', 6000, 'error');
         this.clearing = false;
       }
     },
@@ -819,21 +819,21 @@ export function registerInventoryAlpine(Alpine) {
     },
     async transferNewItem(entry) {
       if (!this.canTransfer) {
-        showToast('Keine Berechtigung für Stammdaten.', 5000, true);
+        showToast('Keine Berechtigung für Stammdaten.', 5000, 'error');
         return false;
       }
       if (!navigator.onLine) {
-        showToast('Zum Anlegen bitte online sein.', 5000, true);
+        showToast('Zum Anlegen bitte online sein.', 5000, 'warn');
         return false;
       }
       const name = String(entry.name || '').trim();
       const locId = Number(entry.location_id);
       if (name === '') {
-        showToast('Bitte eine Bezeichnung angeben.', 4000, true);
+        showToast('Bitte eine Bezeichnung angeben.', 4000, 'warn');
         return false;
       }
       if (!locId) {
-        showToast('Bitte einen Lagerort wählen.', 4000, true);
+        showToast('Bitte einen Lagerort wählen.', 4000, 'warn');
         return false;
       }
       entry.busy = true;
@@ -850,7 +850,7 @@ export function registerInventoryAlpine(Alpine) {
         return true;
       } catch (e) {
         entry.busy = false;
-        showToast(e?.message || 'Anlegen fehlgeschlagen', 6000, true);
+        showToast(e?.message || 'Anlegen fehlgeschlagen', 6000, 'error');
         return false;
       }
     },
@@ -868,7 +868,7 @@ export function registerInventoryAlpine(Alpine) {
         if (ok > 0 && fail === 0) {
           showToast(`${ok} Artikel angelegt.`, 4000);
         } else if (ok > 0) {
-          showToast(`${ok} angelegt, ${fail} übersprungen (siehe Liste).`, 6000, true);
+          showToast(`${ok} angelegt, ${fail} übersprungen (siehe Liste).`, 6000, 'error');
         }
       } finally {
         this.bulkBusy = false;
@@ -876,7 +876,7 @@ export function registerInventoryAlpine(Alpine) {
     },
     async dismissNewItem(entry) {
       if (!navigator.onLine) {
-        showToast('Zum Verwerfen bitte online sein.', 5000, true);
+        showToast('Zum Verwerfen bitte online sein.', 5000, 'warn');
         return;
       }
       entry.busy = true;
@@ -885,7 +885,7 @@ export function registerInventoryAlpine(Alpine) {
         await this.loadNewItems();
       } catch (e) {
         entry.busy = false;
-        showToast(e?.message || 'Konnte nicht verwerfen', 5000, true);
+        showToast(e?.message || 'Konnte nicht verwerfen', 5000, 'error');
       }
     },
     formatSeen(iso) {

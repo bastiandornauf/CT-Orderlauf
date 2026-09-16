@@ -38,7 +38,7 @@ $assetVersion = static function (string $publicPath): string {
     <?= $content ?? '' ?>
 </main>
 <?php require __DIR__ . '/partials/footer.php'; ?>
-<div id="toast-float" class="toast-float" aria-live="polite"></div>
+<div id="toast-float" class="toast toast-float toast--success" aria-live="polite"></div>
 <script type="module" src="/assets/js/main.js?v=<?= $assetVersion('/assets/js/main.js') ?>"></script>
 </body>
 </html>

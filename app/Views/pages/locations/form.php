@@ -1,7 +1,7 @@
 <section class="page-section">
     <h1 class="page-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
     <?php if (!empty($error)): ?>
-        <p class="toast toast--error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <form method="post" action="/locations/save" class="form-stack card card--pad">
         <?= \App\Helpers\Csrf::field() ?>
@@ -21,6 +21,9 @@
             <input type="checkbox" name="active" <?= !isset($location['active']) || (int) $location['active'] ? 'checked' : '' ?>>
             aktiv
         </label>
-        <button type="submit" class="button button--primary">Speichern</button>
+        <div class="form-actions">
+            <button type="submit" class="button button--primary">Speichern</button>
+            <a href="/locations" class="button button--ghost">Abbrechen</a>
+        </div>
     </form>
 </section>

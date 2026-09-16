@@ -22,6 +22,15 @@
     <p class="text-muted output-cc-line" x-show="cc && String(cc).trim()" x-cloak>
         CC: <span class="output-cc-line__addr" x-text="cc"></span>
     </p>
+    <p class="order-context text-muted" x-show="targetDate">
+        Wunsch-Lieferung <span x-text="formatDate(targetDate)"></span>
+        <span x-show="positionCount > 0" x-text="' · ' + positionCount + ' Positionen'"></span>
+    </p>
+
+    <div class="card card--pad" x-show="outputReady && !finalized && !blocks.length" x-cloak>
+        <p class="text-muted u-m-0">Keine Positionen zum Versand. Im Rundgang Mengen eintragen.</p>
+        <a href="/order/round" class="button button--secondary button--block">Zum Rundgang</a>
+    </div>
 
     <div class="button-stack output-bulk" x-show="!finalized && sendableBlocks.length" x-cloak>
         <button type="button" class="button button--primary button--block"
@@ -113,7 +122,7 @@
                     <template x-if="directSend && (block.supplier.order_type === 'webshop' || (block.supplier.order_type === 'mail' && block.supplier.email))">
                         <button type="button"
                                 :class="smtpSendButtonClass(block)"
-                                :disabled="blockSendState(block) === 'sending'"
+                                :disabled="blockSendState(block) === 'sending' || sendingAll"
                                 @click="sendBlock(block)">
                             <span class="button__label" x-text="smtpSendButtonLabel(block)">Senden</span>
                         </button>
@@ -136,7 +145,7 @@
         </div>
     </template>
 
-    <div class="button-stack" x-show="!finalized">
+    <div class="button-stack" x-show="!finalized && blocks.length">
         <button type="button" class="button button--primary button--block" @click="finalizeDone()">Bestellung abschließen</button>
         <p class="form-hint text-muted">Nur lokal – kein Versandnachweis.</p>
     </div>

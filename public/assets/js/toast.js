@@ -1,11 +1,25 @@
 let _toastTimer = null;
 
-/** Kurze Hinweise; Fehler länger und rot hervorgehoben. */
-export function showToast(msg, durationMs = 2500, isError = false) {
+/**
+ * Kurze Hinweise. Farben nur über `.toast--success|warn|error` (Light/Dark-Tokens).
+ *
+ * @param {string} msg
+ * @param {number} [durationMs]
+ * @param {boolean|'error'|'warn'|'success'} [kind] true = error (alt)
+ */
+export function showToast(msg, durationMs = 2500, kind = 'success') {
   const el = document.getElementById('toast-float');
   if (!el) return;
+  const variant =
+    kind === true || kind === 'error' ? 'error' : kind === 'warn' ? 'warn' : 'success';
+  const isError = variant === 'error';
   el.textContent = msg;
-  el.classList.toggle('toast-float--error', !!isError);
+  el.className = `toast toast-float toast--${variant}`;
+  if (isError) {
+    el.classList.add('toast-float--error');
+  }
+  el.setAttribute('role', isError ? 'alert' : 'status');
+  el.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   el.classList.add('toast-float--visible');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => {

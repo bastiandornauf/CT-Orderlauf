@@ -2,12 +2,12 @@
     <?php if (!empty($_SESSION['flash_ok'])): ?>
         <?php $flashOk = $_SESSION['flash_ok'];
         unset($_SESSION['flash_ok']); ?>
-        <p class="toast toast--success"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--success" role="status"><?= htmlspecialchars((string) $flashOk, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <?php if (!empty($_SESSION['flash_err'])): ?>
         <?php $flashErr = $_SESSION['flash_err'];
         unset($_SESSION['flash_err']); ?>
-        <p class="toast toast--error"><?= htmlspecialchars((string) $flashErr, ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="toast toast--error" role="alert"><?= htmlspecialchars((string) $flashErr, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
     <div class="page-toolbar">
         <h1 class="page-title">Benutzer</h1>

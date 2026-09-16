@@ -1,5 +1,6 @@
 <section class="page-section" x-data="reviewPage()">
     <?php $order_step = 3;
+    $stepper_guard_output = true;
     require __DIR__ . '/../../partials/order-stepper.php'; ?>
     <div class="page-toolbar">
         <h1 class="page-title">Kontrolle</h1>
@@ -10,6 +11,10 @@
         </button>
     </div>
     <p class="text-muted order-stammdaten-hint">Nur bestellte Positionen.</p>
+    <p class="order-context text-muted" x-show="targetDate">
+        Wunsch-Lieferung <span x-text="formatDate(targetDate)"></span>
+        <span x-show="positionCount > 0" x-text="' · ' + positionCount + ' Positionen'"></span>
+    </p>
 
     <template x-if="loading">
         <p class="text-muted">Lade…</p>
@@ -24,10 +29,23 @@
                 <span class="review-block__count" x-text="problemLines.length"></span>
             </h2>
             <ul class="review-problem-list">
-                <template x-for="(p, idx) in problemLines" :key="idx">
+                <template x-for="(p, idx) in problemLines" :key="p.entryId || idx">
                     <li class="review-problem-list__item">
-                        <strong x-text="p.itemLabel"></strong>
-                        <span class="text-muted" x-text="p.reason"></span>
+                        <div class="review-problem-list__main">
+                            <strong x-text="p.itemLabel"></strong>
+                            <span class="text-muted" x-text="p.reason"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" :for="'problem-sup-' + p.entryId">Lieferant</label>
+                            <select class="select" :id="'problem-sup-' + p.entryId"
+                                    @change="assignProblemSupplier(p, $event.target.value)">
+                                <option value="">— Lieferant wählen —</option>
+                                <template x-for="s in activeSupplierOptions()" :key="s.id">
+                                    <option :value="String(s.id)" x-text="s.label"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <button type="button" class="button button--small button--ghost" @click="removeProblem(p)">Entfernen</button>
                     </li>
                 </template>
             </ul>
@@ -83,7 +101,9 @@
                         </template>
                     </div>
                 </div>
-                <button type="button" class="button button--small button--ghost" @click="addFreeToSupplier(g.supplierId)">+ Frei</button>
+                <button type="button" class="button button--small button--ghost"
+                        @click="toggleFreeDraft(g.supplierId)"
+                        x-text="freeDraftOpen === g.supplierId ? 'Schließen' : '+ Frei'">+ Frei</button>
             </div>
 
             <!-- Artikel-Zeilen -->
@@ -145,12 +165,39 @@
                 </template>
             </ul>
 
+            <div class="review-free-draft form-stack" x-show="freeDraftOpen === g.supplierId" x-cloak>
+                <h3 class="section-header">Freier Artikel</h3>
+                <div class="form-group">
+                    <label class="form-label" :for="'free-label-' + g.supplierId">Bezeichnung</label>
+                    <input class="input" :id="'free-label-' + g.supplierId" x-model="freeDraft.label">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" :for="'free-qty-' + g.supplierId">Menge</label>
+                    <input class="input" :id="'free-qty-' + g.supplierId" x-model="freeDraft.qty" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" :for="'free-unit-' + g.supplierId">Gebinde / Einheit (optional)</label>
+                    <input class="input" :id="'free-unit-' + g.supplierId" x-model="freeDraft.unit" placeholder="z. B. Kiste, Bund, kg">
+                </div>
+                <div class="button-row">
+                    <button type="button" class="button button--secondary button--small" @click="submitFreeDraft(g.supplierId)">Hinzufügen</button>
+                    <button type="button" class="button button--ghost button--small" @click="freeDraftOpen = null">Abbrechen</button>
+                </div>
+            </div>
+
             <!-- Zusatznotiz -->
             <div class="review-supplier-card__note">
                 <label class="form-label">Zusatz für diesen Lieferanten</label>
                 <textarea class="textarea" rows="2" x-model="g.note"
                           @blur="saveNote(g.supplierId, g.note)"></textarea>
             </div>
+        </div>
+    </template>
+
+    <template x-if="!loading && reviewIsEmpty">
+        <div class="card card--pad">
+            <p class="text-muted u-m-0">Noch keine Positionen. Im Rundgang Mengen eintragen.</p>
+            <a href="/order/round" class="button button--secondary button--block u-mt-3">Zum Rundgang</a>
         </div>
     </template>
 

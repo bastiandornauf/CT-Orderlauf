@@ -164,7 +164,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 
 - Rollen mit Stammdaten-Recht: am **Artikel** Feld **Bewertungspreis pro Einheit** (nur für Inventur).
 - Die **Bestellung** nutzt diesen Preis nicht.
-- **Massenpflege per CSV:** Unter **Import / Export** **Bewertungspreise** herunterladen, in Excel eintragen, denselben Typ wieder importieren.
+- **Massenpflege per CSV:** Unter **Import / Export** **Artikel** herunterladen, Spalte **`bewertungspreis`** in Excel ändern, als **Artikel** oder Typ **Bewertungspreise** wieder importieren.
 
 ### Kurz-Checkliste Inventur (monatlich)
 
@@ -179,7 +179,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 
 - **Artikel**, **Lieferanten**, **Lagerorte** pflegen Sie über das **Menü** oder die einklappbare Sektion auf der Startseite.
 - Änderungen gelten für **neu begonnene** Bestellungen und können auf **Kontrolle/Versand** per **Aktualisieren** oder Tab-Wechsel nachgezogen werden (siehe oben).
-- **CSV Import/Export** (Menü **Import / Export**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; für reine Preislisten den Export **Bewertungspreise** und denselben Import-Typ.
+- **CSV Import/Export** (Menü **Import / Export**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; reine Preispflege über dieselbe Spalte oder Import-Typ **Bewertungspreise**.
 
 ---
 

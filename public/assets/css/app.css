@@ -1303,13 +1303,13 @@ button.supplier-chip--choice-active .supplier-chip--choice__name {
   z-index: var(--z-toast);
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
-  background: var(--color-text);
-  color: #fff;
+  border: 1px solid var(--color-border);
   font-size: var(--text-sm);
   font-weight: 600;
   box-shadow: var(--shadow-md);
   pointer-events: none;
   opacity: 0;
+  max-width: min(92vw, 32rem);
   transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
@@ -1319,12 +1319,9 @@ button.supplier-chip--choice-active .supplier-chip--choice__name {
 }
 
 .toast-float.toast-float--error {
-  background: #6b1c18;
-  color: #fff;
   font-weight: 500;
   white-space: pre-wrap;
   word-break: break-word;
-  max-width: min(92vw, 32rem);
   max-height: min(50vh, 18rem);
   overflow-y: auto;
   pointer-events: auto;
@@ -2197,7 +2194,17 @@ a.order-stepper__item:focus-visible {
 .review-problem-list__item {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+
+.review-problem-list__main {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
+}
+
+.review-free-draft {
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 /* Lieferanten-Card */
@@ -2968,6 +2975,42 @@ a.order-stepper__item:focus-visible {
   margin: 0;
 }
 
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.order-context {
+  margin: 0 0 var(--space-3);
+}
+
+.import-preview-wrap {
+  overflow-x: auto;
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.import-preview {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.import-preview th,
+.import-preview td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.import-preview thead th {
+  background: var(--color-accent-soft);
+  font-weight: 600;
+}
 
 }
 

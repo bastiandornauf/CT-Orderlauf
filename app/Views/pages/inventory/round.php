@@ -41,6 +41,8 @@
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
+                    :aria-selected="activeLocId === loc.id"
+                    :tabindex="activeLocId === loc.id ? 0 : -1"
                     @click="selectLocation(loc.id)">
                 <span class="button__label" x-text="tabLabel(loc)">Lager</span>
             </button>
