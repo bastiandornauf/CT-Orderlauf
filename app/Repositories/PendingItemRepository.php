@@ -120,13 +120,22 @@ final class PendingItemRepository
         Database::pdo()->prepare('DELETE FROM pending_items WHERE id = ?')->execute([$id]);
     }
 
-    /** Verworfen – bleibt als Merker liegen, kehrt bei erneuter Erfassung zurück. */
+    /**
+     * Verworfen – bleibt als Merker liegen, kehrt bei erneuter Erfassung zurück.
+     *
+     * Der Zeitstempel kommt bewusst aus PHP und nicht aus MySQL `NOW()`:
+     * `last_seen_at` wird ebenfalls von PHP geschrieben, und nur wenn beide aus
+     * derselben Uhr stammen, ist der Vergleich beim Wiederauftauchen belastbar.
+     * Laufen die Zeitzonen von PHP und MySQL auseinander – auf Shared Hosting
+     * keine Seltenheit –, würde jede spätere Erfassung Verworfenes sofort
+     * zurückholen und „Verwerfen" wirkte kaputt.
+     */
     public function dismiss(int $id): void
     {
         $stmt = Database::pdo()->prepare(
-            'UPDATE pending_items SET status = ?, dismissed_at = NOW() WHERE id = ?'
+            'UPDATE pending_items SET status = ?, dismissed_at = ? WHERE id = ?'
         );
-        $stmt->execute([self::STATUS_DISMISSED, $id]);
+        $stmt->execute([self::STATUS_DISMISSED, self::normalizeDateTime(null), $id]);
     }
 
     public function find(int $id): ?array
