@@ -8,6 +8,7 @@ import {
   putRow,
   deleteRow,
   openDb,
+  recordPendingItem,
   INVENTORY_ONLY_STORES,
 } from './storage.js';
 
@@ -284,15 +285,29 @@ export async function addInventoryFreeItem(data) {
   const now = new Date().toISOString();
   const qtyRaw = String(data.quantity ?? '').trim().replace(',', '.');
   const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
+  const unit = String(data.unit || '').trim();
+  const locationId = data.location_id != null ? Number(data.location_id) : null;
   await putRow('inventory_free_items', {
     name,
-    unit: String(data.unit || '').trim(),
+    unit,
     quantity: Number.isFinite(qty) && qty >= 0 ? qty : 0,
-    location_id: data.location_id != null ? Number(data.location_id) : null,
+    location_id: locationId,
     transferred: 0,
+    // direkt in der Sammelliste vermerkt – kein Nachtrag nötig
+    pending_synced: 1,
     created_at: now,
     updated_at: now,
   });
+  await recordPendingItem(
+    {
+      name,
+      unit,
+      quantity: qtyRaw,
+      location_id: locationId,
+      source: 'inventory',
+    },
+    now,
+  );
   return true;
 }
 

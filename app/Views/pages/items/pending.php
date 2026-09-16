@@ -25,12 +25,20 @@ foreach ($suppliers ?? [] as $sup) {
     </div>
 
     <p class="text-muted">
-        Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong>.
+        Hier sammeln sich alle per <strong>Freitext</strong> erfassten Positionen aus <strong>Inventur</strong> und <strong>Bestellung</strong> –
+        dauerhaft über Bestellrunden und Inventuren hinweg und <strong>von allen Nutzern gemeinsam</strong>.
+        Häufig getippte Artikel stehen oben.
         <span x-show="canTransfer">Lagerort und ggf. Lieferant werden aus der Erfassung übernommen – bitte prüfen und in die Stammdaten übernehmen (online).</span>
         <span x-show="!canTransfer">Übernahme in die Stammdaten benötigt Stammdaten-Recht.</span>
     </p>
+    <p class="text-muted">
+        <strong>Verwerfen</strong> entfernt einen Eintrag aus der Liste. Wird derselbe Artikel später erneut per Freitext erfasst, erscheint er wieder.
+        Freitext aus dem Rundgang wird beim Öffnen der <strong>Kontrolle</strong> bzw. des <strong>Inventur-Abschlusses</strong> übertragen – dafür ist eine Verbindung nötig.
+    </p>
 
-    <p class="toast toast--warn" x-show="ready && newItems.length === 0" x-cloak>
+    <p class="toast toast--error" x-show="loadError" x-text="loadError" x-cloak></p>
+
+    <p class="toast toast--warn" x-show="ready && !loadError && newItems.length === 0" x-cloak>
         Keine offenen Freitext-Artikel. Neue entstehen im <a href="/inventory/round">Inventur-Rundgang</a> oder in der <a href="/order/round">Bestellung</a>.
     </p>
 
@@ -47,8 +55,16 @@ foreach ($suppliers ?? [] as $sup) {
             <li class="card card--pad list-item--stack inventory-newitems__item">
                 <div class="inventory-newitems__head">
                     <span class="status-badge status-badge--neutral" x-text="ni.sourceLabel"></span>
+                    <span class="status-badge status-badge--ok" x-show="ni.seenCount > 1"
+                          x-text="ni.seenCount + '× erfasst'"></span>
                     <span class="text-muted" x-show="ni.quantity" x-text="'Menge: ' + String(ni.quantity).replace('.', ',')"></span>
                 </div>
+                <p class="text-muted" x-show="ni.firstSeenAt">
+                    <span x-text="'Zuerst: ' + formatSeen(ni.firstSeenAt)"></span>
+                    <span x-show="ni.lastSeenAt && ni.lastSeenAt !== ni.firstSeenAt"
+                          x-text="' · Zuletzt: ' + formatSeen(ni.lastSeenAt)"></span>
+                    <span x-show="ni.lastSeenByName" x-text="' · von ' + ni.lastSeenByName"></span>
+                </p>
                 <div class="form-group">
                     <label class="form-label">Bezeichnung</label>
                     <input class="input" x-model="ni.name" :disabled="!canTransfer || ni.busy">
@@ -86,7 +102,7 @@ foreach ($suppliers ?? [] as $sup) {
                     </button>
                     <button type="button" class="button button--ghost button--small"
                             :disabled="ni.busy"
-                            @click.prevent="dismissNewItem(ni)">Ausblenden</button>
+                            @click.prevent="dismissNewItem(ni)">Verwerfen</button>
                 </div>
             </li>
         </template>

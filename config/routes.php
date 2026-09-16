@@ -19,6 +19,7 @@ use App\Controllers\ItemController;
 use App\Controllers\LocationController;
 use App\Controllers\OrderApiController;
 use App\Controllers\OrderController;
+use App\Controllers\PendingItemApiController;
 use App\Controllers\ProfileController;
 use App\Controllers\SettingsController;
 use App\Controllers\SupplierController;
@@ -53,7 +54,9 @@ return [
         '/inventory/round' => [InventoryController::class, 'round'],
         '/inventory/finalize' => [InventoryController::class, 'finalize'],
         '/api/order/payload' => [OrderApiController::class, 'payload'],
+        '/api/order/delivery-preview' => [OrderApiController::class, 'deliveryPreview'],
         '/api/inventory/payload' => [InventoryApiController::class, 'payload'],
+        '/api/pending-items' => [PendingItemApiController::class, 'index'],
         '/export/locations' => [ExportController::class, 'locations'],
         '/export/suppliers' => [ExportController::class, 'suppliers'],
         '/export/delivery-days' => [ExportController::class, 'deliveryDays'],
@@ -79,5 +82,7 @@ return [
         '/api/order/send-mail' => [OrderApiController::class, 'sendMail'],
         '/api/items/save' => [ItemApiController::class, 'save'],
         '/api/items/create' => [ItemApiController::class, 'create'],
+        '/api/pending-items/sync' => [PendingItemApiController::class, 'sync'],
+        '/api/pending-items/resolve' => [PendingItemApiController::class, 'resolve'],
     ],
 ];

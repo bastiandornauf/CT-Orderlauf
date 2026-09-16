@@ -176,6 +176,27 @@ Die Inventur braucht **mehr als den Ordner `app/`**. Mindestens hochladen:
 **Schnelltest auf dem Server:** In `config/routes.php` muss die Zeile `'/inventory' =>` vorkommen.  
 Wenn `/order/round` geht, `/inventory` aber 404 liefert, fehlen fast immer die neuen Routen-Dateien.
 
+### Gemeinsame Sammlung „Neue Artikel“ (Deploy-Check)
+
+Damit die Freitext-Artikel **aller Nutzer** in einem Topf landen, liegt die Sammlung in der Datenbank. Bei einer bestehenden Installation ist das ein **Pflicht-Schritt in phpMyAdmin**:
+
+1. `database/migrations/20260916_pending_items.sql` ausführen (legt die Tabelle `pending_items` an).
+2. Falls noch nicht erledigt: `database/migrations/20260605_users_display_name.sql` ausführen – die Spalte `display_name` wird für den Namen „zuletzt erfasst von“ und die Mail-Platzhalter gebraucht.
+
+Zusätzlich hochladen:
+
+| Pfad | Zweck |
+|------|--------|
+| `app/Repositories/PendingItemRepository.php` | |
+| `app/Controllers/PendingItemApiController.php` | |
+| `config/routes.php` | Routen `/api/pending-items`, `.../sync`, `.../resolve` |
+| `public/assets/js/pending-sync.js` | Abgleich Gerät → Server |
+| `public/assets/js/api.js`, `storage.js`, `order-pages.js`, `inventory-pages.js` | |
+| `app/Views/pages/items/pending.php` | |
+| `public/sw.js` | Cache v39+ |
+
+**Schnelltest:** Als Administrator `/items/pending` öffnen – die Seite muss ohne Fehlermeldung laden. Als Nutzer mit „Nur Bestellen“ muss `/items/pending` auf die Startseite umleiten, während dessen Freitext-Artikel beim Öffnen der Kontrolle trotzdem in der Sammlung erscheinen.
+
 ---
 
 ## 9. Backup

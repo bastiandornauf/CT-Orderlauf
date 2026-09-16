@@ -30,6 +30,20 @@ export async function fetchInventoryPayload(stichtag, label = '') {
   return { ...data, label: String(label || '').trim() };
 }
 
+export async function fetchDeliveryPreview(targetDate) {
+  const u = new URL('/api/order/delivery-preview', window.location.origin);
+  u.searchParams.set('target_date', targetDate);
+  const res = await fetch(u.toString(), {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Liefer-Vorschau fehlgeschlagen');
+  }
+  return data;
+}
+
 export async function fetchPayload(targetDate) {
   const u = new URL('/api/order/payload', window.location.origin);
   u.searchParams.set('target_date', targetDate);
@@ -86,6 +100,62 @@ export async function createItem(body) {
   const data = await res.json();
   if (!res.ok || !data.ok) {
     throw new Error(data.error || 'Anlegen fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
+ * Freitext-Artikel in die gemeinsame Sammlung einzahlen.
+ * Steht allen Rollen offen – auch „Nur Bestellen“ muss beitragen können.
+ * @param {object[]} items
+ */
+export async function syncPendingItems(items) {
+  const res = await fetch('/api/pending-items/sync', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ items, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Abgleich der Sammelliste fehlgeschlagen');
+  }
+  return data;
+}
+
+/** Gemeinsame Sammlung lesen (nur Stammdaten-Recht). */
+export async function fetchPendingItems() {
+  const res = await fetch('/api/pending-items', {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Sammelliste laden fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
+ * @param {number} id
+ * @param {'transferred'|'dismiss'} action
+ */
+export async function resolvePendingItem(id, action) {
+  const res = await fetch('/api/pending-items/resolve', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ id, action, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Aktion fehlgeschlagen');
   }
   return data;
 }

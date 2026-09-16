@@ -65,7 +65,7 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Sie können die *
 
 - **Tabs** oben: Wechsel zwischen den **Lagerorten**.
 - Bei jedem Artikel die **Menge** eintragen (leer lassen = nicht bestellen).
-- **Freie Position**: Bezeichnung und Menge; Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden.
+- **Freie Position**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jede freie Position landet zusätzlich dauerhaft in der Sammelliste **Neue Artikel**.
 - Wenn Sie fertig sind: **Weiter zur Kontrolle** (o. ä.) – die Runde wird als **bereit zur Kontrolle** markiert.
 
 *Tipp:* Kurz **offline** arbeiten geht; zum **Laden** einer neuen Runde oder **Synchronisieren** mit geänderten Stammdaten sind Sie **online** nötig.
@@ -114,12 +114,14 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 
 ### Rundgang
 
-- Wie bei der Bestellung: **Tabs** nach **Lagerort**, **Suche** nach Artikelname.
+- Wie bei der Bestellung: **Tabs** nach **Lagerort**, **Suche** nach Artikelname **und Gebinde/Einheit**.
+- Die **Gebindegröße/Einheit** steht immer sichtbar unter dem Artikelnamen (auch im Kompaktmodus).
 - Es erscheinen nur **aktive** Artikel (inaktive Artikel sind ausgeschlossen).
 - Pro Artikel:
   - **Leer lassen** = noch **nicht gezählt** (Status später `offen` in der CSV).
   - **Leer / 0** = bewusst **kein Bestand** (Status `gezaehlt_0`).
   - **Menge eintragen** = gezählter Bestand (Status `gezaehlt`).
+- **Artikel nicht im Bestand**: Unten im jeweiligen Lagerort gibt es den Block **„Artikel nicht im Bestand"** – Bezeichnung, Gebinde/Einheit und Menge eintragen → **Hinzufügen**. Diese freien Artikel kommen in die CSV (Status `frei_gezaehlt`) und in die **Sammelliste** im Abschluss.
 - Sie müssen **nicht** jeden Artikel im Rundgang anfassen. Offene Positionen klären Sie am besten im **Abschluss**.
 
 ### Abschluss (empfohlene Vorgehensweise)
@@ -133,10 +135,29 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
      - `offen` – nicht gezählt  
      - `gezaehlt_0` – gezählt, Bestand null  
      - `gezaehlt` – Menge in Spalte `menge`  
+     - `frei_gezaehlt` – per Freitext erfasster Artikel (nicht im Stamm)  
    - In **Excel** filtern Sie nach `status`, formatieren und werten aus.
    - Optional Spalten **`bewertungspreis`** und **`wert`** (wenn am Artikel ein Bewertungspreis gepflegt ist).
 
 **Nach dem Export** ist die Inventur **gesperrt**: keine Änderungen mehr am Rundgang. Sie können die CSV **erneut herunterladen** oder die Session **lokal löschen** (Seite **Inventur** oder Abschluss → **Inventur beenden**). Für die nächste Monats-Inventur: **Neue Inventur starten**.
+
+### Neue Artikel (eigene Seite unter „Artikel")
+
+Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** (freie Positionen) – sammeln sich auf der Seite **Neue Artikel** (Menü → **Neue Artikel**, oder im Inventur-Abschluss der Hinweis-Link, oder auf der Artikelliste oben **Neue Artikel**). Adresse: `/items/pending`.
+
+Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge bleiben erhalten, wenn Sie eine neue Bestellrunde laden, eine Runde abschließen, eine Inventur abschließen oder lokal löschen. So können Sie alle paar Wochen in Ruhe prüfen, welche Freitext-Artikel zu **Regulars** geworden sind.
+
+- **Alle Nutzer zahlen in denselben Topf ein** – egal wer die Bestellung oder Inventur gemacht hat und auf welchem Gerät. Auch Nutzer mit „Nur Bestellen“ tragen bei, sehen die Liste aber nicht.
+- Gleiche Bezeichnungen werden **über alle Nutzer hinweg zusammengefasst**. Ein Zähler zeigt, wie oft der Artikel erfasst wurde (`3× erfasst`), dazu **Zuerst**- und **Zuletzt**-Datum sowie wer ihn zuletzt getippt hat. Häufigste stehen oben.
+- Pro Eintrag **Bezeichnung**, **Gebinde/Einheit**, **Lagerort** und ggf. **Lieferant** prüfen/ergänzen.
+- **Lagerort** wird aus der Erfassung übernommen (Inventur: aktueller Lagerort-Tab; Bestellung: Lagerort der freien Position).
+- **Gebinde/Einheit** wird aus der Erfassung übernommen – in der Bestellung gibt es dafür beim freien Artikel ein eigenes Feld, damit die Einheit nicht in die Bezeichnung getippt werden muss.
+- **Lieferant** wird bei Freitext aus der **Bestellung** übernommen, sofern in der Runde oder Kontrolle zugeordnet.
+- Mit **Stammdaten-Recht** und **online**: **In Stammdaten übernehmen** legt den Artikel direkt an – einzeln pro Zeile oder per **Alle übernehmen**. Er steht dann ab der **nächsten** Inventur/Bestellung im Katalog (der aktuelle Stand ist eine lokale Kopie). Der Eintrag verschwindet danach aus der Sammelliste.
+- **Verwerfen** entfernt einen Eintrag aus der Liste, ohne ihn anzulegen. Wird derselbe Artikel **später erneut** per Freitext erfasst, erscheint er wieder – aus Einmal-Notizen können so über Wochen doch noch Stammartikel werden.
+- Ohne Stammdaten-Recht ist die Seite nicht erreichbar: **Auswerten und Übernehmen darf nur Administrator oder Stammdaten.** „Nur Bestellen“ sieht die Seite und den Hinweis im Inventur-Abschluss nicht.
+- Freitext aus dem Rundgang wird **beim Öffnen der Kontrolle** bzw. des **Inventur-Abschlusses** an den Server übertragen – dafür ist einmal Verbindung nötig. Offline erfasste Artikel warten auf dem Gerät und gehen nicht verloren; sie erscheinen bei den Kollegen erst nach dieser Übertragung.
+- **Verwerfen** und **Übernehmen** wirken für alle Nutzer und brauchen eine Verbindung.
 
 ### Bewertungspreis (optional)
 

@@ -2,6 +2,7 @@ import * as api from './api.js';
 import * as invStorage from './inventory-storage.js';
 import * as orderStorage from './storage.js';
 import * as invRound from './inventory-round.js';
+import * as pendingSync from './pending-sync.js';
 import { buildInventoryCsv, downloadCsv } from './inventory-csv.js';
 import { showToast } from './toast.js';
 
@@ -20,65 +21,38 @@ function formatDeDate(iso) {
 }
 
 /**
- * Alle noch offenen Freitext-Positionen aus Inventur (lokaler Store) und
- * Bestellung (order_entries) einsammeln – Quelle für die Sammelliste „Neue Artikel".
+ * Gemeinsame Sammlung vom Server holen – enthält die Freitext-Artikel **aller**
+ * Nutzer. Vorher wird der lokale Ausgangskorb übertragen, damit die eigenen
+ * Erfassungen der letzten Runde mit drin sind.
+ *
  * @returns {Promise<object[]>}
  */
 async function collectPendingFreeItems() {
-  const list = [];
-  const suppliers = await orderStorage.getAllSuppliers();
-  const supById = new Map(suppliers.map((s) => [Number(s.id), String(s.name || '')]));
+  await pendingSync.pushPendingOutbox();
+  const data = await api.fetchPendingItems();
 
-  const invFree = await invStorage.getInventoryFreeItems();
-  for (const f of invFree) {
-    if (Number(f.transferred) === 1) continue;
-    list.push({
-      key: `inv-${f.id}`,
-      source: 'inventory',
-      sourceId: f.id,
-      sourceLabel: 'Inventur',
-      name: f.name || '',
-      unit: f.unit || '',
-      quantity: f.quantity,
-      location_id: f.location_id != null ? Number(f.location_id) : null,
-      supplier_id: null,
+  return (data.items || []).map((r) => {
+    const sourceLabels = [];
+    if (r.source_order) sourceLabels.push('Bestellung');
+    if (r.source_inventory) sourceLabels.push('Inventur');
+    return {
+      key: `pend-${r.id}`,
+      pendingId: r.id,
+      source: r.source_order ? 'order' : 'inventory',
+      sourceLabel: sourceLabels.join(' + ') || 'Bestellung',
+      seenCount: Number(r.seen_count) || 1,
+      firstSeenAt: r.first_seen_at || '',
+      lastSeenAt: r.last_seen_at || '',
+      lastSeenByName: r.last_seen_by_name || '',
+      name: r.name || '',
+      unit: r.unit || '',
+      quantity: r.last_quantity ?? '',
+      location_id: r.location_id != null ? Number(r.location_id) : null,
+      supplier_id: r.supplier_id != null ? Number(r.supplier_id) : null,
+      supplier_label: r.supplier_name || '',
       busy: false,
-    });
-  }
-
-  const entries = await orderStorage.getOrderEntries();
-  for (const e of entries) {
-    if (!e.is_free_item || e.transferred_to_item_id) continue;
-    const label = String(e.free_label || '').trim();
-    if (label === '') continue;
-    const rawSid = e.free_supplier_id ?? e.selected_supplier_id;
-    const supplierId =
-      rawSid != null && rawSid !== '' && Number(rawSid) > 0 ? Number(rawSid) : null;
-    list.push({
-      key: `ord-${e.id}`,
-      source: 'order',
-      sourceId: e.id,
-      sourceLabel: 'Bestellung',
-      name: label,
-      unit: '',
-      quantity: e.quantity,
-      location_id: e.location_id != null ? Number(e.location_id) : null,
-      supplier_id: supplierId,
-      supplier_label: supplierId ? supById.get(supplierId) || '' : '',
-      busy: false,
-    });
-  }
-
-  return list;
-}
-
-/** @param {object} entry Quelle als erledigt markieren (übernommen/ausgeblendet) */
-async function markPendingFreeItemDone(entry) {
-  if (entry.source === 'inventory') {
-    await invStorage.updateInventoryFreeItem(entry.sourceId, { transferred: 1 });
-  } else {
-    await orderStorage.updateOrderEntry(entry.sourceId, { transferred_to_item_id: 1 });
-  }
+    };
+  });
 }
 
 /** @param {object} session */
@@ -445,12 +419,34 @@ export function registerInventoryAlpine(Alpine) {
       if (p == null || p === '') return '';
       return `Bewertung ${String(p).replace('.', ',')} €/${it.unit || 'Einh.'}`;
     },
+    /**
+     * Nach oben springen, sobald der Lagerort wechselt.
+     * iOS Safari bricht ein laufendes „smooth“-Scroll ab, wenn sich die
+     * Seitenhöhe ändert – und genau das passiert beim Neuaufbau der Liste.
+     * Deshalb hart springen, direkt in der Tap-Geste und erneut nach Re-Render
+     * und nächstem Frame (dann ist die neue Höhe geklammert).
+     */
+    scrollToListTop() {
+      const jump = () => {
+        window.scrollTo(0, 0);
+        const el = document.scrollingElement || document.documentElement;
+        el.scrollTop = 0;
+      };
+      jump();
+      this.$nextTick(() => {
+        jump();
+        requestAnimationFrame(jump);
+      });
+    },
+    selectLocation(locationId) {
+      this.activeLocId = locationId;
+      this.scrollToListTop();
+    },
     nextLocation() {
       if (this.locations.length < 2) return;
       const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
       const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
-      this.activeLocId = next.id;
-      this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      this.selectLocation(next.id);
     },
     nextLocationLabel() {
       if (this.locations.length < 2) return '';
@@ -574,10 +570,28 @@ export function registerInventoryAlpine(Alpine) {
             a.name.localeCompare(b.name, 'de'),
         );
     },
+    /**
+     * Freitext-Artikel der Inventur in die gemeinsame Sammlung schieben – der
+     * Abschluss ist der Moment, an dem auch „Nur Bestellen“-Nutzer wieder online
+     * sind. Der Hinweis auf die Sammelliste erscheint nur mit Stammdaten-Recht,
+     * weil sonst niemand darauf reagieren kann.
+     */
     async countNewItems() {
-      const items = await collectPendingFreeItems();
-      this.newItemCount = items.length;
-      this.hasNewItems = items.length > 0;
+      const canEditMaster = this.$el?.dataset?.canEditMaster === '1';
+      const sync = await pendingSync.pushPendingOutbox();
+      if (!canEditMaster || sync.offline) {
+        this.hasNewItems = false;
+        this.newItemCount = 0;
+        return;
+      }
+      try {
+        const data = await api.fetchPendingItems();
+        this.newItemCount = (data.items || []).length;
+        this.hasNewItems = this.newItemCount > 0;
+      } catch {
+        this.hasNewItems = false;
+        this.newItemCount = 0;
+      }
     },
     async refreshStats() {
       const items = await invStorage.getAllInventoryCatalogItems();
@@ -742,6 +756,7 @@ export function registerInventoryAlpine(Alpine) {
     ready: false,
     canTransfer: false,
     bulkBusy: false,
+    loadError: '',
     /** @type {{id:number,name:string}[]} */
     transferLocations: [],
     /** @type {{id:number,name:string}[]} */
@@ -773,7 +788,15 @@ export function registerInventoryAlpine(Alpine) {
       const defaultLoc = this.transferLocations[0]?.id ?? '';
       const locById = new Map(this.transferLocations.map((l) => [l.id, l.name]));
       const supById = new Map(this.transferSuppliers.map((s) => [s.id, s.name]));
-      const list = await collectPendingFreeItems();
+      let list = [];
+      try {
+        list = await collectPendingFreeItems();
+        this.loadError = '';
+      } catch (e) {
+        this.loadError = e?.message || 'Sammelliste nicht erreichbar';
+        this.newItems = [];
+        return;
+      }
       for (const ni of list) {
         const fromLoc = ni.location_id != null ? Number(ni.location_id) : null;
         if (fromLoc && locById.has(fromLoc)) {
@@ -821,7 +844,7 @@ export function registerInventoryAlpine(Alpine) {
           body.supplier_links = [{ supplier_id: sid, priority: 10 }];
         }
         await api.createItem(body);
-        await markPendingFreeItemDone(entry);
+        await api.resolvePendingItem(entry.pendingId, 'transferred');
         showToast(`„${name}" als Artikel angelegt.`, 3500);
         await this.loadNewItems();
         return true;
@@ -852,12 +875,22 @@ export function registerInventoryAlpine(Alpine) {
       }
     },
     async dismissNewItem(entry) {
+      if (!navigator.onLine) {
+        showToast('Zum Verwerfen bitte online sein.', 5000, true);
+        return;
+      }
+      entry.busy = true;
       try {
-        await markPendingFreeItemDone(entry);
+        await api.resolvePendingItem(entry.pendingId, 'dismiss');
         await this.loadNewItems();
       } catch (e) {
-        showToast(e?.message || 'Konnte nicht ausblenden', 5000, true);
+        entry.busy = false;
+        showToast(e?.message || 'Konnte nicht verwerfen', 5000, true);
       }
+    },
+    formatSeen(iso) {
+      if (!iso) return '';
+      return formatDeDate(String(iso).slice(0, 10));
     },
   }));
 }

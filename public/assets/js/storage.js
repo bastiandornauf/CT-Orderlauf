@@ -3,7 +3,7 @@
  */
 
 const DB_NAME = 'ct-orderlauf';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 /** @returns {Promise<IDBDatabase>} */
 function openDb() {
@@ -11,6 +11,11 @@ function openDb() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
     req.onsuccess = () => resolve(req.result);
+    // Ein anderer offener Tab blockiert sonst still das Schema-Update.
+    req.onblocked = () =>
+      reject(
+        new Error('Bitte alle anderen Tabs dieser App schließen und die Seite neu laden.'),
+      );
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('meta')) {
@@ -60,9 +65,21 @@ function openDb() {
         const s = db.createObjectStore('inventory_free_items', { keyPath: 'id', autoIncrement: true });
         s.createIndex('by_location', 'location_id', { unique: false });
       }
+      if (!db.objectStoreNames.contains('pending_items')) {
+        const s = db.createObjectStore('pending_items', { keyPath: 'id', autoIncrement: true });
+        s.createIndex('by_key', 'dedupe_key', { unique: true });
+      }
     };
   });
 }
+
+/**
+ * Ausgangskorb für Freitext-Artikel auf dem Weg zur gemeinsamen Sammlung
+ * auf dem Server. Wird bewusst von keinem Reset geleert – Einträge verschwinden
+ * erst, wenn sie erfolgreich übertragen wurden. Offline erfasste Sichtungen
+ * werden hier je Bezeichnung gebündelt.
+ */
+export const PENDING_ITEMS_STORE = 'pending_items';
 
 /** Inventur-Stores (inventory_*) werden von savePreparedSnapshot/clearOrderRound nicht geleert. */
 export const INVENTORY_ONLY_STORES = [
@@ -525,6 +542,109 @@ export async function clearOrderRound() {
   ];
   for (const s of stores) {
     await clearStore(s);
+  }
+}
+
+/* ─── Ausgangskorb für die gemeinsame Sammlung neuer Artikel ───────────────── */
+
+/** @param {string} name */
+function pendingDedupeKey(name) {
+  return String(name || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+/** @param {string} key */
+async function findPendingItemByKey(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PENDING_ITEMS_STORE, 'readonly');
+    const req = tx.objectStore(PENDING_ITEMS_STORE).index('by_key').get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Freitext-Artikel für die gemeinsame Sammlung vormerken. Läuft offline und
+ * bündelt mehrfache Sichtungen derselben Bezeichnung in `seen_count`, damit der
+ * Server beim nächsten Abgleich um genau diesen Betrag hochzählt.
+ *
+ * @param {{
+ *   name: string, unit?: string, quantity?: unknown,
+ *   location_id?: number|null, supplier_id?: number|null,
+ *   source?: 'order'|'inventory'
+ * }} data
+ * @param {string} [seenAt] ISO-Zeitpunkt der Erfassung (für Nachträge aus Altdaten)
+ */
+export async function recordPendingItem(data, seenAt) {
+  const name = String(data.name || '').trim().replace(/\s+/g, ' ');
+  if (name === '') return;
+  const key = pendingDedupeKey(name);
+  const at = seenAt || new Date().toISOString();
+  const source = data.source === 'inventory' ? 'inventory' : 'order';
+  const unit = String(data.unit || '').trim();
+  const qty = String(data.quantity ?? '').trim();
+  const locId = data.location_id != null && data.location_id !== '' ? Number(data.location_id) : null;
+  const supId = data.supplier_id != null && data.supplier_id !== '' ? Number(data.supplier_id) : null;
+
+  const existing = await findPendingItemByKey(key);
+  if (!existing) {
+    await putRow(PENDING_ITEMS_STORE, {
+      dedupe_key: key,
+      name,
+      unit,
+      last_quantity: qty,
+      location_id: locId,
+      supplier_id: supId && supId > 0 ? supId : null,
+      sources: [source],
+      seen_count: 1,
+      first_seen_at: at,
+      last_seen_at: at,
+    });
+    return;
+  }
+
+  const sources = new Set(Array.isArray(existing.sources) ? existing.sources : []);
+  sources.add(source);
+  const next = {
+    ...existing,
+    name: existing.name || name,
+    unit: existing.unit || unit,
+    last_quantity: qty || existing.last_quantity || '',
+    location_id: existing.location_id ?? locId,
+    supplier_id: existing.supplier_id ?? (supId && supId > 0 ? supId : null),
+    sources: [...sources],
+    seen_count: (Number(existing.seen_count) || 0) + 1,
+    first_seen_at: existing.first_seen_at && existing.first_seen_at < at ? existing.first_seen_at : at,
+    last_seen_at: existing.last_seen_at && existing.last_seen_at > at ? existing.last_seen_at : at,
+  };
+  await putRow(PENDING_ITEMS_STORE, next);
+}
+
+/** @returns {Promise<object[]>} noch nicht übertragene Vormerkungen */
+export async function getPendingOutbox() {
+  return getAll(PENDING_ITEMS_STORE);
+}
+
+/**
+ * Übertragene Vormerkungen entfernen. Nur die gemeldeten Sichtungen werden
+ * abgezogen – kommt währenddessen eine neue dazu, bleibt sie für den nächsten
+ * Abgleich stehen.
+ *
+ * @param {{ id: number, seen_count: number }[]} pushed
+ */
+export async function clearPushedPendingOutbox(pushed) {
+  for (const p of pushed) {
+    const row = await getOne(PENDING_ITEMS_STORE, Number(p.id));
+    if (!row) continue;
+    const remaining = (Number(row.seen_count) || 0) - (Number(p.seen_count) || 0);
+    if (remaining > 0) {
+      await putRow(PENDING_ITEMS_STORE, { ...row, seen_count: remaining });
+    } else {
+      await deleteRow(PENDING_ITEMS_STORE, row.id);
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import * as api from './api.js';
 import * as storage from './storage.js';
 import * as orch from './order-round.js';
+import * as pendingSync from './pending-sync.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
 import { showToast } from './toast.js';
@@ -44,7 +45,7 @@ function formatStockHint(it) {
 }
 
 /**
- * @param {{ targetDate: string, loading: boolean, error: string, suppliersWithDates: object[] }} ctx
+ * @param {{ targetDate: string, loading: boolean, error: string }} ctx
  */
 async function executeLoadPreparedRound(ctx) {
   ctx.error = '';
@@ -79,21 +80,52 @@ async function executeLoadPreparedRound(ctx) {
     };
     await storage.savePreparedSnapshot(payload);
 
-    const targetMap = new Map((data.supplier_delivery_targets || []).map((t) => [Number(t.supplier_id), t.delivery_date]));
-    ctx.suppliersWithDates = data.suppliers
-      .filter((s) => s.active)
-      .map((s) => ({
-        ...s,
-        deliveryDate: targetMap.get(Number(s.id)) || null,
-      }))
-      .sort((a, b) => (a.deliveryDate || '').localeCompare(b.deliveryDate || '') || a.name.localeCompare(b.name));
-
     window.location.href = '/order/round';
   } catch (e) {
     ctx.error = e.message || 'Fehler';
   } finally {
     ctx.loading = false;
   }
+}
+
+let deliveryPreviewTimer = null;
+
+/** @param {ReturnType<typeof dashboardPageData>} ctx */
+async function refreshDeliveryPreview(ctx) {
+  if (!ctx.targetDate) {
+    return;
+  }
+  if (!navigator.onLine) {
+    ctx.deliveryPreview = [];
+    ctx.previewOffline = true;
+    ctx.previewLoading = false;
+    ctx.previewError = '';
+    return;
+  }
+  ctx.previewOffline = false;
+  ctx.previewLoading = true;
+  ctx.previewError = '';
+  try {
+    const data = await api.fetchDeliveryPreview(ctx.targetDate);
+    ctx.deliveryPreview = (data.suppliers || []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      order_type: s.order_type,
+      deliveryDate: s.delivery_date,
+      onTarget: !!s.on_target,
+    }));
+  } catch (e) {
+    ctx.previewError = e.message || 'Liefer-Vorschau nicht verfügbar';
+    ctx.deliveryPreview = [];
+  } finally {
+    ctx.previewLoading = false;
+  }
+}
+
+/** @param {ReturnType<typeof dashboardPageData>} ctx */
+function scheduleDeliveryPreview(ctx) {
+  clearTimeout(deliveryPreviewTimer);
+  deliveryPreviewTimer = setTimeout(() => refreshDeliveryPreview(ctx), 300);
 }
 
 /** Start-Seite: Status + Fortsetzen + neue Runde vorbereiten */
@@ -106,7 +138,10 @@ export function dashboardPageData() {
     targetDate: tomorrowIso(),
     loading: false,
     error: '',
-    suppliersWithDates: [],
+    deliveryPreview: [],
+    previewLoading: false,
+    previewError: '',
+    previewOffline: false,
     get roundStatusLabel() {
       const m = {
         prepared: 'Vorbereitet – Rundgang noch nicht begonnen',
@@ -125,8 +160,9 @@ export function dashboardPageData() {
       const row = await storage.getOrderRound();
       this.hasRound = !!row;
       this.roundStatus = row?.status || 'idle';
-      this.suppliersWithDates = [];
       this.initialized = true;
+      this.$watch('targetDate', () => scheduleDeliveryPreview(this));
+      scheduleDeliveryPreview(this);
       this.$nextTick(() => {
         const open = new URLSearchParams(window.location.search).get('open');
         if (open === 'bestellen') {
@@ -162,6 +198,7 @@ export function registerOrderAlpine(Alpine) {
     quantities: {},
     freeLabel: '',
     freeQty: '',
+    freeUnit: '',
     freeSupplierId: '',
     suppliers: [],
     /** @type {Map<number, number[]>} itemId -> Lieferanten-IDs (Priorität) */
@@ -365,14 +402,34 @@ export function registerOrderAlpine(Alpine) {
     isSupplierHidden(supplierId) {
       return this.hiddenSupplierIds.includes(Number(supplierId));
     },
+    /**
+     * Nach oben springen, sobald der Lagerort wechselt.
+     * iOS Safari bricht ein laufendes „smooth“-Scroll ab, wenn sich die
+     * Seitenhöhe ändert – und genau das passiert beim Neuaufbau der Liste.
+     * Deshalb hart springen, direkt in der Tap-Geste und erneut nach Re-Render
+     * und nächstem Frame (dann ist die neue Höhe geklammert).
+     */
+    scrollToListTop() {
+      const jump = () => {
+        window.scrollTo(0, 0);
+        const el = document.scrollingElement || document.documentElement;
+        el.scrollTop = 0;
+      };
+      jump();
+      this.$nextTick(() => {
+        jump();
+        requestAnimationFrame(jump);
+      });
+    },
+    selectLocation(locationId) {
+      this.activeLocId = locationId;
+      this.scrollToListTop();
+    },
     nextLocation() {
       if (this.locations.length < 2) return;
       const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
       const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
-      this.activeLocId = next.id;
-      this.$nextTick(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      this.selectLocation(next.id);
     },
     nextLocationLabel() {
       if (this.locations.length < 2) return '';
@@ -432,9 +489,16 @@ export function registerOrderAlpine(Alpine) {
       await this.reloadEntries();
     },
     async addFree() {
-      await orch.addFreeLine(this.activeLocId, this.freeLabel, this.freeQty, this.freeSupplierId || null);
+      await orch.addFreeLine(
+        this.activeLocId,
+        this.freeLabel,
+        this.freeQty,
+        this.freeSupplierId || null,
+        this.freeUnit,
+      );
       this.freeLabel = '';
       this.freeQty = '';
+      this.freeUnit = '';
       this.freeSupplierId = '';
     },
     async goReview() {
@@ -462,6 +526,10 @@ export function registerOrderAlpine(Alpine) {
       try {
         await this._mergeServerIfOnline(round.target_date);
         await this._rebuildReviewUi();
+        // Freitext-Artikel in die gemeinsame Sammlung schieben. Die Kontrolle ist
+        // der erste Schritt nach dem Rundgang, an dem verlässlich Netz besteht –
+        // und der einzige, den auch „Nur Bestellen“-Nutzer erreichen.
+        pendingSync.pushPendingOutbox();
       } finally {
         this.loading = false;
       }
@@ -534,7 +602,7 @@ export function registerOrderAlpine(Alpine) {
               entryId: e.id,
               label: e.free_label,
               quantity: e.quantity,
-              unit: '',
+              unit: e.free_unit || '',
               itemId: null,
               candidates: candidateIds,
               supplierId: null,
@@ -546,7 +614,7 @@ export function registerOrderAlpine(Alpine) {
             entryId: e.id,
             label: e.free_label,
             quantity: e.quantity,
-            unit: '',
+            unit: e.free_unit || '',
             itemId: null,
             candidates: [sid],
             supplierId: sid,
@@ -698,7 +766,8 @@ export function registerOrderAlpine(Alpine) {
       const label = window.prompt('Freier Artikel (Bezeichnung)');
       if (!label?.trim()) return;
       const qty = window.prompt('Menge');
-      await orch.addFreeLine(null, label, qty, supplierId);
+      const unit = window.prompt('Gebinde / Einheit (optional)') || '';
+      await orch.addFreeLine(null, label, qty, supplierId, unit);
       await this.rebuildLocal();
     },
     goOutput() {
@@ -1053,7 +1122,13 @@ export function registerOrderAlpine(Alpine) {
           if (!sid) continue;
           if (!bySup.has(sid)) bySup.set(sid, []);
           if (!freesBySup.has(sid)) freesBySup.set(sid, []);
-          freesBySup.get(sid).push(`${String(e.quantity ?? '').trim()}x ${String(e.free_label ?? '').trim()}`);
+          const freeUnit = String(e.free_unit ?? '').trim();
+          const freeLabel = String(e.free_label ?? '').trim();
+          freesBySup
+            .get(sid)
+            .push(
+              `${String(e.quantity ?? '').trim()}x ${freeUnit ? `${freeUnit} ` : ''}${freeLabel}`,
+            );
           continue;
         }
         const item = itemMap.get(e.item_id);

@@ -45,7 +45,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
-                    @click="activeLocId = loc.id">
+                    @click="selectLocation(loc.id)">
                 <span class="button__label" x-text="tabLabel(loc)">Lager</span>
             </button>
         </template>
@@ -115,6 +115,10 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         <div class="form-group">
             <label class="form-label">Menge</label>
             <input class="input" x-model="freeQty" inputmode="decimal">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Gebinde / Einheit (optional)</label>
+            <input class="input" x-model="freeUnit" placeholder="z. B. Kiste, Bund, kg">
         </div>
         <div class="form-group">
             <label class="form-label">Lieferant (optional)</label>

@@ -14,6 +14,7 @@ use App\Repositories\SettingsRepository;
 use App\Repositories\SupplierRepository;
 use App\Services\MailSenderService;
 use App\Services\PdfService;
+use App\Services\SupplierDeliveryService;
 use DateTimeImmutable;
 use PDO;
 
@@ -58,25 +59,18 @@ final class OrderApiController
             'SELECT item_id, supplier_id, priority FROM item_supplier ORDER BY item_id, priority DESC'
         )->fetchAll(PDO::FETCH_ASSOC);
 
-        // For each supplier, find the next delivery date >= target_date (within 7 days)
+        $deliveryPreview = (new SupplierDeliveryService())->previewForTargetDate($date);
         $deliveryTargets = [];
         $deliveringIds = [];
-        foreach ($suppliers as $s) {
-            $days = $supRepo->deliveryWeekdays((int) $s['id']);
-            if (empty($days)) {
+        foreach ($deliveryPreview['suppliers'] as $row) {
+            if ($row['delivery_date'] === null) {
                 continue;
             }
-            for ($offset = 0; $offset <= 6; $offset++) {
-                $candidate = $dt->modify("+{$offset} days");
-                if (in_array((int) $candidate->format('N'), $days, true)) {
-                    $deliveryTargets[] = [
-                        'supplier_id'   => (int) $s['id'],
-                        'delivery_date' => $candidate->format('Y-m-d'),
-                    ];
-                    $deliveringIds[] = (int) $s['id'];
-                    break;
-                }
-            }
+            $deliveryTargets[] = [
+                'supplier_id' => $row['id'],
+                'delivery_date' => $row['delivery_date'],
+            ];
+            $deliveringIds[] = $row['id'];
         }
 
         Response::jsonOk([
@@ -101,6 +95,18 @@ final class OrderApiController
                 'send_email_direct'     => $settings->get('send_email_direct', '0') === '1',
             ],
         ]);
+    }
+
+    public function deliveryPreview(): void
+    {
+        AuthMiddleware::requireAuth();
+        $date = (string) ($_GET['target_date'] ?? '');
+        try {
+            $preview = (new SupplierDeliveryService())->previewForTargetDate($date);
+            Response::jsonOk($preview);
+        } catch (\InvalidArgumentException $e) {
+            Response::jsonError($e->getMessage(), 422);
+        }
     }
 
     public function pdf(): void
