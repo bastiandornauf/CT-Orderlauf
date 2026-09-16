@@ -145,17 +145,19 @@ Die **Inventur** ist ein **eigener Ablauf** neben der Bestellung. Ihre Zählunge
 
 Alle per **Freitext** erfassten Positionen – aus der **Inventur** *und* aus der **Bestellung** (freie Positionen) – sammeln sich auf der Seite **Neue Artikel** (Menü → **Neue Artikel**, oder im Inventur-Abschluss der Hinweis-Link, oder auf der Artikelliste oben **Neue Artikel**). Adresse: `/items/pending`.
 
-Die Liste ist ein **dauerhafter Sammler**: Einträge bleiben erhalten, wenn Sie eine neue Bestellrunde laden, eine Runde abschließen, eine Inventur abschließen oder lokal löschen. So können Sie alle paar Wochen in Ruhe prüfen, welche Freitext-Artikel zu **Regulars** geworden sind.
+Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge bleiben erhalten, wenn Sie eine neue Bestellrunde laden, eine Runde abschließen, eine Inventur abschließen oder lokal löschen. So können Sie alle paar Wochen in Ruhe prüfen, welche Freitext-Artikel zu **Regulars** geworden sind.
 
-- Gleiche Bezeichnungen werden **zusammengefasst**. Ein Zähler zeigt, wie oft der Artikel erfasst wurde (`3× erfasst`), dazu **Zuerst**- und **Zuletzt**-Datum. Häufigste stehen oben.
+- **Alle Nutzer zahlen in denselben Topf ein** – egal wer die Bestellung oder Inventur gemacht hat und auf welchem Gerät. Auch Nutzer mit „Nur Bestellen“ tragen bei, sehen die Liste aber nicht.
+- Gleiche Bezeichnungen werden **über alle Nutzer hinweg zusammengefasst**. Ein Zähler zeigt, wie oft der Artikel erfasst wurde (`3× erfasst`), dazu **Zuerst**- und **Zuletzt**-Datum sowie wer ihn zuletzt getippt hat. Häufigste stehen oben.
 - Pro Eintrag **Bezeichnung**, **Gebinde/Einheit**, **Lagerort** und ggf. **Lieferant** prüfen/ergänzen.
 - **Lagerort** wird aus der Erfassung übernommen (Inventur: aktueller Lagerort-Tab; Bestellung: Lagerort der freien Position).
 - **Gebinde/Einheit** wird aus der Erfassung übernommen – in der Bestellung gibt es dafür beim freien Artikel ein eigenes Feld, damit die Einheit nicht in die Bezeichnung getippt werden muss.
 - **Lieferant** wird bei Freitext aus der **Bestellung** übernommen, sofern in der Runde oder Kontrolle zugeordnet.
 - Mit **Stammdaten-Recht** und **online**: **In Stammdaten übernehmen** legt den Artikel direkt an – einzeln pro Zeile oder per **Alle übernehmen**. Er steht dann ab der **nächsten** Inventur/Bestellung im Katalog (der aktuelle Stand ist eine lokale Kopie). Der Eintrag verschwindet danach aus der Sammelliste.
 - **Verwerfen** entfernt einen Eintrag aus der Liste, ohne ihn anzulegen. Wird derselbe Artikel **später erneut** per Freitext erfasst, erscheint er wieder – aus Einmal-Notizen können so über Wochen doch noch Stammartikel werden.
-- Ohne Stammdaten-Recht ist die Seite nicht erreichbar (Editor-Recht nötig).
-- Die Sammelliste liegt **lokal im Browser** (wie die Runden-Daten), also pro Gerät und Benutzerprofil.
+- Ohne Stammdaten-Recht ist die Seite nicht erreichbar: **Auswerten und Übernehmen darf nur Administrator oder Stammdaten.** „Nur Bestellen“ sieht die Seite und den Hinweis im Inventur-Abschluss nicht.
+- Freitext aus dem Rundgang wird **beim Öffnen der Kontrolle** bzw. des **Inventur-Abschlusses** an den Server übertragen – dafür ist einmal Verbindung nötig. Offline erfasste Artikel warten auf dem Gerät und gehen nicht verloren; sie erscheinen bei den Kollegen erst nach dieser Übertragung.
+- **Verwerfen** und **Übernehmen** wirken für alle Nutzer und brauchen eine Verbindung.
 
 ### Bewertungspreis (optional)
 

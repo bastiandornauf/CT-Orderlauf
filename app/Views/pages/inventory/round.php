@@ -41,7 +41,7 @@
         <template x-for="loc in locations" :key="loc.id">
             <button type="button" class="tab-bar__btn" role="tab"
                     :class="{ 'tab-bar__btn--active': activeLocId === loc.id }"
-                    @click="activeLocId = loc.id">
+                    @click="selectLocation(loc.id)">
                 <span class="button__label" x-text="tabLabel(loc)">Lager</span>
             </button>
         </template>

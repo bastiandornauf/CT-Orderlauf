@@ -1,6 +1,7 @@
 import * as api from './api.js';
 import * as storage from './storage.js';
 import * as orch from './order-round.js';
+import * as pendingSync from './pending-sync.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
 import { showToast } from './toast.js';
@@ -401,14 +402,34 @@ export function registerOrderAlpine(Alpine) {
     isSupplierHidden(supplierId) {
       return this.hiddenSupplierIds.includes(Number(supplierId));
     },
+    /**
+     * Nach oben springen, sobald der Lagerort wechselt.
+     * iOS Safari bricht ein laufendes „smooth“-Scroll ab, wenn sich die
+     * Seitenhöhe ändert – und genau das passiert beim Neuaufbau der Liste.
+     * Deshalb hart springen, direkt in der Tap-Geste und erneut nach Re-Render
+     * und nächstem Frame (dann ist die neue Höhe geklammert).
+     */
+    scrollToListTop() {
+      const jump = () => {
+        window.scrollTo(0, 0);
+        const el = document.scrollingElement || document.documentElement;
+        el.scrollTop = 0;
+      };
+      jump();
+      this.$nextTick(() => {
+        jump();
+        requestAnimationFrame(jump);
+      });
+    },
+    selectLocation(locationId) {
+      this.activeLocId = locationId;
+      this.scrollToListTop();
+    },
     nextLocation() {
       if (this.locations.length < 2) return;
       const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
       const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
-      this.activeLocId = next.id;
-      this.$nextTick(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      this.selectLocation(next.id);
     },
     nextLocationLabel() {
       if (this.locations.length < 2) return '';
@@ -505,6 +526,10 @@ export function registerOrderAlpine(Alpine) {
       try {
         await this._mergeServerIfOnline(round.target_date);
         await this._rebuildReviewUi();
+        // Freitext-Artikel in die gemeinsame Sammlung schieben. Die Kontrolle ist
+        // der erste Schritt nach dem Rundgang, an dem verlässlich Netz besteht –
+        // und der einzige, den auch „Nur Bestellen“-Nutzer erreichen.
+        pendingSync.pushPendingOutbox();
       } finally {
         this.loading = false;
       }

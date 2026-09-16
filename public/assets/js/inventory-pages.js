@@ -2,6 +2,7 @@ import * as api from './api.js';
 import * as invStorage from './inventory-storage.js';
 import * as orderStorage from './storage.js';
 import * as invRound from './inventory-round.js';
+import * as pendingSync from './pending-sync.js';
 import { buildInventoryCsv, downloadCsv } from './inventory-csv.js';
 import { showToast } from './toast.js';
 
@@ -20,89 +21,35 @@ function formatDeDate(iso) {
 }
 
 /**
- * Freitext-Positionen der aktuellen Runde/Inventur einmalig in die dauerhafte
- * Sammelliste nachtragen. Nötig für Daten, die vor Einführung von `pending_items`
- * entstanden sind. Nachgetragene Zeilen werden mit `pending_synced` markiert,
- * damit der Zähler bei jedem Seitenaufruf nicht erneut hochläuft.
+ * Gemeinsame Sammlung vom Server holen – enthält die Freitext-Artikel **aller**
+ * Nutzer. Vorher wird der lokale Ausgangskorb übertragen, damit die eigenen
+ * Erfassungen der letzten Runde mit drin sind.
  *
- * Als Erfassungszeit wird ein Wert aus der Vergangenheit verwendet, damit bereits
- * verworfene Artikel nicht wieder auftauchen.
- */
-async function backfillPendingFromCurrentRounds() {
-  const LEGACY_SEEN_AT = '1970-01-01T00:00:00.000Z';
-
-  for (const f of await invStorage.getInventoryFreeItems()) {
-    if (Number(f.pending_synced) === 1) continue;
-    // Im alten Ablauf bereits übernommen/ausgeblendet – nicht erneut vorschlagen.
-    if (Number(f.transferred) === 1) {
-      await invStorage.updateInventoryFreeItem(f.id, { pending_synced: 1 });
-      continue;
-    }
-    await orderStorage.recordPendingItem(
-      {
-        name: f.name || '',
-        unit: f.unit || '',
-        quantity: f.quantity,
-        location_id: f.location_id ?? null,
-        source: 'inventory',
-      },
-      f.created_at || f.updated_at || LEGACY_SEEN_AT,
-    );
-    await invStorage.updateInventoryFreeItem(f.id, { pending_synced: 1 });
-  }
-
-  const round = await orderStorage.getOrderRound();
-  const roundSeenAt = round?.prepared_at || round?.created_at || LEGACY_SEEN_AT;
-  for (const e of await orderStorage.getOrderEntries()) {
-    if (!e.is_free_item || Number(e.pending_synced) === 1) continue;
-    if (e.transferred_to_item_id) {
-      await orderStorage.updateOrderEntry(e.id, { pending_synced: 1 });
-      continue;
-    }
-    const rawSid = e.free_supplier_id ?? e.selected_supplier_id;
-    await orderStorage.recordPendingItem(
-      {
-        name: e.free_label || '',
-        unit: e.free_unit || '',
-        quantity: e.quantity,
-        location_id: e.location_id ?? null,
-        supplier_id: rawSid ?? null,
-        source: 'order',
-      },
-      e.created_at || roundSeenAt,
-    );
-    await orderStorage.updateOrderEntry(e.id, { pending_synced: 1 });
-  }
-}
-
-const PENDING_SOURCE_LABELS = { order: 'Bestellung', inventory: 'Inventur' };
-
-/**
- * Offene Einträge der dauerhaften Sammelliste „Neue Artikel“ aufbereiten.
  * @returns {Promise<object[]>}
  */
 async function collectPendingFreeItems() {
-  const suppliers = await orderStorage.getAllSuppliers();
-  const supById = new Map(suppliers.map((s) => [Number(s.id), String(s.name || '')]));
-  const rows = await orderStorage.getOpenPendingItems();
+  await pendingSync.pushPendingOutbox();
+  const data = await api.fetchPendingItems();
 
-  return rows.map((r) => {
-    const sources = Array.isArray(r.sources) && r.sources.length ? r.sources : ['order'];
-    const supplierId = r.supplier_id != null && Number(r.supplier_id) > 0 ? Number(r.supplier_id) : null;
+  return (data.items || []).map((r) => {
+    const sourceLabels = [];
+    if (r.source_order) sourceLabels.push('Bestellung');
+    if (r.source_inventory) sourceLabels.push('Inventur');
     return {
       key: `pend-${r.id}`,
       pendingId: r.id,
-      source: sources.includes('order') ? 'order' : 'inventory',
-      sourceLabel: sources.map((s) => PENDING_SOURCE_LABELS[s] || s).join(' + '),
+      source: r.source_order ? 'order' : 'inventory',
+      sourceLabel: sourceLabels.join(' + ') || 'Bestellung',
       seenCount: Number(r.seen_count) || 1,
       firstSeenAt: r.first_seen_at || '',
       lastSeenAt: r.last_seen_at || '',
+      lastSeenByName: r.last_seen_by_name || '',
       name: r.name || '',
       unit: r.unit || '',
       quantity: r.last_quantity ?? '',
       location_id: r.location_id != null ? Number(r.location_id) : null,
-      supplier_id: supplierId,
-      supplier_label: supplierId ? supById.get(supplierId) || '' : '',
+      supplier_id: r.supplier_id != null ? Number(r.supplier_id) : null,
+      supplier_label: r.supplier_name || '',
       busy: false,
     };
   });
@@ -472,12 +419,34 @@ export function registerInventoryAlpine(Alpine) {
       if (p == null || p === '') return '';
       return `Bewertung ${String(p).replace('.', ',')} €/${it.unit || 'Einh.'}`;
     },
+    /**
+     * Nach oben springen, sobald der Lagerort wechselt.
+     * iOS Safari bricht ein laufendes „smooth“-Scroll ab, wenn sich die
+     * Seitenhöhe ändert – und genau das passiert beim Neuaufbau der Liste.
+     * Deshalb hart springen, direkt in der Tap-Geste und erneut nach Re-Render
+     * und nächstem Frame (dann ist die neue Höhe geklammert).
+     */
+    scrollToListTop() {
+      const jump = () => {
+        window.scrollTo(0, 0);
+        const el = document.scrollingElement || document.documentElement;
+        el.scrollTop = 0;
+      };
+      jump();
+      this.$nextTick(() => {
+        jump();
+        requestAnimationFrame(jump);
+      });
+    },
+    selectLocation(locationId) {
+      this.activeLocId = locationId;
+      this.scrollToListTop();
+    },
     nextLocation() {
       if (this.locations.length < 2) return;
       const idx = this.locations.findIndex((l) => l.id === this.activeLocId);
       const next = idx >= 0 && idx < this.locations.length - 1 ? this.locations[idx + 1] : this.locations[0];
-      this.activeLocId = next.id;
-      this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      this.selectLocation(next.id);
     },
     nextLocationLabel() {
       if (this.locations.length < 2) return '';
@@ -601,15 +570,28 @@ export function registerInventoryAlpine(Alpine) {
             a.name.localeCompare(b.name, 'de'),
         );
     },
+    /**
+     * Freitext-Artikel der Inventur in die gemeinsame Sammlung schieben – der
+     * Abschluss ist der Moment, an dem auch „Nur Bestellen“-Nutzer wieder online
+     * sind. Der Hinweis auf die Sammelliste erscheint nur mit Stammdaten-Recht,
+     * weil sonst niemand darauf reagieren kann.
+     */
     async countNewItems() {
-      try {
-        await backfillPendingFromCurrentRounds();
-      } catch {
-        /* Zähler darf den Abschluss nicht blockieren */
+      const canEditMaster = this.$el?.dataset?.canEditMaster === '1';
+      const sync = await pendingSync.pushPendingOutbox();
+      if (!canEditMaster || sync.offline) {
+        this.hasNewItems = false;
+        this.newItemCount = 0;
+        return;
       }
-      const items = await collectPendingFreeItems();
-      this.newItemCount = items.length;
-      this.hasNewItems = items.length > 0;
+      try {
+        const data = await api.fetchPendingItems();
+        this.newItemCount = (data.items || []).length;
+        this.hasNewItems = this.newItemCount > 0;
+      } catch {
+        this.hasNewItems = false;
+        this.newItemCount = 0;
+      }
     },
     async refreshStats() {
       const items = await invStorage.getAllInventoryCatalogItems();
@@ -774,6 +756,7 @@ export function registerInventoryAlpine(Alpine) {
     ready: false,
     canTransfer: false,
     bulkBusy: false,
+    loadError: '',
     /** @type {{id:number,name:string}[]} */
     transferLocations: [],
     /** @type {{id:number,name:string}[]} */
@@ -798,11 +781,6 @@ export function registerInventoryAlpine(Alpine) {
       } catch {
         this.transferSuppliers = [];
       }
-      try {
-        await backfillPendingFromCurrentRounds();
-      } catch {
-        /* Sammelliste bleibt nutzbar, auch wenn der Nachtrag scheitert */
-      }
       await this.loadNewItems();
       this.ready = true;
     },
@@ -810,7 +788,15 @@ export function registerInventoryAlpine(Alpine) {
       const defaultLoc = this.transferLocations[0]?.id ?? '';
       const locById = new Map(this.transferLocations.map((l) => [l.id, l.name]));
       const supById = new Map(this.transferSuppliers.map((s) => [s.id, s.name]));
-      const list = await collectPendingFreeItems();
+      let list = [];
+      try {
+        list = await collectPendingFreeItems();
+        this.loadError = '';
+      } catch (e) {
+        this.loadError = e?.message || 'Sammelliste nicht erreichbar';
+        this.newItems = [];
+        return;
+      }
       for (const ni of list) {
         const fromLoc = ni.location_id != null ? Number(ni.location_id) : null;
         if (fromLoc && locById.has(fromLoc)) {
@@ -858,7 +844,7 @@ export function registerInventoryAlpine(Alpine) {
           body.supplier_links = [{ supplier_id: sid, priority: 10 }];
         }
         await api.createItem(body);
-        await orderStorage.deletePendingItem(entry.pendingId);
+        await api.resolvePendingItem(entry.pendingId, 'transferred');
         showToast(`„${name}" als Artikel angelegt.`, 3500);
         await this.loadNewItems();
         return true;
@@ -889,10 +875,16 @@ export function registerInventoryAlpine(Alpine) {
       }
     },
     async dismissNewItem(entry) {
+      if (!navigator.onLine) {
+        showToast('Zum Verwerfen bitte online sein.', 5000, true);
+        return;
+      }
+      entry.busy = true;
       try {
-        await orderStorage.dismissPendingItem(entry.pendingId);
+        await api.resolvePendingItem(entry.pendingId, 'dismiss');
         await this.loadNewItems();
       } catch (e) {
+        entry.busy = false;
         showToast(e?.message || 'Konnte nicht verwerfen', 5000, true);
       }
     },

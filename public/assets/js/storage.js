@@ -74,8 +74,10 @@ function openDb() {
 }
 
 /**
- * Sammelt Freitext-Artikel über Bestellrunden und Inventuren hinweg.
- * Wird bewusst von keinem Reset geleert – nur Übernehmen/Verwerfen entfernt Einträge.
+ * Ausgangskorb für Freitext-Artikel auf dem Weg zur gemeinsamen Sammlung
+ * auf dem Server. Wird bewusst von keinem Reset geleert – Einträge verschwinden
+ * erst, wenn sie erfolgreich übertragen wurden. Offline erfasste Sichtungen
+ * werden hier je Bezeichnung gebündelt.
  */
 export const PENDING_ITEMS_STORE = 'pending_items';
 
@@ -543,7 +545,7 @@ export async function clearOrderRound() {
   }
 }
 
-/* ─── Sammelliste neuer Artikel (überdauert Runden und Inventuren) ─────────── */
+/* ─── Ausgangskorb für die gemeinsame Sammlung neuer Artikel ───────────────── */
 
 /** @param {string} name */
 function pendingDedupeKey(name) {
@@ -565,9 +567,9 @@ async function findPendingItemByKey(key) {
 }
 
 /**
- * Freitext-Artikel in die Sammelliste aufnehmen (idempotent je Bezeichnung).
- * Mehrfache Sichtungen erhöhen nur `seen_count` – so werden aus Freitext-Notizen
- * über Wochen erkennbare „Regulars“.
+ * Freitext-Artikel für die gemeinsame Sammlung vormerken. Läuft offline und
+ * bündelt mehrfache Sichtungen derselben Bezeichnung in `seen_count`, damit der
+ * Server beim nächsten Abgleich um genau diesen Betrag hochzählt.
  *
  * @param {{
  *   name: string, unit?: string, quantity?: unknown,
@@ -600,8 +602,6 @@ export async function recordPendingItem(data, seenAt) {
       seen_count: 1,
       first_seen_at: at,
       last_seen_at: at,
-      status: 'open',
-      dismissed_at: null,
     });
     return;
   }
@@ -620,44 +620,32 @@ export async function recordPendingItem(data, seenAt) {
     first_seen_at: existing.first_seen_at && existing.first_seen_at < at ? existing.first_seen_at : at,
     last_seen_at: existing.last_seen_at && existing.last_seen_at > at ? existing.last_seen_at : at,
   };
-  // Verworfene Artikel kommen zurück, wenn sie danach erneut getippt wurden.
-  if (existing.status === 'dismissed' && existing.dismissed_at && at > existing.dismissed_at) {
-    next.status = 'open';
-    next.dismissed_at = null;
-  }
   await putRow(PENDING_ITEMS_STORE, next);
 }
 
-/** @returns {Promise<object[]>} offene Einträge, häufigste zuerst */
-export async function getOpenPendingItems() {
-  const rows = await getAll(PENDING_ITEMS_STORE);
-  return rows
-    .filter((r) => r.status !== 'dismissed')
-    .sort(
-      (a, b) =>
-        (Number(b.seen_count) || 0) - (Number(a.seen_count) || 0) ||
-        String(a.name || '').localeCompare(String(b.name || ''), 'de'),
-    );
+/** @returns {Promise<object[]>} noch nicht übertragene Vormerkungen */
+export async function getPendingOutbox() {
+  return getAll(PENDING_ITEMS_STORE);
 }
 
-/** @param {number} id @param {object} patch */
-export async function updatePendingItem(id, patch) {
-  const row = await getOne(PENDING_ITEMS_STORE, Number(id));
-  if (!row) return;
-  await putRow(PENDING_ITEMS_STORE, { ...row, ...patch, id: row.id });
-}
-
-/** Übernommen – Eintrag ist erledigt und verschwindet aus der Sammelliste. */
-export async function deletePendingItem(id) {
-  await deleteRow(PENDING_ITEMS_STORE, Number(id));
-}
-
-/** Verworfen – bleibt als Merker liegen, taucht bei erneuter Erfassung wieder auf. */
-export async function dismissPendingItem(id) {
-  await updatePendingItem(id, {
-    status: 'dismissed',
-    dismissed_at: new Date().toISOString(),
-  });
+/**
+ * Übertragene Vormerkungen entfernen. Nur die gemeldeten Sichtungen werden
+ * abgezogen – kommt währenddessen eine neue dazu, bleibt sie für den nächsten
+ * Abgleich stehen.
+ *
+ * @param {{ id: number, seen_count: number }[]} pushed
+ */
+export async function clearPushedPendingOutbox(pushed) {
+  for (const p of pushed) {
+    const row = await getOne(PENDING_ITEMS_STORE, Number(p.id));
+    if (!row) continue;
+    const remaining = (Number(row.seen_count) || 0) - (Number(p.seen_count) || 0);
+    if (remaining > 0) {
+      await putRow(PENDING_ITEMS_STORE, { ...row, seen_count: remaining });
+    } else {
+      await deleteRow(PENDING_ITEMS_STORE, row.id);
+    }
+  }
 }
 
 export { openDb, putRow, getAll, getOne, deleteRow, clearStore };

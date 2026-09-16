@@ -104,6 +104,62 @@ export async function createItem(body) {
   return data;
 }
 
+/**
+ * Freitext-Artikel in die gemeinsame Sammlung einzahlen.
+ * Steht allen Rollen offen – auch „Nur Bestellen“ muss beitragen können.
+ * @param {object[]} items
+ */
+export async function syncPendingItems(items) {
+  const res = await fetch('/api/pending-items/sync', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ items, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Abgleich der Sammelliste fehlgeschlagen');
+  }
+  return data;
+}
+
+/** Gemeinsame Sammlung lesen (nur Stammdaten-Recht). */
+export async function fetchPendingItems() {
+  const res = await fetch('/api/pending-items', {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Sammelliste laden fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
+ * @param {number} id
+ * @param {'transferred'|'dismiss'} action
+ */
+export async function resolvePendingItem(id, action) {
+  const res = await fetch('/api/pending-items/resolve', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ id, action, _csrf: csrfToken() }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Aktion fehlgeschlagen');
+  }
+  return data;
+}
+
 export async function sendMail(params) {
   const res = await fetch('/api/order/send-mail', {
     method: 'POST',
