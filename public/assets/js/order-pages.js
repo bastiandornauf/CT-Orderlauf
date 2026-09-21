@@ -586,19 +586,23 @@ export function registerOrderAlpine(Alpine) {
         showToast('Bezeichnung und Menge angeben.', 2500, 'warn');
         return;
       }
-      await orch.addFreeLine(
-        this.activeLocId,
-        this.freeLabel,
-        this.freeQty,
-        this.freeSupplierId || null,
-        this.freeUnit,
-      );
-      this.freeLabel = '';
-      this.freeQty = '';
-      this.freeUnit = '';
-      this.freeSupplierId = '';
-      await this.reloadEntries();
-      showToast('Freier Artikel hinzugefügt.');
+      try {
+        await orch.addFreeLine(
+          this.activeLocId,
+          this.freeLabel,
+          this.freeQty,
+          this.freeSupplierId || null,
+          this.freeUnit,
+        );
+        this.freeLabel = '';
+        this.freeQty = '';
+        this.freeUnit = '';
+        this.freeSupplierId = '';
+        await this.reloadEntries();
+        showToast('Freier Artikel hinzugefügt.');
+      } catch (e) {
+        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, 'error');
+      }
     },
     formatDate(iso) {
       return formatDeDate(iso);
@@ -901,17 +905,21 @@ export function registerOrderAlpine(Alpine) {
         showToast('Bezeichnung und Menge angeben.', 2500, 'warn');
         return;
       }
-      await orch.addFreeLine(
-        null,
-        this.freeDraft.label,
-        this.freeDraft.qty,
-        supplierId,
-        this.freeDraft.unit,
-      );
-      this.freeDraftOpen = null;
-      this.freeDraft = { label: '', qty: '', unit: '' };
-      showToast('Freier Artikel hinzugefügt.');
-      await this.rebuildLocal();
+      try {
+        await orch.addFreeLine(
+          null,
+          this.freeDraft.label,
+          this.freeDraft.qty,
+          supplierId,
+          this.freeDraft.unit,
+        );
+        this.freeDraftOpen = null;
+        this.freeDraft = { label: '', qty: '', unit: '' };
+        showToast('Freier Artikel hinzugefügt.');
+        await this.rebuildLocal();
+      } catch (e) {
+        showToast(e?.message || 'Speichern fehlgeschlagen', 5000, 'error');
+      }
     },
     async assignProblemSupplier(p, sid) {
       const v = String(sid ?? '').trim();

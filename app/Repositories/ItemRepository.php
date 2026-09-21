@@ -63,9 +63,17 @@ final class ItemRepository
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $ids = array_map(static fn (array $r): int => (int) $r['id'], $rows);
-        $byItem = $this->supplierNamesByItemIds($ids);
+        $byItem = $this->supplierLinksByItemIds($ids);
         foreach ($rows as &$row) {
-            $row['supplier_names'] = $byItem[(int) $row['id']] ?? [];
+            $links = $byItem[(int) $row['id']] ?? [];
+            $row['supplier_links'] = array_map(
+                static fn (array $l): array => [
+                    'supplier_id' => $l['supplier_id'],
+                    'priority' => $l['priority'],
+                ],
+                $links
+            );
+            $row['supplier_names'] = array_map(static fn (array $l): string => $l['name'], $links);
         }
         unset($row);
 
@@ -73,12 +81,12 @@ final class ItemRepository
     }
 
     /**
-     * Lieferanten-Namen je Artikel, nach Priorität absteigend (höchste zuerst).
+     * Lieferanten je Artikel, nach Priorität absteigend (höchste zuerst).
      *
      * @param list<int> $itemIds
-     * @return array<int, list<string>>
+     * @return array<int, list<array{supplier_id:int, priority:int, name:string}>>
      */
-    public function supplierNamesByItemIds(array $itemIds): array
+    public function supplierLinksByItemIds(array $itemIds): array
     {
         $itemIds = array_values(array_unique(array_filter($itemIds)));
         if ($itemIds === []) {
@@ -86,7 +94,7 @@ final class ItemRepository
         }
         $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
         $stmt = Database::pdo()->prepare(
-            "SELECT isup.item_id, s.name
+            "SELECT isup.item_id, isup.supplier_id, isup.priority, s.name
              FROM item_supplier isup
              JOIN suppliers s ON s.id = isup.supplier_id
              WHERE isup.item_id IN ($placeholders)
@@ -99,7 +107,27 @@ final class ItemRepository
             if (!isset($out[$iid])) {
                 $out[$iid] = [];
             }
-            $out[$iid][] = (string) $r['name'];
+            $out[$iid][] = [
+                'supplier_id' => (int) $r['supplier_id'],
+                'priority' => (int) $r['priority'],
+                'name' => (string) $r['name'],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Lieferanten-Namen je Artikel, nach Priorität absteigend (höchste zuerst).
+     *
+     * @param list<int> $itemIds
+     * @return array<int, list<string>>
+     */
+    public function supplierNamesByItemIds(array $itemIds): array
+    {
+        $out = [];
+        foreach ($this->supplierLinksByItemIds($itemIds) as $iid => $rows) {
+            $out[$iid] = array_map(static fn (array $r): string => $r['name'], $rows);
         }
 
         return $out;

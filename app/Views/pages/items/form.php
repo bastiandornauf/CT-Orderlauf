@@ -152,7 +152,7 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
         </label>
         <div class="form-actions">
             <button type="submit" class="button button--primary">Speichern</button>
-            <a href="/items" class="button button--ghost">Abbrechen</a>
+            <a href="<?= htmlspecialchars((string) ($list_index_url ?? '/items'), ENT_QUOTES, 'UTF-8') ?>" class="button button--ghost">Abbrechen</a>
         </div>
     </form>
 </section>

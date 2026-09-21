@@ -3,7 +3,8 @@
  */
 
 const DB_NAME = 'ct-orderlauf';
-const DB_VERSION = 5;
+/** v6: Store `pending_items` nachziehen (war in v5-Code gelandet, ohne Versionsbump). */
+const DB_VERSION = 6;
 
 /** @returns {Promise<IDBDatabase>} */
 function openDb() {

@@ -569,6 +569,16 @@ html.js .app-nav__logout {
   gap: var(--space-3);
 }
 
+.card-list > .list-item {
+  scroll-margin-top: 5.5rem;
+}
+
+.card-list > .list-item:target,
+.list-item--just-saved {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  background: var(--color-accent-soft);
+}
+
 .list-item__main {
   display: flex;
   flex-direction: column;
@@ -2507,12 +2517,27 @@ a.order-stepper__item:focus-visible {
   overflow-y: auto;
 }
 
+.item-quick-edit__panel > .section-header:first-child {
+  position: sticky;
+  top: calc(-1 * var(--space-4));
+  z-index: 1;
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+  background: var(--color-surface);
+}
+
 .item-quick-edit__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-3);
+  position: sticky;
+  bottom: calc(-1 * var(--space-4));
+  z-index: 1;
+  padding: var(--space-3) 0 var(--space-4);
+  margin-bottom: calc(-1 * var(--space-4));
+  background: var(--color-surface);
 }
 
 .item-quick-edit__supplier-row {

@@ -152,6 +152,7 @@ final class ItemController
             'suppliers' => $this->suppliers->all(true),
             'links' => $links,
             'list_filter' => $listFilter,
+            'list_index_url' => '/items' . self::buildItemsIndexQuery($listFilter),
             'csrf' => Csrf::token(),
         ]);
     }
@@ -214,7 +215,7 @@ final class ItemController
         $this->items->setSupplierLinks($id, $pairs);
 
         $_SESSION['flash_ok'] = 'Artikel gespeichert.';
-        Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromPost()));
+        Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromPost()) . '#item-' . $id);
     }
 
     /** @param array{loc:int, active:string, supplier:int, q:string} $listFilter */
@@ -248,6 +249,7 @@ final class ItemController
             'suppliers' => $this->suppliers->all(true),
             'links' => $id ? $this->items->supplierLinksWithNames($id) : [],
             'list_filter' => $listFilter,
+            'list_index_url' => '/items' . self::buildItemsIndexQuery($listFilter),
             'error' => $error,
             'csrf' => Csrf::token(),
         ]);

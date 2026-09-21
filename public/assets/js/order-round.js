@@ -55,12 +55,18 @@ export async function addFreeLine(locationId, label, rawQty, freeSupplierId, uni
     // direkt in der Sammelliste vermerkt – kein Nachtrag nötig
     pending_synced: 1,
   });
-  await storage.recordPendingItem({
-    name,
-    unit: freeUnit,
-    quantity: qty,
-    location_id: locationId,
-    supplier_id: sid,
-    source: 'order',
-  });
+  // Sammelliste ist Zusatz: Bestellung darf nicht scheitern, wenn der Store fehlt
+  // (z. B. altes IndexedDB v5 ohne pending_items vor dem Versionsbump).
+  try {
+    await storage.recordPendingItem({
+      name,
+      unit: freeUnit,
+      quantity: qty,
+      location_id: locationId,
+      supplier_id: sid,
+      source: 'order',
+    });
+  } catch (e) {
+    console.warn('Freier Artikel: Vormerkung für Sammelliste fehlgeschlagen', e);
+  }
 }

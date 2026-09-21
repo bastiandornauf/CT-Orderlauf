@@ -298,16 +298,20 @@ export async function addInventoryFreeItem(data) {
     created_at: now,
     updated_at: now,
   });
-  await recordPendingItem(
-    {
-      name,
-      unit,
-      quantity: qtyRaw,
-      location_id: locationId,
-      source: 'inventory',
-    },
-    now,
-  );
+  try {
+    await recordPendingItem(
+      {
+        name,
+        unit,
+        quantity: qtyRaw,
+        location_id: locationId,
+        source: 'inventory',
+      },
+      now,
+    );
+  } catch (e) {
+    console.warn('Inventur: Vormerkung für Sammelliste fehlgeschlagen', e);
+  }
   return true;
 }
 

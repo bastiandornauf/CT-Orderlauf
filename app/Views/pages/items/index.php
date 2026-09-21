@@ -1,20 +1,32 @@
-<section class="page-section">
-    <?php
-    $listParams = [];
-    if (($filter_loc ?? 0) > 0) {
-        $listParams['loc'] = (int) $filter_loc;
-    }
-    if (($filter_active ?? 'all') !== 'all') {
-        $listParams['active'] = $filter_active;
-    }
-    if (($filter_supplier ?? 0) > 0) {
-        $listParams['supplier'] = (int) $filter_supplier;
-    }
-    if (trim((string) ($filter_q ?? '')) !== '') {
-        $listParams['q'] = trim((string) $filter_q);
-    }
-    $listQuery = $listParams === [] ? '' : http_build_query($listParams);
-    ?>
+<?php
+$listParams = [];
+if (($filter_loc ?? 0) > 0) {
+    $listParams['loc'] = (int) $filter_loc;
+}
+if (($filter_active ?? 'all') !== 'all') {
+    $listParams['active'] = $filter_active;
+}
+if (($filter_supplier ?? 0) > 0) {
+    $listParams['supplier'] = (int) $filter_supplier;
+}
+if (trim((string) ($filter_q ?? '')) !== '') {
+    $listParams['q'] = trim((string) $filter_q);
+}
+$listQuery = $listParams === [] ? '' : http_build_query($listParams);
+$pageCfg = [
+    'locations' => array_map(
+        static fn (array $l): array => ['id' => (int) $l['id'], 'name' => (string) $l['name']],
+        $locations ?? []
+    ),
+    'suppliers' => array_map(
+        static fn (array $s): array => ['id' => (int) $s['id'], 'name' => (string) $s['name']],
+        $suppliers ?? []
+    ),
+];
+$pageCfgJson = json_encode($pageCfg, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS);
+$pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
+?>
+<section class="page-section" x-data="itemsListPage()" data-items-page="<?= $pageCfgAttr ?>">
     <?php if (!empty($_SESSION['flash_ok'])): ?>
         <?php $flashOk = $_SESSION['flash_ok'];
         unset($_SESSION['flash_ok']); ?>
@@ -89,25 +101,131 @@
     <?php else: ?>
     <ul class="card-list">
         <?php foreach ($items as $it): ?>
-            <li class="card card--pad list-item">
+            <?php
+            $itemPayload = [
+                'id' => (int) $it['id'],
+                'name' => (string) ($it['name'] ?? ''),
+                'unit' => (string) ($it['unit'] ?? ''),
+                'location_id' => (int) ($it['location_id'] ?? 0),
+                'sort_order' => (int) ($it['sort_order'] ?? 0),
+                'min_stock' => isset($it['min_stock']) && $it['min_stock'] !== null && $it['min_stock'] !== ''
+                    ? (int) $it['min_stock'] : null,
+                'max_stock' => isset($it['max_stock']) && $it['max_stock'] !== null && $it['max_stock'] !== ''
+                    ? (int) $it['max_stock'] : null,
+                'valuation_price' => isset($it['valuation_price']) && $it['valuation_price'] !== null && $it['valuation_price'] !== ''
+                    ? (string) $it['valuation_price'] : null,
+                'active' => (int) ($it['active'] ?? 0),
+                'supplier_links' => $it['supplier_links'] ?? [],
+            ];
+            $itemJson = json_encode($itemPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS);
+            $itemAttr = htmlspecialchars((string) $itemJson, ENT_QUOTES, 'UTF-8');
+            ?>
+            <li class="card card--pad list-item" id="item-<?= (int) $it['id'] ?>" data-item-id="<?= (int) $it['id'] ?>" data-item="<?= $itemAttr ?>">
                 <div class="list-item__main">
-                    <strong><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                    <span class="text-muted"><?= htmlspecialchars($it['unit'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <span class="text-muted"><?= htmlspecialchars($it['location_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+                    <strong data-item-name><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                    <span class="text-muted" data-item-unit><?= htmlspecialchars($it['unit'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="text-muted" data-item-location><?= htmlspecialchars($it['location_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($it['supplier_names']) && is_array($it['supplier_names'])): ?>
-                        <div class="item-suppliers item-suppliers--list">
+                        <div class="item-suppliers item-suppliers--list" data-item-suppliers>
                             <?php foreach ($it['supplier_names'] as $si => $sname): ?>
                                 <span class="supplier-chip <?= $si === 0 ? 'supplier-chip--primary' : '' ?>"><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></span>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                     <?php if (!(int) $it['active']): ?>
-                        <span class="status-badge status-badge--warn">inaktiv</span>
+                        <span class="status-badge status-badge--warn" data-item-inactive>inaktiv</span>
                     <?php endif; ?>
                 </div>
-                <a href="/items/edit?id=<?= (int) $it['id'] ?><?= $listQuery !== '' ? '&' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>" class="button button--ghost button--small">Bearbeiten</a>
+                <a href="/items/edit?id=<?= (int) $it['id'] ?><?= $listQuery !== '' ? '&' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>"
+                   class="button button--ghost button--small"
+                   @click="openEdit($event)">Bearbeiten</a>
             </li>
         <?php endforeach; ?>
     </ul>
     <?php endif; ?>
+
+    <dialog class="item-quick-edit"
+            x-ref="itemEditDialog"
+            aria-labelledby="item-edit-title"
+            @click="if ($event.target === $refs.itemEditDialog) closeEdit()"
+            @close="editError = ''">
+        <form class="item-quick-edit__panel form-stack" @submit.prevent="submitEdit()">
+            <h2 id="item-edit-title" class="section-header">Artikel bearbeiten</h2>
+            <p class="toast toast--error" x-show="editError" x-text="editError" role="alert"></p>
+
+            <div class="form-group">
+                <label class="form-label" for="ie-name">Name</label>
+                <input class="input" id="ie-name" x-ref="ieName" type="text" required x-model="editDraft.name">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-unit">Einheit</label>
+                <input class="input" id="ie-unit" type="text" x-model="editDraft.unit">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-loc">Lagerort</label>
+                <select class="select" id="ie-loc" required x-model="editDraft.location_id">
+                    <option value="">— wählen —</option>
+                    <template x-for="loc in locations" :key="loc.id">
+                        <option :value="String(loc.id)" x-text="loc.name"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-sort">Reihenfolge im Rundgang (optional)</label>
+                <input class="input" id="ie-sort" type="number" x-model="editDraft.sort_order">
+                <p class="form-hint">Niedrigere Zahl = weiter oben im Lager-Tab; gleiche Zahl = alphabetisch nach Name.</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-min">Mindestbestand (optional)</label>
+                <input class="input" id="ie-min" type="number" x-model="editDraft.min_stock">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-max">Maximalbestand (optional)</label>
+                <input class="input" id="ie-max" type="number" x-model="editDraft.max_stock">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-price">Bewertungspreis pro Einheit (optional)</label>
+                <input class="input" id="ie-price" type="text" inputmode="decimal" placeholder="z. B. 2,50" x-model="editDraft.valuation_price">
+                <p class="form-hint">Nur für Inventur-Export (Wert = Menge × Preis). Bestellung bleibt unberührt.</p>
+            </div>
+
+            <h3 class="section-header u-mb-0">Lieferanten &amp; Priorität</h3>
+            <p class="form-hint text-muted">Höhere Zahl = bevorzugt bei mehreren Lieferanten am Zieltag.</p>
+            <template x-for="(row, idx) in editSupplierRows" :key="idx">
+                <div class="form-row item-quick-edit__supplier-row">
+                    <div class="form-group">
+                        <label class="form-label" :for="'ie-sup-' + idx">Lieferant</label>
+                        <select class="select" :id="'ie-sup-' + idx" x-model="row.supplier_id">
+                            <option value="">—</option>
+                            <template x-for="s in suppliers" :key="s.id">
+                                <option :value="String(s.id)" x-text="s.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="form-group item-quick-edit__prio">
+                        <label class="form-label" :for="'ie-prio-' + idx">Priorität</label>
+                        <input class="input" :id="'ie-prio-' + idx" type="number" x-model.number="row.priority">
+                    </div>
+                    <button type="button" class="button button--ghost button--small item-quick-edit__remove-row"
+                            x-show="editSupplierRows.length > 1"
+                            @click="removeEditSupplierRow(idx)"
+                            title="Lieferant entfernen">&times;</button>
+                </div>
+            </template>
+            <button type="button" class="button button--ghost button--small" @click="addEditSupplierRow()">+ Lieferant</button>
+
+            <label class="checkbox">
+                <input type="checkbox" x-model="editDraft.active">
+                aktiv
+            </label>
+
+            <div class="item-quick-edit__actions">
+                <button type="button" class="button button--ghost" @click="closeEdit()" :disabled="editSaving">Abbrechen</button>
+                <button type="submit" class="button button--primary" :disabled="editSaving">
+                    <span x-show="!editSaving">Speichern</span>
+                    <span x-show="editSaving">…</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
 </section>
