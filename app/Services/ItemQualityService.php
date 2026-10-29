@@ -178,8 +178,22 @@ final class ItemQualityService
         return self::UNIT_SYNONYMS[$k] ?? $k;
     }
 
-    /** Seltenere Schreibweise einer Einheit, die es auch in häufigerer Form gibt (Ktn ↔ Karton, Kg ↔ kg). */
     private function unitSpelling(): array
+    {
+        $out = [];
+        foreach ($this->unitSpellingFixes() as $id => [$from, $to]) {
+            $out[$id] = "„{$from}“ → „{$to}“";
+        }
+
+        return $out;
+    }
+
+    /**
+     * Seltenere Schreibweise einer Einheit, die es auch in häufigerer Form gibt (Ktn ↔ Karton, Kg ↔ kg).
+     *
+     * @return array<int, array{0: string, 1: string}> item_id → [bisher, Vorschlag]
+     */
+    public function unitSpellingFixes(): array
     {
         $rows = $this->pdo->query("SELECT id, unit FROM items WHERE active = 1 AND unit <> ''")->fetchAll(PDO::FETCH_ASSOC);
         $byKey = [];
@@ -198,7 +212,7 @@ final class ItemQualityService
                     continue;
                 }
                 foreach ($ids as $id) {
-                    $out[$id] = "„{$spelling}“ → „{$preferred}“";
+                    $out[$id] = [(string) $spelling, (string) $preferred];
                 }
             }
         }

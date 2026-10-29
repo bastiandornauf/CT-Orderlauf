@@ -56,6 +56,11 @@ Syntaxcheck ohne Docker: `php -l <datei>` (PHP 8.4 lokal installiert).
 - Fachliche Vorgaben (Pflichtenhefte, CSV-Formate, Beispieldaten): `project guidelines and definition/`
 - Zurückgestellte Ideen stehen in [BACKLOG.md](BACKLOG.md) – nur umsetzen, wenn ausdrücklich gewünscht.
 
+## Datenpflege & Belege
+
+- Belege (Rechnungsfotos, Preislisten) → Skill `beleg-einpflegen` (`.claude/skills/`): Pflegepaket-JSON erzeugen, der User spielt es unter *Datenpflege → Pflegepaket einspielen* ein. Nie direkt in die Live-DB schreiben.
+- **Repo ist öffentlich:** Pakete, Daten-Migrationen mit Preisen und DB-Exporte nie committen – Ablage `~/Backups/orderlauf/` bzw. `database/private/` (gitignored).
+
 ## Hilfe nach Rolle (später)
 
 `/help` ist aktuell eine gemeinsame Anleitung für alle Rollen. Geplant sind später eigene Fassungen:

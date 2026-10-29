@@ -84,6 +84,24 @@ export async function saveItem(body) {
 }
 
 /**
+ * Sammelbearbeitung mehrerer Artikel (nur Editor).
+ * @param {{ action: string, ids: number[], value?: string, priority?: number }} body
+ */
+export async function bulkItems(body) {
+  const res = await fetch('/api/items/bulk', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ ...body, _csrf: csrfToken() }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Aktion fehlgeschlagen');
+  }
+  return data;
+}
+
+/**
  * Neuen Artikel-Stammdatensatz anlegen (JSON-API, nur Editor).
  * @param {{ name: string, unit?: string, location_id: number, valuation_price?: string|number|null, supplier_links?: {supplier_id:number,priority?:number}[] }} body
  */

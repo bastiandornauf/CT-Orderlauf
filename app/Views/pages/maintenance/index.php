@@ -4,6 +4,10 @@
 <section class="page-section">
     <div class="page-toolbar">
         <h1 class="page-title">Datenpflege</h1>
+        <div class="toolbar-actions">
+            <a href="/pflege/paket" class="button button--secondary button--small">Pflegepaket einspielen</a>
+            <a href="/pflege/export" class="button button--ghost button--small">Artikelstamm exportieren</a>
+        </div>
     </div>
     <p class="text-muted u-m-0 u-mb-2">
         <?= (int) $errors === 0 ? 'Keine Fehler.' : (int) $errors . ' Fehler zu beheben.' ?>
@@ -16,7 +20,7 @@
             <?php foreach ($checks as $c): ?>
                 <?php $empty = $c['count'] === 0; ?>
                 <a class="card card--pad maintenance-card maintenance-card--<?= $c['severity'] ?><?= $empty ? ' maintenance-card--done' : '' ?>"
-                   href="<?= $empty ? '#' : '/items?active=1&check=' . urlencode($c['key']) ?>"
+                   href="<?= $empty ? '#' : htmlspecialchars($c['href'], ENT_QUOTES, 'UTF-8') ?>"
                    <?= $empty ? 'aria-disabled="true" tabindex="-1"' : '' ?>>
                     <span class="maintenance-card__count"><?= $empty ? '✓' : (int) $c['count'] ?></span>
                     <span class="maintenance-card__title"><?= htmlspecialchars($c['title'], ENT_QUOTES, 'UTF-8') ?></span>

@@ -65,6 +65,9 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Zahl oder Beschri
 
 - **Tabs** oben: Wechsel zwischen den **Lagerorten**.
 - Bei jedem Artikel die **Menge** eintragen (leer lassen = nicht bestellen).
+- Angezeigt wird der **Alias** (kurzer Name, z. B. „Pommes“), falls hinterlegt. Die **Suche** findet auch den vollen Namen, die Bezeichnung beim Lieferanten und die Art.-Nr.
+- Unter dem Artikel steht dezent der **letzte bekannte Preis** je Lieferant, z. B. „Pütz 24,80 €/Karton · 2,48 €/kg · 03.10.26“. Fehlt ein Preis, steht dort „Preis unbekannt“ – nie 0,00 €.
+- An den Lieferanten geht immer dessen **Bezeichnung** (und Art.-Nr., falls hinterlegt) – nie der Alias.
 - **Freier Artikel**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jeder freie Artikel landet zusätzlich in den **Artikel-Vorschlägen**.
 - Wenn Sie fertig sind: **Weiter zur Kontrolle** (o. ä.) – die Runde wird als **bereit zur Kontrolle** markiert.
 
@@ -160,9 +163,16 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 - Freitext aus dem Rundgang wird **beim Öffnen der Kontrolle** bzw. des **Inventur-Abschlusses** an den Server übertragen – dafür ist einmal Verbindung nötig. Offline erfasste Artikel warten auf dem Gerät und gehen nicht verloren; sie erscheinen bei den Kollegen erst nach dieser Übertragung.
 - **Verwerfen** und **Übernehmen** wirken für alle Nutzer und brauchen eine Verbindung.
 
+### Bewertung nach letztem Einkauf
+
+- Beim Start der Inventur wird für jeden Artikel der **letzte bestätigte Einkaufspreis bis zum Stichtag** festgehalten – egal bei welchem Lieferanten. Listenpreise zählen dafür nie.
+- Der Preis wird auf die **Zähleinheit** umgerechnet. Zählen Sie in „Dose“, kauft aber je kg, braucht der Artikel das Feld **Inhalt je Einheit** (z. B. 1 Dose = 4,25 kg). Geht die Umrechnung nicht eindeutig, steht in der CSV „nicht umrechenbar“ statt eines geschätzten Werts.
+- Später eingetragene Preise ändern eine **laufende** Inventur nicht.
+- In der **CSV** stehen hinten zusätzlich: `einkaufspreis_je_einheit`, `einkaufswert`, `einkauf_status`, `einkauf_lieferant`, `einkauf_datum`, `einkauf_basis`, `einkauf_beleg`, `alias`. Die bisherigen Spalten bleiben unverändert.
+
 ### Bewertungspreis (optional)
 
-- Rollen mit Stammdaten-Recht: am **Artikel** Feld **Bewertungspreis pro Einheit** (nur für Inventur).
+- Rollen mit Stammdaten-Recht: am **Artikel** Feld **Bewertungspreis pro Einheit** (BP, nur für Inventur). Er wird **parallel** zum Einkaufspreis geführt; welcher gilt, entscheiden Sie in Excel.
 - Die **Bestellung** nutzt diesen Preis nicht.
 - **Massenpflege per CSV:** Unter **Import / Export** **Artikel** herunterladen, Spalte **`bewertungspreis`** in Excel ändern, als **Artikel** oder Typ **Bewertungspreise** wieder importieren.
 
@@ -180,6 +190,21 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 - **Artikel**, **Lieferanten**, **Lagerorte** pflegen Sie über das **Menü** oder die einklappbare Sektion auf der Startseite.
 - Änderungen gelten für **neu begonnene** Bestellungen und können auf **Kontrolle/Versand** per **Aktualisieren** oder Tab-Wechsel nachgezogen werden (siehe oben).
 - **CSV Import/Export** (Menü **Import / Export**): Artikel inkl. optionaler Spalte **`bewertungspreis`**; reine Preispflege über dieselbe Spalte oder Import-Typ **Bewertungspreise**.
+- **Alias:** optionaler kurzer Name für Rundgang und Listen. Bestellungen nutzen weiter den Namen bzw. die Bezeichnung des Lieferanten.
+- **Bestelldaten je Lieferant** (im Artikel unter dem Lieferanten aufklappen): Bezeichnung beim Lieferanten, Art.-Nr., Bestelleinheit, Gebinde (z. B. 4,25 kg). Mit Gebinde zeigt der Rundgang den Vergleichspreis (€/kg, €/l, €/Stück).
+- **Preise:** dort auch **Preis eintragen** – als *Listenpreis* oder *Einkauf (bestätigt)*, mit Datum und optional Beleg-Nr. Ein neuer Preis ersetzt den alten nicht, er kommt in den **Verlauf**. Derselbe Preis mit demselben Beleg wird nicht doppelt gespeichert.
+- **Inhalt je Einheit** (optional): z. B. 1 Karton = 10 kg – nötig, wenn für die Inventurbewertung umgerechnet werden muss.
+- **Lieferant → „Hat Artikelnummern“:** dann meldet die Datenpflege Artikel dieses Lieferanten ohne Art.-Nr.
+
+---
+
+## 9a. Datenpflege (Menü → Datenpflege)
+
+- **Übersicht:** Kacheln mit der Anzahl je Prüfung – **Fehler** (rot, z. B. ohne Lieferant, gleiche Art.-Nr. an zwei Artikeln) und **Hinweise** (z. B. ohne Preis, Preis älter als 6 Monate, Einheit uneinheitlich geschrieben, auffälliger Preissprung). Ein Klick zeigt die betroffenen Artikel mit Begründung; im Bearbeiten-Dialog führt **Speichern & nächster** durch die Liste.
+- **Mögliche Dubletten:** Vorschläge mit Begründung. **Vergleichen** öffnet die Gegenüberstellung, **Getrennt lassen** blendet das Paar dauerhaft aus, **Später** stellt es zurück.
+- **Zusammenführen:** Sie wählen, welcher Artikel bleibt und welche Werte gelten. Lieferanten, Bestelldaten und Preise wandern mit; der andere Artikel wird **stillgelegt, nicht gelöscht**. Es gibt **keinen Rückgängig-Knopf** – vorher genau prüfen. Der Vorher-Stand wird protokolliert.
+- **Sammelbearbeitung** (Artikelliste): Artikel anhaken → Aktion wählen: Einheit oder Lagerort setzen, Lieferant ergänzen, archivieren/aktivieren, zwei Artikel zusammenführen. In der Prüfung „Einheit uneinheitlich“ zusätzlich **Vorschlag übernehmen**.
+- **Pflegepaket einspielen:** Eine vorbereitete Datei (z. B. von Claude aus Rechnungsfotos erstellt) wählen → jede Änderung mit **bisher / neu** prüfen → angehakte übernehmen. Grundlage dafür: **Artikelstamm exportieren**. Ein zweites Einspielen derselben Datei ändert nichts.
 
 ---
 

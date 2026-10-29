@@ -16,9 +16,11 @@ use App\Controllers\ImportController;
 use App\Controllers\InventoryApiController;
 use App\Controllers\InventoryController;
 use App\Controllers\ItemApiController;
+use App\Controllers\ItemBulkApiController;
 use App\Controllers\ItemController;
 use App\Controllers\LocationController;
 use App\Controllers\MaintenanceController;
+use App\Controllers\MaintenancePackageController;
 use App\Controllers\OrderApiController;
 use App\Controllers\OrderController;
 use App\Controllers\PendingItemApiController;
@@ -40,6 +42,10 @@ return [
         '/items' => [ItemController::class, 'index'],
         '/items/pending' => [ItemController::class, 'pending'],
         '/pflege' => [MaintenanceController::class, 'index'],
+        '/pflege/dubletten' => [MaintenanceController::class, 'duplicates'],
+        '/pflege/zusammenfuehren' => [MaintenanceController::class, 'mergeForm'],
+        '/pflege/paket' => [MaintenancePackageController::class, 'index'],
+        '/pflege/export' => [MaintenancePackageController::class, 'export'],
         '/items/new' => [ItemController::class, 'form'],
         '/items/edit' => [ItemController::class, 'form'],
         '/settings' => [SettingsController::class, 'index'],
@@ -87,8 +93,13 @@ return [
         '/api/order/send-mail' => [OrderApiController::class, 'sendMail'],
         '/api/items/save' => [ItemApiController::class, 'save'],
         '/api/items/create' => [ItemApiController::class, 'create'],
+        '/api/items/bulk' => [ItemBulkApiController::class, 'run'],
         '/api/pending-items/sync' => [PendingItemApiController::class, 'sync'],
         '/api/pending-items/resolve' => [PendingItemApiController::class, 'resolve'],
+        '/pflege/dubletten/entscheiden' => [MaintenanceController::class, 'decide'],
+        '/pflege/zusammenfuehren' => [MaintenanceController::class, 'merge'],
+        '/api/pflege/paket/preview' => [MaintenancePackageController::class, 'preview'],
+        '/api/pflege/paket/apply' => [MaintenancePackageController::class, 'apply'],
         '/api/prices/add' => [PriceApiController::class, 'add'],
         '/api/prices/delete' => [PriceApiController::class, 'delete'],
     ],

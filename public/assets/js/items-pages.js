@@ -98,6 +98,13 @@ export function registerItemsAlpine(Alpine) {
     editDraft: emptyDraft(),
     editSupplierRows: [emptySupplierRow()],
     rootEl: null,
+    check: '',
+    /** @type {number[]} Auswahl für die Sammelbearbeitung */
+    selected: [],
+    bulkAction: '',
+    bulkValue: '',
+    bulkPriority: 0,
+    bulkBusy: false,
     init() {
       // $el zeigt in Event-Handlern auf das auslösende Element (z. B. das Dialog-Formular),
       // daher die Seitenwurzel einmalig merken.
@@ -108,6 +115,7 @@ export function registerItemsAlpine(Alpine) {
         const cfg = JSON.parse(raw);
         this.locations = Array.isArray(cfg.locations) ? cfg.locations : [];
         this.suppliers = Array.isArray(cfg.suppliers) ? cfg.suppliers : [];
+        this.check = cfg.check || '';
       } catch (e) {
         console.error('Artikelliste: JSON', e);
         return;
@@ -118,6 +126,47 @@ export function registerItemsAlpine(Alpine) {
       this.supplierNameById = Object.fromEntries(
         this.suppliers.map((s) => [String(s.id), s.name]),
       );
+    },
+    allIds() {
+      return [...(this.rootEl?.querySelectorAll('[data-item-id]') || [])].map((li) => Number(li.dataset.itemId));
+    },
+    toggleSelected(id) {
+      const i = this.selected.indexOf(id);
+      if (i >= 0) this.selected.splice(i, 1);
+      else this.selected.push(id);
+    },
+    selectAll(on) {
+      this.selected = on ? this.allIds() : [];
+    },
+    async runBulk() {
+      if (this.bulkAction === 'merge') {
+        const [a, b] = this.selected;
+        window.location.href = `/pflege/zusammenfuehren?a=${a}&b=${b}`;
+        return;
+      }
+      if (!navigator.onLine) {
+        showToast('Nur online möglich.', 4000, 'error');
+        return;
+      }
+      if (this.bulkAction === 'archive' &&
+          !window.confirm(`${this.selected.length} Artikel archivieren? Sie erscheinen dann nicht mehr im Rundgang.`)) {
+        return;
+      }
+      this.bulkBusy = true;
+      try {
+        const data = await api.bulkItems({
+          action: this.bulkAction,
+          ids: this.selected,
+          value: this.bulkValue,
+          priority: this.bulkPriority,
+        });
+        showToast(`${data.changed} Artikel geändert.`);
+        window.setTimeout(() => window.location.reload(), 700);
+      } catch (e) {
+        showToast(e?.message || 'Aktion fehlgeschlagen', 5000, 'error');
+      } finally {
+        this.bulkBusy = false;
+      }
     },
     openEdit(event) {
       const dialog = this.$refs.itemEditDialog;

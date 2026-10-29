@@ -27,6 +27,7 @@ $pageCfg = [
         static fn (array $s): array => ['id' => (int) $s['id'], 'name' => (string) $s['name']],
         $suppliers ?? []
     ),
+    'check' => (string) ($check ?? ''),
 ];
 $pageCfgJson = json_encode($pageCfg, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS);
 $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
@@ -108,6 +109,12 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
         </form>
     </div>
 
+    <?php if (!empty($items)): ?>
+        <label class="checkbox-label bulk-select-all">
+            <input type="checkbox" @change="selectAll($event.target.checked)" :checked="selected.length > 0 && selected.length === allIds().length">
+            Alle auswählen
+        </label>
+    <?php endif; ?>
     <p class="text-muted u-m-0 u-mb-2"><?= count($items) ?> Artikel<?= (($filter_loc ?? 0) > 0 || ($filter_supplier ?? 0) > 0 || ($filter_active ?? 'all') !== 'all' || (($filter_q ?? '') !== '')) ? ' (gefiltert)' : '' ?></p>
 
     <?php if (empty($items)): ?>
@@ -139,7 +146,10 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
             $itemJson = json_encode($itemPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS);
             $itemAttr = htmlspecialchars((string) $itemJson, ENT_QUOTES, 'UTF-8');
             ?>
-            <li class="card card--pad list-item" id="item-<?= (int) $it['id'] ?>" data-item-id="<?= (int) $it['id'] ?>" data-item="<?= $itemAttr ?>">
+            <li class="card card--pad list-item" id="item-<?= (int) $it['id'] ?>" data-item-id="<?= (int) $it['id'] ?>" data-item="<?= $itemAttr ?>"
+                :class="{ 'list-item--selected': selected.includes(<?= (int) $it['id'] ?>) }">
+                <input type="checkbox" class="bulk-check" aria-label="Auswählen"
+                       :checked="selected.includes(<?= (int) $it['id'] ?>)" @change="toggleSelected(<?= (int) $it['id'] ?>)">
                 <div class="list-item__main">
                     <strong data-item-display-name><?= htmlspecialchars(\App\Helpers\ItemDisplay::name($it), ENT_QUOTES, 'UTF-8') ?></strong>
                     <span class="text-muted" data-item-formal-name <?= trim((string) ($it['alias'] ?? '')) === '' ? 'hidden' : '' ?>><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></span>
@@ -166,6 +176,36 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
         <?php endforeach; ?>
     </ul>
     <?php endif; ?>
+
+    <div class="bulk-bar" x-show="selected.length > 0" x-cloak>
+        <span class="bulk-bar__count" x-text="selected.length + ' ausgewählt'"></span>
+        <select class="select" x-model="bulkAction" aria-label="Aktion">
+            <option value="">Aktion wählen …</option>
+            <?php if ($checkKey === 'unit_spelling'): ?><option value="apply_unit_suggestion">Vorschlag übernehmen</option><?php endif; ?>
+            <option value="set_unit">Einheit setzen</option>
+            <option value="set_location">Lagerort setzen</option>
+            <option value="add_supplier">Lieferant ergänzen</option>
+            <option value="archive">Archivieren (inaktiv)</option>
+            <option value="activate">Aktivieren</option>
+            <option value="merge" :disabled="selected.length !== 2">Zusammenführen (2 Artikel)</option>
+        </select>
+        <input class="input" x-show="bulkAction === 'set_unit'" x-model="bulkValue" placeholder="z. B. Karton" aria-label="Einheit">
+        <select class="select" x-show="bulkAction === 'set_location'" x-model="bulkValue" aria-label="Lagerort">
+            <option value="">Lagerort …</option>
+            <template x-for="loc in locations" :key="loc.id"><option :value="String(loc.id)" x-text="loc.name"></option></template>
+        </select>
+        <template x-if="bulkAction === 'add_supplier'">
+            <span class="bulk-bar__group">
+                <select class="select" x-model="bulkValue" aria-label="Lieferant">
+                    <option value="">Lieferant …</option>
+                    <template x-for="s in suppliers" :key="s.id"><option :value="String(s.id)" x-text="s.name"></option></template>
+                </select>
+                <input class="input bulk-bar__prio" type="number" x-model.number="bulkPriority" aria-label="Priorität" title="Priorität (höher = bevorzugt)">
+            </span>
+        </template>
+        <button type="button" class="button button--primary button--small" @click="runBulk()" :disabled="!bulkAction || bulkBusy">Ausführen</button>
+        <button type="button" class="button button--ghost button--small" @click="selected = []">Auswahl aufheben</button>
+    </div>
 
     <dialog class="item-quick-edit"
             x-ref="itemEditDialog"

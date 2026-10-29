@@ -3,12 +3,14 @@ import { registerOrderAlpine, dashboardPageData } from './order-pages.js';
 import { registerInventoryAlpine } from './inventory-pages.js';
 import { registerItemsAlpine } from './items-pages.js';
 import { registerPricesAlpine } from './prices.js';
+import { registerMaintenanceAlpine } from './maintenance.js';
 import { initOnlineIndicator, registerServiceWorker } from './offline.js';
 
 registerOrderAlpine(Alpine);
 registerInventoryAlpine(Alpine);
 registerItemsAlpine(Alpine);
 registerPricesAlpine(Alpine);
+registerMaintenanceAlpine(Alpine);
 Alpine.data('dashboardPage', () => dashboardPageData());
 
 Alpine.data('appHeader', () => ({
