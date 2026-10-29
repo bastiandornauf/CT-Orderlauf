@@ -205,7 +205,9 @@ Zusätzlich hochladen:
 2. In phpMyAdmin nacheinander ausführen (rein additiv – die bisherige Version läuft danach unverändert weiter):
    1. `database/migrations/20261029_items_alias_supplier_articles.sql`
    2. `database/migrations/20261029_supplier_article_prices.sql`
-3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v57+**. **Kein** `vendor/`.
+   3. `database/migrations/20261030_suppliers_has_skus.sql`
+   4. Datenpflege (nicht im Git, liegt unter `database/private/` bzw. `~/Backups/orderlauf/`): `20261029_data_transgourmet_ordersatz.sql`
+3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v58+**. **Kein** `vendor/`.
 
 **Schnelltest:** Artikel bearbeiten → unter einem Lieferanten „Bestelldaten“ aufklappen, Bezeichnung eintragen, speichern, erneut öffnen. Dort „Preis eintragen“ → Preis erscheint; neue Bestellrunde starten → Preiszeile unter dem Artikel.
 

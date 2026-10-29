@@ -73,6 +73,7 @@ final class SupplierController
         $subjectTpl = $subjectTplRaw !== '' ? mb_substr($subjectTplRaw, 0, 512) : null;
         $active = isset($_POST['active']);
         $attachPdf = isset($_POST['attach_pdf']);
+        $hasSkus = isset($_POST['has_skus']);
         $days = isset($_POST['weekdays']) && is_array($_POST['weekdays'])
             ? array_map('intval', $_POST['weekdays']) : [];
 
@@ -97,6 +98,7 @@ final class SupplierController
                     'email_subject_template' => $subjectTpl,
                     'active' => $active ? 1 : 0,
                     'attach_pdf' => $attachPdf ? 1 : 0,
+                    'has_skus' => $hasSkus ? 1 : 0,
                 ],
                 'weekdays' => $days,
                 'error' => $err,
@@ -108,9 +110,11 @@ final class SupplierController
         if ($id > 0) {
             $this->repo->update($id, $name, $email, $phone, $fax, $mobile, $street, $city, $type, $template, $subjectTpl, $active, $attachPdf);
             $this->repo->setDeliveryWeekdays($id, $days);
+            $this->repo->updateHasSkus($id, $hasSkus);
         } else {
             $newId = $this->repo->create($name, $email, $phone, $fax, $mobile, $street, $city, $type, $template, $subjectTpl, $active, $attachPdf);
             $this->repo->setDeliveryWeekdays($newId, $days);
+            $this->repo->updateHasSkus($newId, $hasSkus);
         }
         $_SESSION['flash_ok'] = 'Lieferant gespeichert.';
         Response::redirect('/suppliers');

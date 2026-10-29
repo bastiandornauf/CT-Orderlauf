@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     email_template MEDIUMTEXT NULL,
     email_subject_template VARCHAR(512) NULL,
     attach_pdf TINYINT(1) NOT NULL DEFAULT 0,
+    has_skus TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Art.-Nr. sichtbar → Datenpflege prüft fehlende Art.-Nr.',
     active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_suppliers_name (name)

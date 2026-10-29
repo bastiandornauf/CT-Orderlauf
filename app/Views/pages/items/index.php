@@ -12,6 +12,11 @@ if (($filter_supplier ?? 0) > 0) {
 if (trim((string) ($filter_q ?? '')) !== '') {
     $listParams['q'] = trim((string) $filter_q);
 }
+$checkKey = (string) ($check ?? '');
+$checkDef = \App\Services\ItemQualityService::CHECKS[$checkKey] ?? null;
+if ($checkDef !== null) {
+    $listParams['check'] = $checkKey;
+}
 $listQuery = $listParams === [] ? '' : http_build_query($listParams);
 $pageCfg = [
     'locations' => array_map(
@@ -40,12 +45,23 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
         </div>
     </div>
 
+    <?php if ($checkDef !== null): ?>
+        <div class="card card--pad maintenance-banner maintenance-banner--<?= $checkDef[1] ?>">
+            <strong><?= htmlspecialchars($checkDef[0], ENT_QUOTES, 'UTF-8') ?></strong>
+            <span class="text-muted"><?= htmlspecialchars($checkDef[3], ENT_QUOTES, 'UTF-8') ?></span>
+            <a href="/pflege" class="button button--ghost button--small">Zur Datenpflege</a>
+        </div>
+    <?php endif; ?>
+
     <div class="items-filter-panel">
         <div class="items-filter-panel__header">
             <span class="items-filter-panel__title">Suche &amp; Filter</span>
             <p class="items-filter-panel__hint text-muted">Lagerort, Lieferant, Status und Textsuche kombinierbar.</p>
         </div>
         <form method="get" action="/items" class="items-filter-panel__form">
+            <?php if ($checkDef !== null): ?>
+                <input type="hidden" name="check" value="<?= htmlspecialchars($checkKey, ENT_QUOTES, 'UTF-8') ?>">
+            <?php endif; ?>
             <div class="items-filter-grid">
                 <div class="form-group">
                     <label class="form-label" for="filter-loc">Lagerort</label>
@@ -138,6 +154,9 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
                     <?php endif; ?>
                     <?php if (!(int) $it['active']): ?>
                         <span class="status-badge status-badge--warn" data-item-inactive>inaktiv</span>
+                    <?php endif; ?>
+                    <?php if (($check_details[(int) $it['id']] ?? '') !== ''): ?>
+                        <span class="maintenance-detail"><?= htmlspecialchars($check_details[(int) $it['id']], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                 </div>
                 <a href="/items/edit?id=<?= (int) $it['id'] ?><?= $listQuery !== '' ? '&' . htmlspecialchars($listQuery, ENT_QUOTES, 'UTF-8') : '' ?>"
@@ -244,6 +263,9 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
 
             <div class="item-quick-edit__actions">
                 <button type="button" class="button button--ghost" @click="closeEdit()" :disabled="editSaving">Abbrechen</button>
+                <?php if ($checkDef !== null): ?>
+                <button type="button" class="button button--secondary" @click="submitEdit(true)" :disabled="editSaving">Speichern &amp; nächster</button>
+                <?php endif; ?>
                 <button type="submit" class="button button--primary" :disabled="editSaving">
                     <span x-show="!editSaving">Speichern</span>
                     <span x-show="editSaving">…</span>

@@ -80,6 +80,12 @@ final class SupplierRepository
         $stmt->execute([$name, $email, $phone, $fax, $mobile, $street, $city, $orderType, $emailTemplate, $emailSubjectTemplate, $active ? 1 : 0, $attachPdf ? 1 : 0, $id]);
     }
 
+    /** Eigene Methode, damit ältere Aufrufer von update() die Spalte nicht kennen müssen. */
+    public function updateHasSkus(int $id, bool $hasSkus): void
+    {
+        Database::pdo()->prepare('UPDATE suppliers SET has_skus = ? WHERE id = ?')->execute([$hasSkus ? 1 : 0, $id]);
+    }
+
     /** @return list<int> */
     public function deliveryWeekdays(int $supplierId): array
     {

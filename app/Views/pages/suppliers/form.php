@@ -71,6 +71,14 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
             <p class="form-hint">Wenn der Direktversand in den Einstellungen aktiv ist, wird die Bestellliste als PDF an die Mail angehängt.</p>
         </div>
         <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="has_skus" value="1"
+                       <?= !empty($supplier['has_skus']) ? 'checked' : '' ?>>
+                Hat Artikelnummern
+            </label>
+            <p class="form-hint">Datenpflege meldet Artikel dieses Lieferanten ohne Art.-Nr.</p>
+        </div>
+        <div class="form-group">
             <label class="form-label" for="email_subject_template">Betreff-Vorlage (optional)</label>
             <p class="form-hint">Wenn ausgefüllt, ersetzt dieser Betreff die <a href="/settings">systemweite Betreff-Vorlage</a> nur für diesen Lieferanten. Leer lassen für die globale Vorlage.</p>
             <input class="input" id="email_subject_template" name="email_subject_template" maxlength="512"

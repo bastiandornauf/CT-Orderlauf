@@ -34,7 +34,8 @@ final class ItemRepository
         string $activeFilter = 'all',
         ?string $search = null,
         bool $requireActiveLocation = false,
-        ?int $supplierId = null
+        ?int $supplierId = null,
+        ?array $onlyIds = null
     ): array {
         $pdo = Database::pdo();
         $sql = 'SELECT i.*, l.name AS location_name FROM items i JOIN locations l ON l.id = i.location_id WHERE 1=1';
@@ -53,6 +54,14 @@ final class ItemRepository
         if ($supplierId !== null && $supplierId > 0) {
             $sql .= ' AND EXISTS (SELECT 1 FROM item_supplier isf WHERE isf.item_id = i.id AND isf.supplier_id = ?)';
             $params[] = $supplierId;
+        }
+        if ($onlyIds !== null) {
+            $onlyIds = array_values(array_filter(array_map('intval', $onlyIds)));
+            if ($onlyIds === []) {
+                return [];
+            }
+            $sql .= ' AND i.id IN (' . implode(',', array_fill(0, count($onlyIds), '?')) . ')';
+            array_push($params, ...$onlyIds);
         }
         if ($search !== null && trim($search) !== '') {
             $sql .= ' AND (i.name LIKE ? OR i.alias LIKE ? OR i.unit LIKE ?

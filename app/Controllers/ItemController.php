@@ -16,6 +16,7 @@ use App\Repositories\ItemRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\SupplierArticleRepository;
 use App\Repositories\SupplierRepository;
+use App\Services\ItemQualityService;
 
 final class ItemController
 {
@@ -107,6 +108,14 @@ final class ItemController
         if ($supplierId <= 0) {
             $supplierId = 0;
         }
+        // Aus der Datenpflege: nur Artikel einer Prüfung, mit Begründung je Zeile
+        $check = (string) ($_GET['check'] ?? '');
+        $checkDetails = null;
+        if (isset(ItemQualityService::CHECKS[$check])) {
+            $checkDetails = (new ItemQualityService())->run($check);
+        } else {
+            $check = '';
+        }
 
         View::layout('layout', 'pages/items/index', [
             'title' => 'Artikel',
@@ -115,8 +124,11 @@ final class ItemController
                 $active,
                 $q === '' ? null : $q,
                 false,
-                $supplierId > 0 ? $supplierId : null
+                $supplierId > 0 ? $supplierId : null,
+                $checkDetails !== null ? array_keys($checkDetails) : null
             ),
+            'check' => $check,
+            'check_details' => $checkDetails ?? [],
             'locations' => $this->locations->all(),
             'suppliers' => $this->suppliers->all(),
             'filter_loc' => $locId,

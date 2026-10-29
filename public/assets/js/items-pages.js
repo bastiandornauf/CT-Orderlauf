@@ -123,7 +123,10 @@ export function registerItemsAlpine(Alpine) {
       const dialog = this.$refs.itemEditDialog;
       if (!dialog || typeof dialog.showModal !== 'function') return;
       event.preventDefault();
-      const li = event.currentTarget.closest('[data-item]');
+      this.openEditFor(event.currentTarget.closest('[data-item]'));
+    },
+    openEditFor(li) {
+      const dialog = this.$refs.itemEditDialog;
       const item = parseItemPayload(li?.dataset?.item);
       if (!item || !item.id) {
         showToast('Artikel konnte nicht geladen werden.', 4000, 'error');
@@ -167,7 +170,7 @@ export function registerItemsAlpine(Alpine) {
       if (this.editSupplierRows.length <= 1) return;
       this.editSupplierRows.splice(idx, 1);
     },
-    async submitEdit() {
+    async submitEdit(openNext = false) {
       if (!navigator.onLine) {
         this.editError = 'Nur online möglich.';
         return;
@@ -201,8 +204,16 @@ export function registerItemsAlpine(Alpine) {
           supplier_links,
         });
         this.patchRow(data.item, data.item_supplier_links || []);
+        const current = this.rootEl?.querySelector(`[data-item-id="${data.item.id}"]`);
+        const next = current?.nextElementSibling?.matches('[data-item]') ? current.nextElementSibling : null;
         this.closeEdit();
         showToast('Artikel gespeichert.');
+        if (openNext && next) {
+          next.scrollIntoView({ block: 'center' });
+          this.openEditFor(next);
+        } else if (openNext) {
+          showToast('Das war der letzte Artikel dieser Liste.', 3000);
+        }
       } catch (e) {
         this.editError = e?.message || 'Speichern fehlgeschlagen';
       } finally {

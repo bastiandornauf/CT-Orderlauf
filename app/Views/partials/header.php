@@ -64,6 +64,7 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                     <a href="/items" class="app-nav__link<?= ($navActive('/items') && !$navActive('/items/pending')) ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Artikel</a>
                     <a href="/suppliers" class="app-nav__link<?= $navActive('/suppliers') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Lieferanten</a>
                     <a href="/locations" class="app-nav__link<?= $navActive('/locations') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Lagerorte</a>
+                    <a href="/pflege" class="app-nav__link<?= $navActive('/pflege') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Datenpflege</a>
                     <a href="/items/pending" class="app-nav__link<?= $navActive('/items/pending') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Artikel-Vorschläge</a>
                     <a href="/import" class="app-nav__link<?= $navActive('/import') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Import / Export</a>
                 </div>

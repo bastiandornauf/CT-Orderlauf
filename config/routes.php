@@ -18,6 +18,7 @@ use App\Controllers\InventoryController;
 use App\Controllers\ItemApiController;
 use App\Controllers\ItemController;
 use App\Controllers\LocationController;
+use App\Controllers\MaintenanceController;
 use App\Controllers\OrderApiController;
 use App\Controllers\OrderController;
 use App\Controllers\PendingItemApiController;
@@ -38,6 +39,7 @@ return [
         '/suppliers/edit' => [SupplierController::class, 'form'],
         '/items' => [ItemController::class, 'index'],
         '/items/pending' => [ItemController::class, 'pending'],
+        '/pflege' => [MaintenanceController::class, 'index'],
         '/items/new' => [ItemController::class, 'form'],
         '/items/edit' => [ItemController::class, 'form'],
         '/settings' => [SettingsController::class, 'index'],

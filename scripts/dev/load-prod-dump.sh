@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Spielt einen phpMyAdmin-Export der Produktion in die lokale Docker-DB ein.
 # Die lokale DB wird dabei komplett ersetzt. Danach ist Mailversand entschärft:
-# Testbetrieb an, Direktversand aus, SMTP-Passwort leer.
+# Testbetrieb an, Direktversand aus, SMTP-Passwort leer. Legt den Login lokaltest/lokaltest an.
 #
 #   scripts/dev/load-prod-dump.sh ~/Backups/orderlauf/prod-2026-10-29-1146.sql
 set -euo pipefail
@@ -21,6 +21,12 @@ db ct_orderlauf -e "
   UPDATE settings SET value = '1' WHERE key_name = 'dev_mode';
   UPDATE settings SET value = '0' WHERE key_name = 'send_email_direct';
   UPDATE settings SET value = ''  WHERE key_name = 'smtp_pass';"
+
+# Lokaler Test-Admin (nur in der lokalen Kopie): lokaltest / lokaltest
+hash=$(docker compose exec -T web php -r 'echo password_hash("lokaltest", PASSWORD_BCRYPT);')
+db ct_orderlauf -e "INSERT INTO users (username, display_name, password_hash, role)
+  VALUES ('lokaltest', 'Lokal Test', '${hash}', 'admin')
+  ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash);"
 
 db ct_orderlauf -e "
   SELECT 'items' AS tabelle, COUNT(*) AS anzahl FROM items

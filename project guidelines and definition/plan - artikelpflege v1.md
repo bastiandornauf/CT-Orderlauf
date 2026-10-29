@@ -290,12 +290,14 @@ Claude erzeugt aus Fotos/Listen ein strukturiertes Paket (JSON: Preise, Bestelld
 
 `dedupe_decisions (item_a, item_b, decision, decided_by, decided_at)` – mehr nicht; `maintenance_log` und `merged_into_id` gibt es schon. Synonymliste als Datei. Ggf. Spalte `suppliers.has_skus` für die Art.-Nr.-Prüfung.
 
-### Offene Entscheidungen für Phase 4
+### Entscheidungen Phase 4 (2026-10-29)
 
-| # | Frage | Empfehlung |
+| # | Frage | Entscheidung |
 |---|---|---|
-| F1 | Pflegepaket-Import (4.6) bauen oder weiter SQL über phpMyAdmin? | Paket-Import: sicherer (Vorschau, Prüfungen, Protokoll) und auf Dauer bequemer als SQL |
-| F2 | Ab wann gilt ein Preis als veraltet? | 6 Monate |
-| F3 | Welche Lieferanten haben für dich sichtbare Art.-Nr.? | Transgourmet, Pütz (?) – Rest ohne Prüfung |
-| F4 | „Rückgängig“ für Zusammenführungen nötig? | Ja, einfache Variante aus dem Protokoll |
-| F5 | Die 28 aktiven Artikel im inaktiven Lagerort SB: Absicht? | klären – ggf. archivieren oder Lagerort aktivieren |
+| F1 | Pflegepaket-Import | Ja, bauen (4.6) |
+| F2 | Preis veraltet | nach 6 Monaten – relevant für Inventur **und** Kalkulation |
+| F3 | Lieferanten mit Art.-Nr. | Schalter `suppliers.has_skus`; an: Transgourmet, Pütz, HANOS. Aus: OGA, Gastro Service |
+| F4 | Rückgängig für Zusammenführen | Kein Rückgängig-Knopf; deutliche Warnung vorab, Vorher-Stand im Protokoll |
+| F5 | Lagerort SB | Strandbar, nur im Sommer – inaktiv ist Absicht, keine Prüfung „aktiv in inaktivem Lagerort“ |
+
+4.0 entfällt: Bestellrunden und Inventuren arbeiten mit dem eingefrorenen Snapshot im Gerät – ein zusammengeführter Artikel bleibt dort bis Rundenende erhalten.
