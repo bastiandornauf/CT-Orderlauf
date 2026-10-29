@@ -13,6 +13,7 @@ use App\Helpers\ValuationPrice;
 use App\Helpers\Validator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
+use App\Repositories\PriceRepository;
 use App\Repositories\SupplierArticleRepository;
 
 final class ItemApiController
@@ -151,6 +152,7 @@ final class ItemApiController
             Response::jsonError($notFound, 500);
         }
         $articles = (new SupplierArticleRepository())->defaultsByItemIds([$id])[$id] ?? [];
+        $prices = (new PriceRepository())->latestForDefaults($id)[$id] ?? [];
         $normLinks = [];
         foreach ($items->supplierLinksForItem($id) as $l) {
             $sid = (int) $l['supplier_id'];
@@ -158,7 +160,7 @@ final class ItemApiController
                 'item_id' => (int) $l['item_id'],
                 'supplier_id' => $sid,
                 'priority' => (int) $l['priority'],
-            ] + ItemRepository::articleFields($articles[$sid] ?? null);
+            ] + ItemRepository::articleFields($articles[$sid] ?? null) + ['price' => $prices[$sid] ?? null];
         }
 
         Response::jsonOk([

@@ -154,7 +154,8 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
                         <input class="input" type="number" :id="'supplier_priority_' + idx" :name="'supplier_priority[' + idx + ']'" x-model.number="row.priority">
                     </div>
                 </div>
-                <?php require __DIR__ . '/../../partials/supplier-article-fields.php'; ?>
+                <?php $priceItemIdExpr = (string) (int) ($item['id'] ?? 0); $priceSupplierIdExpr = 'rows[idx]?.supplier_id';
+                require __DIR__ . '/../../partials/supplier-article-fields.php'; ?>
             </div>
         </template>
         <button type="button" class="button button--ghost button--small" @click="rows.push({ supplier_id: '', priority: 0, supplier_label: '', supplier_sku: '', pack_size: '', pack_unit: '', order_unit: '' })">+ Lieferant</button>

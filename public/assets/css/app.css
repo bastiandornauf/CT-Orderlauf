@@ -3116,3 +3116,72 @@ a.order-stepper__item:focus-visible {
   flex: 1 1 8rem;
   min-width: 0;
 }
+
+/* Preise je Lieferant im Editor */
+.supplier-prices {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.supplier-prices__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.supplier-prices__latest {
+  font-variant-numeric: tabular-nums;
+}
+
+.supplier-prices__purchase {
+  margin: var(--space-1) 0 0;
+  font-size: 0.875rem;
+}
+
+.supplier-prices__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.supplier-prices__form {
+  margin-top: var(--space-2);
+}
+
+.supplier-prices__form .form-row > .form-group {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+
+.supplier-prices__form .supplier-prices__qty {
+  flex: 0 1 4.5rem;
+}
+
+.supplier-prices__history {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.supplier-prices__history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Dezente Preiszeile im Rundgang */
+.round-price-hint {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}

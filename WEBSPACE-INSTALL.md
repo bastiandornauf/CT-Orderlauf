@@ -199,13 +199,15 @@ Zusätzlich hochladen:
 
 ---
 
-### Alias und Lieferantenartikel (Deploy-Check)
+### Alias, Lieferantenartikel und Preise (Deploy-Check)
 
 1. **Vorher** frischen DB-Export ziehen (phpMyAdmin → Exportieren) und unter `~/Backups/orderlauf/` ablegen.
-2. `database/migrations/20261029_items_alias_supplier_articles.sql` in phpMyAdmin ausführen. Rein additiv – die bisherige Version läuft danach unverändert weiter.
-3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v55+**. **Kein** `vendor/`.
+2. In phpMyAdmin nacheinander ausführen (rein additiv – die bisherige Version läuft danach unverändert weiter):
+   1. `database/migrations/20261029_items_alias_supplier_articles.sql`
+   2. `database/migrations/20261029_supplier_article_prices.sql`
+3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v56+**. **Kein** `vendor/`.
 
-**Schnelltest:** Artikel bearbeiten → unter einem Lieferanten „Bestelldaten“ aufklappen, Bezeichnung eintragen, speichern, erneut öffnen.
+**Schnelltest:** Artikel bearbeiten → unter einem Lieferanten „Bestelldaten“ aufklappen, Bezeichnung eintragen, speichern, erneut öffnen. Dort „Preis eintragen“ → Preis erscheint; neue Bestellrunde starten → Preiszeile unter dem Artikel.
 
 ## 9. Backup
 

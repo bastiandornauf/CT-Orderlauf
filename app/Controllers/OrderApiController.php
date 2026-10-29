@@ -11,6 +11,7 @@ use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
 use App\Repositories\LocationRepository;
+use App\Repositories\PriceRepository;
 use App\Repositories\SettingsRepository;
 use App\Repositories\SupplierArticleRepository;
 use App\Repositories\SupplierRepository;
@@ -62,11 +63,13 @@ final class OrderApiController
 
         // Bestelldaten des Standard-Lieferantenartikels hängen direkt an der Zuordnung
         $articles = (new SupplierArticleRepository())->defaultsByItemIds();
+        $prices = (new PriceRepository())->latestForDefaults();
         $links = Database::pdo()->query(
             'SELECT item_id, supplier_id, priority FROM item_supplier ORDER BY item_id, priority DESC'
         )->fetchAll(PDO::FETCH_ASSOC);
         foreach ($links as &$l) {
             $l += ItemRepository::articleFields($articles[(int) $l['item_id']][(int) $l['supplier_id']] ?? null);
+            $l['price'] = $prices[(int) $l['item_id']][(int) $l['supplier_id']] ?? null;
         }
         unset($l);
 

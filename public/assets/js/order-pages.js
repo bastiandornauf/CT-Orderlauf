@@ -5,6 +5,7 @@ import * as pendingSync from './pending-sync.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
 import { displayName, itemSearchText, supplierOrderLine } from './item-display.js';
+import { formatPrice } from './prices.js';
 import { showToast } from './toast.js';
 
 /** Nächster Kalendertag in lokaler Zeitzone (nicht UTC), für input type="date" */
@@ -276,6 +277,8 @@ export function registerOrderAlpine(Alpine) {
     supplierNameById: new Map(),
     /** @type {Map<number, string>} itemId -> Lieferanten-Bezeichnungen/Art.-Nr. (klein) für die Suche */
     supplierSearchByItem: new Map(),
+    /** @type {Map<number, string[]>} itemId -> Preiszeilen je Lieferant (nur wenn mind. ein Preis bekannt) */
+    priceHintsByItem: new Map(),
     /** Lieferanten heute ausblenden (nur Anzeige) */
     hiddenSupplierIds: [],
     targetDate: '',
@@ -353,7 +356,18 @@ export function registerOrderAlpine(Alpine) {
       const byItem = groupLinksByItem(links);
       this.supplierIdsByItem = new Map();
       this.supplierSearchByItem = new Map();
+      this.priceHintsByItem = new Map();
       for (const [itemId, itemLinks] of byItem.entries()) {
+        const byPrio = [...itemLinks].sort((a, b) => b.priority - a.priority);
+        if (byPrio.some((l) => l.price)) {
+          this.priceHintsByItem.set(
+            Number(itemId),
+            byPrio.map((l) => {
+              const name = this.supplierNameById.get(Number(l.supplier_id)) || '';
+              return `${name} ${l.price ? formatPrice(l.price) : 'Preis unbekannt'}`;
+            }),
+          );
+        }
         this.supplierSearchByItem.set(
           Number(itemId),
           itemLinks

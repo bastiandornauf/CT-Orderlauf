@@ -21,6 +21,7 @@ use App\Controllers\LocationController;
 use App\Controllers\OrderApiController;
 use App\Controllers\OrderController;
 use App\Controllers\PendingItemApiController;
+use App\Controllers\PriceApiController;
 use App\Controllers\ProfileController;
 use App\Controllers\SettingsController;
 use App\Controllers\SupplierController;
@@ -59,6 +60,7 @@ return [
         '/api/order/delivery-preview' => [OrderApiController::class, 'deliveryPreview'],
         '/api/inventory/payload' => [InventoryApiController::class, 'payload'],
         '/api/pending-items' => [PendingItemApiController::class, 'index'],
+        '/api/prices' => [PriceApiController::class, 'index'],
         '/export/locations' => [ExportController::class, 'locations'],
         '/export/suppliers' => [ExportController::class, 'suppliers'],
         '/export/delivery-days' => [ExportController::class, 'deliveryDays'],
@@ -85,5 +87,7 @@ return [
         '/api/items/create' => [ItemApiController::class, 'create'],
         '/api/pending-items/sync' => [PendingItemApiController::class, 'sync'],
         '/api/pending-items/resolve' => [PendingItemApiController::class, 'resolve'],
+        '/api/prices/add' => [PriceApiController::class, 'add'],
+        '/api/prices/delete' => [PriceApiController::class, 'delete'],
     ],
 ];

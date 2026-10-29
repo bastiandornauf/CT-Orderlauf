@@ -89,6 +89,9 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                                   x-text="sup"></span>
                         </template>
                     </div>
+                    <template x-for="hint in (priceHintsByItem.get(Number(it.id)) || [])" :key="hint">
+                        <span class="round-price-hint" x-text="hint"></span>
+                    </template>
                 </div>
                 <div class="qty-stepper">
                     <button type="button" class="qty-stepper__btn" @click="onQtyStep(it.id, -1)" aria-label="Minus">−</button>

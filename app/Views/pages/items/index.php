@@ -216,7 +216,7 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
                             x-show="editSupplierRows.length > 1"
                             @click="removeEditSupplierRow(idx)"
                             title="Lieferant entfernen">&times;</button>
-                    <?php $articleFieldPrefix = 'ie-sa'; $articleFieldNamed = false;
+                    <?php $articleFieldPrefix = 'ie-sa'; $articleFieldNamed = false; $priceItemIdExpr = 'editDraft.id'; $priceSupplierIdExpr = 'editSupplierRows[idx]?.supplier_id';
                     require __DIR__ . '/../../partials/supplier-article-fields.php'; ?>
                 </div>
             </template>

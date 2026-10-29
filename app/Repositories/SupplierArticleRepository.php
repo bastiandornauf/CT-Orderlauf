@@ -84,6 +84,26 @@ final class SupplierArticleRepository
         }
     }
 
+    /** ID des Standard-Artikels für (Artikel, Lieferant); legt bei Bedarf einen leeren an (z. B. für einen Preis). */
+    public function ensureDefault(int $itemId, int $supplierId): int
+    {
+        $pdo = Database::pdo();
+        $find = $pdo->prepare(
+            'SELECT id FROM supplier_articles
+             WHERE item_id = ? AND supplier_id = ? AND is_default = 1 AND active = 1
+             ORDER BY id ASC LIMIT 1'
+        );
+        $find->execute([$itemId, $supplierId]);
+        $id = $find->fetchColumn();
+        if ($id !== false) {
+            return (int) $id;
+        }
+        $pdo->prepare('INSERT INTO supplier_articles (item_id, supplier_id, is_default, active) VALUES (?, ?, 1, 1)')
+            ->execute([$itemId, $supplierId]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
     /**
      * @param array<string, mixed> $fields
      * @return array{supplier_label:?string, supplier_sku:?string, pack_size:?float, pack_unit:?string, order_unit:?string}

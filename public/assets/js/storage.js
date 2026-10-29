@@ -198,6 +198,7 @@ function linkArticleFields(row) {
     order_unit: row.order_unit ?? null,
     pack_size: row.pack_size ?? null,
     pack_unit: row.pack_unit ?? null,
+    price: row.price ?? null,
   };
 }
 
