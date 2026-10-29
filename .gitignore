@@ -8,3 +8,5 @@
 
 # Cursor (nicht mehr genutzt)
 .cursor/
+.phpunit.result.cache
+.phpunit.cache/
