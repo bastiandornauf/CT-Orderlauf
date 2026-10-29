@@ -1,4 +1,4 @@
-<section class="page-section" x-data="packageImport()">
+<section class="page-section page-section--wide" x-data="packageImport()">
     <div class="page-toolbar">
         <h1 class="page-title">Pflegepaket einspielen</h1>
         <a href="/pflege" class="button button--ghost button--small">Zur Datenpflege</a>

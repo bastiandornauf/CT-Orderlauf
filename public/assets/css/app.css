@@ -581,6 +581,7 @@ html.js .app-nav__logout {
 
 .list-item__main {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
@@ -3385,6 +3386,11 @@ a.order-stepper__item:focus-visible {
 
 .bulk-bar__prio {
   width: 5rem;
+}
+
+/* Breite Seiten (Tabellen): mehr Platz am Rechner, am Handy unverändert */
+.app-main:has(.page-section--wide) {
+  max-width: min(1280px, 100%);
 }
 
 /* Pflegepaket-Vorschau */
