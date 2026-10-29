@@ -1,3 +1,42 @@
+const SCALE = 10000n;
+
+const PURCHASE_STATUS_LABELS = {
+  ok: 'ok',
+  no_purchase: 'kein Einkaufspreis',
+  not_convertible: 'nicht umrechenbar',
+};
+
+/** Menge (Zahl aus der Zählung) → ganze Zahl in Zehntausendsteln */
+function toUnits(q) {
+  return BigInt(Math.round(Number(q) * 10000));
+}
+
+/** Zehntausendstel → "8,68" (kaufmännisch gerundet, Tausenderpunkt) */
+export function formatUnits(units) {
+  const cents = (units + 50n) / 100n;
+  const whole = cents / 100n;
+  const frac = String(cents % 100n).padStart(2, '0');
+  return `${whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${frac}`;
+}
+
+/**
+ * Wert nach letztem Einkaufspreis in Zehntausendsteln, oder null, wenn keine Bewertung möglich.
+ * @param {number} quantity gezählte Menge in der Zähleinheit
+ * @param {object|null} valuation purchase_valuation aus dem Inventur-Snapshot
+ */
+export function purchaseValueUnits(quantity, valuation) {
+  if (valuation?.status !== 'ok' || valuation.unit_price_units == null) return null;
+  const q = Number(quantity);
+  if (!Number.isFinite(q) || q < 0) return null;
+  return (toUnits(q) * BigInt(valuation.unit_price_units) + SCALE / 2n) / SCALE;
+}
+
+/** Status-Text für CSV/Anzeige; ältere Snapshots ohne Bewertung → „nicht ermittelt“ */
+export function purchaseStatusLabel(valuation) {
+  if (!valuation) return 'nicht ermittelt';
+  return PURCHASE_STATUS_LABELS[valuation.status] || valuation.status;
+}
+
 /**
  * CSV mit allen Katalog-Artikeln und Spalte status (offen | gezaehlt_0 | gezaehlt).
  *
@@ -27,6 +66,16 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
     'menge',
     'bewertungspreis',
     'wert',
+    // ab hier: Bewertung nach letztem bestätigten Einkauf bis Stichtag (neue Spalten hinten,
+    // damit bestehende Excel-Auswertungen ihre Spalten behalten)
+    'einkaufspreis_je_einheit',
+    'einkaufswert',
+    'einkauf_status',
+    'einkauf_lieferant',
+    'einkauf_datum',
+    'einkauf_basis',
+    'einkauf_beleg',
+    'alias',
   ];
 
   const rows = [header.map(esc).join(';')];
@@ -45,6 +94,8 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
 
   let totalValue = 0;
   let hasValue = false;
+  let totalPurchase = 0n;
+  let hasPurchase = false;
 
   for (const it of sorted) {
     const locName = locationById.get(Number(it.location_id))?.name || '';
@@ -59,8 +110,16 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
     const priceStr =
       price != null && !Number.isNaN(price) ? String(price).replace('.', ',') : '';
 
+    const pv = it.purchase_valuation || null;
+    let purchaseValueStr = '';
     if (line?.status === 'counted') {
       const q = Number(line.quantity);
+      const units = q === 0 ? null : purchaseValueUnits(q, pv);
+      if (units != null) {
+        purchaseValueStr = formatUnits(units);
+        totalPurchase += units;
+        hasPurchase = true;
+      }
       if (q === 0) {
         status = 'gezaehlt_0';
         qtyStr = '0';
@@ -88,6 +147,14 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
         qtyStr,
         priceStr,
         wert,
+        pv?.status === 'ok' ? pv.unit_price : '',
+        purchaseValueStr,
+        purchaseStatusLabel(pv),
+        pv?.supplier || '',
+        pv?.price_date || '',
+        pv?.basis || '',
+        pv?.document_ref || '',
+        String(it.alias ?? '').trim(),
       ]
         .map(esc)
         .join(';'),
@@ -117,13 +184,21 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
         qtyStr,
         '',
         '',
+        '',
+        '',
+        'frei erfasst',
+        '',
+        '',
+        '',
+        '',
+        '',
       ]
         .map(esc)
         .join(';'),
     );
   }
 
-  if (hasValue) {
+  if (hasValue || hasPurchase) {
     rows.push(
       [
         '',
@@ -135,7 +210,15 @@ export function buildInventoryCsv(session, catalogItems, lineByItemId, locationB
         '',
         '',
         '',
-        String(totalValue).replace('.', ','),
+        hasValue ? String(totalValue).replace('.', ',') : '',
+        '',
+        hasPurchase ? formatUnits(totalPurchase) : '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
       ]
         .map(esc)
         .join(';'),

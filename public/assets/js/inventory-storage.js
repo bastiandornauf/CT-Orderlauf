@@ -129,6 +129,7 @@ async function writeInventoryCatalogRows(locations, items) {
       location_id: Number(it.location_id),
       sort_order: it.sort_order ?? 0,
       valuation_price: it.valuation_price ?? null,
+      purchase_valuation: it.purchase_valuation ?? null,
       active: normalizeActive(it.active),
     });
   }

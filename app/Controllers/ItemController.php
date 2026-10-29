@@ -211,6 +211,7 @@ final class ItemController
                 $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
             }
             $this->items->updateAlias($id, $alias);
+            $this->items->updateUnitConversion($id, $_POST['unit_factor'] ?? null, $_POST['base_unit'] ?? null);
             $this->items->setSupplierLinks($id, $supplierInput['pairs']);
             if ($supplierInput['articles'] !== null) {
                 $this->articles->saveDefaults($id, $supplierInput['articles']);
@@ -270,6 +271,8 @@ final class ItemController
                 'id' => $id ?: null,
                 'name' => $name,
                 'alias' => $alias,
+                'unit_factor' => $_POST['unit_factor'] ?? null,
+                'base_unit' => $_POST['base_unit'] ?? null,
                 'unit' => $unit,
                 'location_id' => $locId,
                 'min_stock' => $min,

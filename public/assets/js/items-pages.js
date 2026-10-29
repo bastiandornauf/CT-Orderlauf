@@ -7,6 +7,8 @@ function emptyDraft() {
     name: '',
     alias: '',
     unit: '',
+    unit_factor: '',
+    base_unit: '',
     location_id: '',
     sort_order: '0',
     min_stock: '',
@@ -51,6 +53,13 @@ function linkPayload(l) {
     pack_unit: l.pack_unit ?? null,
     order_unit: l.order_unit ?? null,
   };
+}
+
+/** DECIMAL aus der DB ("10.0000") → "10", "2.5000" → "2,5" */
+function formatDecimal(v) {
+  if (v == null || v === '') return '';
+  const n = Number(v);
+  return Number.isFinite(n) ? String(n).replace('.', ',') : String(v);
 }
 
 function formatValuation(v) {
@@ -126,6 +135,8 @@ export function registerItemsAlpine(Alpine) {
         name: item.name ?? '',
         alias: item.alias ?? '',
         unit: item.unit ?? '',
+        unit_factor: formatDecimal(item.unit_factor),
+        base_unit: item.base_unit ?? '',
         location_id: String(item.location_id ?? ''),
         sort_order: String(item.sort_order ?? 0),
         min_stock: item.min_stock != null && item.min_stock !== '' ? String(item.min_stock) : '',
@@ -179,6 +190,8 @@ export function registerItemsAlpine(Alpine) {
           name: this.editDraft.name.trim(),
           alias: String(this.editDraft.alias ?? '').trim(),
           unit: this.editDraft.unit.trim(),
+          unit_factor: String(this.editDraft.unit_factor ?? '').trim(),
+          base_unit: this.editDraft.base_unit || null,
           location_id: lid,
           sort_order: Number(this.editDraft.sort_order) || 0,
           min_stock: minStr === '' ? null : Number(minStr),
@@ -214,6 +227,8 @@ export function registerItemsAlpine(Alpine) {
         name: item.name ?? '',
         alias: item.alias ?? '',
         unit: item.unit ?? '',
+        unit_factor: item.unit_factor ?? null,
+        base_unit: item.base_unit ?? null,
         location_id: Number(item.location_id) || 0,
         sort_order: Number(item.sort_order) || 0,
         min_stock: item.min_stock ?? null,

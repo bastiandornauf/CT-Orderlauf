@@ -106,6 +106,8 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
                 'id' => (int) $it['id'],
                 'name' => (string) ($it['name'] ?? ''),
                 'alias' => (string) ($it['alias'] ?? ''),
+                'unit_factor' => $it['unit_factor'] ?? null,
+                'base_unit' => $it['base_unit'] ?? null,
                 'unit' => (string) ($it['unit'] ?? ''),
                 'location_id' => (int) ($it['location_id'] ?? 0),
                 'sort_order' => (int) ($it['sort_order'] ?? 0),
@@ -166,6 +168,19 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
             <div class="form-group">
                 <label class="form-label" for="ie-unit">Einheit</label>
                 <input class="input" id="ie-unit" type="text" x-model="editDraft.unit">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-uf">Inhalt je Einheit (optional)</label>
+                <div class="form-row unit-content">
+                    <input class="input" id="ie-uf" type="text" inputmode="decimal" placeholder="z. B. 10" x-model="editDraft.unit_factor">
+                    <select class="select" aria-label="Einheit des Inhalts" x-model="editDraft.base_unit">
+                        <option value="">—</option>
+                        <option value="kg">kg</option>
+                        <option value="l">l</option>
+                        <option value="stk">Stück</option>
+                    </select>
+                </div>
+                <p class="form-hint">Für die Inventurbewertung, z. B. 1 Karton = 10 kg. Bei Einheit kg, l oder Stück nicht nötig.</p>
             </div>
             <div class="form-group">
                 <label class="form-label" for="ie-loc">Lagerort</label>

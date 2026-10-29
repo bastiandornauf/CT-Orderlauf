@@ -3,7 +3,7 @@ import * as invStorage from './inventory-storage.js';
 import * as orderStorage from './storage.js';
 import * as invRound from './inventory-round.js';
 import * as pendingSync from './pending-sync.js';
-import { buildInventoryCsv, downloadCsv } from './inventory-csv.js';
+import { buildInventoryCsv, downloadCsv, formatUnits, purchaseValueUnits } from './inventory-csv.js';
 import { showToast } from './toast.js';
 import { displayName, itemSearchText } from './item-display.js';
 
@@ -416,9 +416,12 @@ export function registerInventoryAlpine(Alpine) {
       return `${loc.name} (${counted}/${n})`;
     },
     valuationHint(it) {
+      const parts = [];
       const p = it.valuation_price;
-      if (p == null || p === '') return '';
-      return `Bewertung ${String(p).replace('.', ',')} €/${it.unit || 'Einh.'}`;
+      if (p != null && p !== '') parts.push(`BP ${String(p).replace('.', ',')} €/${it.unit || 'Einh.'}`);
+      const pv = it.purchase_valuation;
+      if (pv?.status === 'ok') parts.push(`Einkauf ${pv.unit_price} €/${it.unit || 'Einh.'}`);
+      return parts.join(' · ');
     },
     /**
      * Nach oben springen, sobald der Lagerort wechselt.
@@ -502,7 +505,7 @@ export function registerInventoryAlpine(Alpine) {
     pageReady: false,
     pageError: '',
     session: null,
-    stats: { counted: 0, open: 0, totalValue: 0, hasValue: false },
+    stats: { counted: 0, open: 0, totalValue: 0, hasValue: false, purchaseTotal: '0,00', purchaseValued: 0, purchaseMissing: 0 },
     /** @type {{ id: number, name: string, unit: string, location_name: string }[]} */
     openItems: [],
     orderRoundActive: false,
@@ -600,9 +603,21 @@ export function registerInventoryAlpine(Alpine) {
       const itemById = new Map(items.map((i) => [Number(i.id), i]));
       let totalValue = 0;
       let hasValue = false;
+      let purchaseTotal = 0n;
+      let purchaseValued = 0;
+      let purchaseMissing = 0;
       for (const line of lines) {
         const it = itemById.get(Number(line.item_id));
         if (!it) continue;
+        if (Number(line.quantity) !== 0) {
+          const units = purchaseValueUnits(line.quantity, it.purchase_valuation);
+          if (units != null) {
+            purchaseTotal += units;
+            purchaseValued += 1;
+          } else {
+            purchaseMissing += 1;
+          }
+        }
         const price =
           it.valuation_price != null && it.valuation_price !== ''
             ? Number(it.valuation_price)
@@ -619,6 +634,9 @@ export function registerInventoryAlpine(Alpine) {
         open: Math.max(0, total - counted),
         totalValue: Math.round(totalValue * 100) / 100,
         hasValue,
+        purchaseTotal: formatUnits(purchaseTotal),
+        purchaseValued,
+        purchaseMissing,
       };
     },
     async markOpenAsZero(itemId) {

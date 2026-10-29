@@ -33,6 +33,14 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 <span class="text-muted">Gesamtwert (nur gezählt mit Preis)</span>
                 <strong x-text="stats.totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'"></strong>
             </li>
+            <li x-show="stats.purchaseValued > 0">
+                <span class="text-muted">Wert nach letztem Einkauf</span>
+                <strong x-text="stats.purchaseTotal + ' €'"></strong>
+            </li>
+            <li x-show="stats.purchaseMissing > 0">
+                <span class="text-muted">Ohne Einkaufspreis / nicht umrechenbar</span>
+                <strong x-text="stats.purchaseMissing"></strong>
+            </li>
         </ul>
 
         <details class="inventory-open-block" x-show="!isLocked && openItems.length > 0" open>

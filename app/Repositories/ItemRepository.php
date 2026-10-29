@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Helpers\Database;
+use App\Helpers\Money;
+use App\Helpers\Units;
 use PDO;
 
 final class ItemRepository
@@ -286,6 +288,22 @@ final class ItemRepository
                 $upsert->execute([$itemId, $sid, $priority]);
             }
         }
+    }
+
+    /**
+     * Inhalt einer Zähleinheit (z. B. 1 Karton = 10 kg) für die Inventurbewertung.
+     * Nur vollständig (Menge > 0 und kg|l|stk) – sonst beides NULL.
+     */
+    public function updateUnitConversion(int $id, mixed $factorRaw, mixed $baseRaw): void
+    {
+        $factor = Money::parse($factorRaw);
+        $base = is_string($baseRaw) && isset(Units::BASE_LABELS[$baseRaw]) ? $baseRaw : null;
+        if ($factor === null || $factor === 0 || $base === null) {
+            $factor = null;
+            $base = null;
+        }
+        Database::pdo()->prepare('UPDATE items SET unit_factor = ?, base_unit = ? WHERE id = ?')
+            ->execute([$factor === null ? null : Money::toDb($factor), $base, $id]);
     }
 
     /** Leerer Alias wird als NULL gespeichert. */

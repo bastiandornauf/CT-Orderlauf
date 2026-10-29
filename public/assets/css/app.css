@@ -3185,3 +3185,18 @@ a.order-stepper__item:focus-visible {
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
+
+.unit-content {
+  flex-wrap: nowrap;
+  margin-bottom: 0;
+}
+
+.unit-content > .input {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.unit-content > .select {
+  flex: 0 0 auto;
+  width: auto;
+}

@@ -77,6 +77,21 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
             <input class="input" id="unit" name="unit" value="<?= htmlspecialchars($item['unit'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="form-group">
+            <label class="form-label" for="unit_factor">Inhalt je Einheit (optional)</label>
+            <div class="form-row unit-content">
+                <input class="input" id="unit_factor" name="unit_factor" type="text" inputmode="decimal" placeholder="z.&nbsp;B. 10"
+                       value="<?= isset($item['unit_factor']) && $item['unit_factor'] !== null && $item['unit_factor'] !== ''
+                           ? htmlspecialchars(str_replace('.', ',', (string) (is_numeric($item['unit_factor']) ? 0 + $item['unit_factor'] : $item['unit_factor'])), ENT_QUOTES, 'UTF-8') : '' ?>">
+                <select class="select" name="base_unit" aria-label="Einheit des Inhalts">
+                    <option value="">—</option>
+                    <?php foreach (['kg' => 'kg', 'l' => 'l', 'stk' => 'Stück'] as $bu => $bl): ?>
+                        <option value="<?= $bu ?>" <?= ($item['base_unit'] ?? '') === $bu ? 'selected' : '' ?>><?= $bl ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <p class="form-hint">Für die Inventurbewertung, z.&nbsp;B. 1 Karton = 10 kg. Bei Einheit kg, l oder Stück nicht nötig.</p>
+        </div>
+        <div class="form-group">
             <label class="form-label" for="location_id">Lagerort</label>
             <select class="select" id="location_id" name="location_id" required>
                 <option value="">— wählen —</option>

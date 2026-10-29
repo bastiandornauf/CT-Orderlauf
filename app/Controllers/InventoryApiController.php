@@ -9,6 +9,7 @@ use App\Helpers\ItemDisplay;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\LocationRepository;
+use App\Services\InventoryValuationService;
 use PDO;
 use PDOException;
 
@@ -32,6 +33,13 @@ final class InventoryApiController
             $locRepo = new LocationRepository();
             $locations = $locRepo->all(true);
             $items = $this->fetchActiveItemsForInventory();
+            // Einkaufsbewertung zum Stichtag – wird mit dem Katalog im Gerät eingefroren
+            $valuations = (new InventoryValuationService())->forItems($items, $stichtag);
+            foreach ($items as &$row) {
+                $row['purchase_valuation'] = $valuations[$row['id']] ?? null;
+                unset($row['base_unit'], $row['unit_factor']);
+            }
+            unset($row);
         } catch (PDOException $e) {
             Response::jsonError('Datenbankfehler: ' . $e->getMessage(), 500);
         }
@@ -52,7 +60,7 @@ final class InventoryApiController
             : 'NULL AS valuation_price';
 
         $items = $pdo->query(
-            "SELECT i.id, i.name, i.alias, i.unit, i.location_id, i.sort_order, {$priceCol}, i.active
+            "SELECT i.id, i.name, i.alias, i.unit, i.base_unit, i.unit_factor, i.location_id, i.sort_order, {$priceCol}, i.active
              FROM items i
              JOIN locations l ON l.id = i.location_id
              WHERE i.active = 1 AND l.active = 1

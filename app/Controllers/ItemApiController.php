@@ -116,6 +116,9 @@ final class ItemApiController
             if (array_key_exists('alias', $data)) {
                 $items->updateAlias($id, (string) ($data['alias'] ?? ''));
             }
+            if (array_key_exists('unit_factor', $data)) {
+                $items->updateUnitConversion($id, $data['unit_factor'], $data['base_unit'] ?? null);
+            }
             $items->setSupplierLinks($id, $supplierInput['pairs']);
             if ($supplierInput['articles'] !== null) {
                 (new SupplierArticleRepository())->saveDefaults($id, $supplierInput['articles']);
@@ -169,6 +172,8 @@ final class ItemApiController
                 'name' => (string) $saved['name'],
                 'alias' => $saved['alias'] ?? null,
                 'display_name' => ItemDisplay::name($saved),
+                'unit_factor' => $saved['unit_factor'] ?? null,
+                'base_unit' => $saved['base_unit'] ?? null,
                 'unit' => (string) ($saved['unit'] ?? ''),
                 'location_id' => (int) $saved['location_id'],
                 'sort_order' => (int) ($saved['sort_order'] ?? 0),
