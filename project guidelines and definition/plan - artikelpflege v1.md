@@ -229,3 +229,73 @@ Rollback: Code wie WEBSPACE-INSTALL.md §10 auf `pre-artikelpflege`; neue Tabell
 | E10 | Mehrere Gebinde beim selben Lieferanten | Das werden zwei interne Artikel. `supplier_articles` bleibt trotzdem ohne UNIQUE (`item_id`, `supplier_id`) und hat `is_default`, damit beim Zusammenführen nichts verloren geht. |
 | E11 | Quellen für die Bereinigung | Uneinheitliche PDFs, die unregelmäßig kommen. Ablauf: PDFs in einen Ordner außerhalb des Repos → Extraktion mit Sichtprüfung → Vorschlagstabelle → deine Freigabe → idempotentes SQL. |
 | E12 | Testinstanz | **Entfällt.** Getestet wird lokal (Docker mit Kopie der Produktions-DB), danach wird die Produktion direkt umgestellt (siehe Phase 6). |
+
+---
+
+## F. Detailplan Datenpflege-Modul (Phase 4, Stand 2026-10-29)
+
+### Rahmen (neu entschieden)
+
+- **Rechnungen und Lieferscheine kommen nicht als Feature in Orderlauf.** Der User fotografiert sie gelegentlich und pflegt sie gemeinsam mit Claude ein – auch für das Live-System. Das Modul muss diesen Weg gut unterstützen, aber keine Belege lesen.
+- Erste Datenpflege (Transgourmet-Ordersatz) ist als Daten-Migration erledigt: `database/private/20261029_data_transgourmet_ordersatz.sql` (nicht im Git, Repo ist öffentlich). Ablauf und Skripte: `scripts/cleanup/transgourmet/`.
+
+### Ist-Stand im echten Bestand (lokal, nach Transgourmet-Abgleich)
+
+| Prüfung | Anzahl |
+|---|---|
+| aktiv ohne Lieferant | 0 |
+| aktiv in inaktivem Lagerort (SB) | 28 |
+| aktiv ohne Bestelldaten | 234 |
+| aktiv ohne Preis | 234 |
+| aktiv ohne Einkaufspreis (Inventur) | 302 |
+| verschiedene Einheiten-Schreibweisen | 116 |
+
+### Bausteine in Umsetzungsreihenfolge
+
+**4.0 Grundlage: zusammengeführte Artikel auf Geräten** (vor jedem Zusammenführen in der App)
+Payloads für Bestellung und Inventur liefern `merged_into` (alte → neue ID). Offene Bestellrunden und Inventuren hängen Einträge eines zusammengeführten Artikels beim nächsten Online-Kontakt um, statt sie zu verlieren. Kein `DB_VERSION`-Sprung.
+
+**4.1 Pflege-Übersicht `/pflege`** (ab Rolle editor, Menü „Datenpflege“)
+Kacheln mit Anzahl je Prüfung, Fehler (rot) getrennt von Hinweisen (grau). Klick → gefilterte Liste → Bearbeiten im bestehenden Listen-Dialog → „nächster Artikel“. Keine eigene Bearbeitungsmaske.
+
+| Prüfung | Art |
+|---|---|
+| aktiv ohne aktiven Lieferanten | Fehler |
+| Bestelldaten ohne Zuordnung (Lieferant entfernt, Daten noch da) | Fehler |
+| gleiche Art.-Nr. bei mehreren Artikeln desselben Lieferanten | Fehler |
+| aktiv in inaktivem Lagerort | Hinweis |
+| ohne Bestelldaten / ohne Art.-Nr. – nur bei Lieferanten mit Art.-Nr. (Schalter je Lieferant) | Hinweis |
+| ohne Preis · Preis älter als N Monate · ohne Einkaufspreis | Hinweis |
+| Gebinde fehlt · Zähleinheit für Inventur nicht umrechenbar | Hinweis |
+| Einheiten-Schreibweise uneinheitlich (Ktn/Karton, Kg/kg, Btl/Beutel) | Hinweis |
+| langer Name ohne Alias | Hinweis |
+
+**4.2 Preisauffälligkeiten** (Teil der Übersicht)
+Sprung > Faktor 3 bzw. ~10 zum Vorpreis desselben Lieferantenartikels (Kommafehler), Abweichung > X % zwischen Lieferanten nur bei gleichem Vergleichspreis-Bezug (€/kg zu €/kg). Nur Anzeige, nie automatische Korrektur.
+
+**4.3 Dubletten-Vorschläge**
+`DuplicateFinder`: Normalisierung (Umlaute, Einheiten/Mengen abtrennen), Tokens, Synonymliste `app/Data/synonyms.php` (Pommes/Frites, TK/tiefgekühlt, o. Stein/entsteint …), **Gegensatzpaare als Malus** (mit/ohne Stein, frisch/TK, ganz/geschnitten, glatt/kraus, hell/dunkel, Größenangaben L/M/XL). Gleiche Art.-Nr./EAN = starkes Signal. Ergebnis: Paar + Score + Begründung. Entscheidung „getrennt lassen“ / „später“ in neuer Tabelle `dedupe_decisions` – erscheint dann nicht wieder.
+Erfahrung aus dem echten Bestand: reine Namensähnlichkeit liefert fast nur Varianten (Petersilie glatt/kraus, Handschuhe L/M/XL, Pirulo-Sorten) – die Gegensatzpaare sind wichtiger als das Fuzzy-Matching.
+
+**4.4 Zusammenführen-Dialog**
+Gegenüberstellung beider Artikel (Name, Alias, Einheit, Lager, Min/Max, Lieferanten mit Priorität, Bestelldaten, letzte Preise). Ziel wählen, Feldkonflikte je Feld entscheiden. Eine Transaktion wie in der Transgourmet-Migration bereits erprobt: Protokoll mit Vorher-Stand → Bestelldaten/Preise umhängen → Zuordnungen zusammenführen (höhere Priorität gewinnt) → Lieferanten der Quelle behalten ihre bisherige Bestellbezeichnung → Quelle inaktiv + `merged_into_id`. „Rückgängig“ aus dem Protokoll, solange danach nichts Widersprüchliches passiert ist.
+
+**4.5 Sammelbearbeitung**
+Mehrere Artikel auswählen → Lagerort setzen, archivieren (inaktiv), Einheit vereinheitlichen, Lieferant als Alternative mit Priorität ergänzen. Jede Aktion im `maintenance_log`.
+
+**4.6 Pflegepaket einspielen (Option, für den Foto-Workflow)**
+Claude erzeugt aus Fotos/Listen ein strukturiertes Paket (JSON: Preise, Bestelldaten, Alias, Zuordnungen – je Eintrag mit Beleg und Datum). Im Modul: Datei wählen → Vorschau alt/neu → nur angehakte Zeilen übernehmen. Läuft über dieselben Repositories wie die App (Prüfungen, Doppel-Schutz, Protokoll). Alternative ohne Feature: wie bisher idempotentes SQL, das der User in phpMyAdmin ausführt.
+
+### Neue Tabellen
+
+`dedupe_decisions (item_a, item_b, decision, decided_by, decided_at)` – mehr nicht; `maintenance_log` und `merged_into_id` gibt es schon. Synonymliste als Datei. Ggf. Spalte `suppliers.has_skus` für die Art.-Nr.-Prüfung.
+
+### Offene Entscheidungen für Phase 4
+
+| # | Frage | Empfehlung |
+|---|---|---|
+| F1 | Pflegepaket-Import (4.6) bauen oder weiter SQL über phpMyAdmin? | Paket-Import: sicherer (Vorschau, Prüfungen, Protokoll) und auf Dauer bequemer als SQL |
+| F2 | Ab wann gilt ein Preis als veraltet? | 6 Monate |
+| F3 | Welche Lieferanten haben für dich sichtbare Art.-Nr.? | Transgourmet, Pütz (?) – Rest ohne Prüfung |
+| F4 | „Rückgängig“ für Zusammenführungen nötig? | Ja, einfache Variante aus dem Protokoll |
+| F5 | Die 28 aktiven Artikel im inaktiven Lagerort SB: Absicht? | klären – ggf. archivieren oder Lagerort aktivieren |
