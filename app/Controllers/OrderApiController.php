@@ -6,11 +6,13 @@ namespace App\Controllers;
 
 use App\Helpers\Csrf;
 use App\Helpers\Database;
+use App\Helpers\ItemDisplay;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
 use App\Repositories\LocationRepository;
 use App\Repositories\SettingsRepository;
+use App\Repositories\SupplierArticleRepository;
 use App\Repositories\SupplierRepository;
 use App\Services\MailSenderService;
 use App\Services\PdfService;
@@ -47,17 +49,26 @@ final class OrderApiController
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $items = Database::pdo()->query(
-            'SELECT i.id, i.name, i.unit, i.location_id, i.sort_order, i.min_stock, i.max_stock, i.active
+            'SELECT i.id, i.name, i.alias, i.unit, i.location_id, i.sort_order, i.min_stock, i.max_stock, i.active
              FROM items i
              JOIN locations l ON l.id = i.location_id
              WHERE i.active = 1 AND l.active = 1
              ORDER BY l.sort_order ASC, i.sort_order ASC, i.name ASC'
         )->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($items as &$it) {
+            $it['display_name'] = ItemDisplay::name($it);
+        }
+        unset($it);
 
-
+        // Bestelldaten des Standard-Lieferantenartikels hängen direkt an der Zuordnung
+        $articles = (new SupplierArticleRepository())->defaultsByItemIds();
         $links = Database::pdo()->query(
             'SELECT item_id, supplier_id, priority FROM item_supplier ORDER BY item_id, priority DESC'
         )->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($links as &$l) {
+            $l += ItemRepository::articleFields($articles[(int) $l['item_id']][(int) $l['supplier_id']] ?? null);
+        }
+        unset($l);
 
         $deliveryPreview = (new SupplierDeliveryService())->previewForTargetDate($date);
         $deliveryTargets = [];

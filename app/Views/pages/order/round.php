@@ -66,7 +66,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                 :class="{ 'card--has-qty': hasQty(it.id) }">
                 <div class="list-item__main">
                     <div class="list-item__title-row">
-                        <strong x-text="it.name"></strong>
+                        <strong x-text="it.display_name || it.name"></strong>
                         <button type="button"
                                 class="round-item-edit"
                                 x-show="canEditMaster"
@@ -95,7 +95,7 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
                     <input class="input input--qty" type="text" inputmode="decimal"
                            :value="quantities[it.id] || ''"
                            @blur="onQtyBlur(it.id, $event)"
-                           :aria-label="'Menge ' + it.name">
+                           :aria-label="'Menge ' + (it.display_name || it.name)">
                     <button type="button" class="qty-stepper__btn" @click="onQtyStep(it.id, 1)" aria-label="Plus">+</button>
                 </div>
             </li>
@@ -165,6 +165,10 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             <div class="form-group">
                 <label class="form-label" for="qe-name">Name</label>
                 <input class="input" id="qe-name" type="text" required x-model="editDraft.name">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="qe-alias">Alias (optional)</label>
+                <input class="input" id="qe-alias" type="text" x-model="editDraft.alias">
             </div>
             <div class="form-group">
                 <label class="form-label" for="qe-unit">Einheit</label>

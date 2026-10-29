@@ -4,6 +4,7 @@ import * as orch from './order-round.js';
 import * as pendingSync from './pending-sync.js';
 import { groupLinksByItem, pickSupplierForItem } from './supplier-logic.js';
 import { buildMailPreview, mailtoLink } from './email-generator.js';
+import { displayName, itemSearchText, supplierOrderLine } from './item-display.js';
 import { showToast } from './toast.js';
 
 /** Nächster Kalendertag in lokaler Zeitzone (nicht UTC), für input type="date" */
@@ -273,6 +274,8 @@ export function registerOrderAlpine(Alpine) {
     /** @type {Map<number, number[]>} itemId -> Lieferanten-IDs (Priorität) */
     supplierIdsByItem: new Map(),
     supplierNameById: new Map(),
+    /** @type {Map<number, string>} itemId -> Lieferanten-Bezeichnungen/Art.-Nr. (klein) für die Suche */
+    supplierSearchByItem: new Map(),
     /** Lieferanten heute ausblenden (nur Anzeige) */
     hiddenSupplierIds: [],
     targetDate: '',
@@ -282,6 +285,7 @@ export function registerOrderAlpine(Alpine) {
     editDraft: {
       id: null,
       name: '',
+      alias: '',
       unit: '',
       location_id: '',
       sort_order: '0',
@@ -300,8 +304,7 @@ export function registerOrderAlpine(Alpine) {
         q === ''
           ? this.items
           : this.allItems.filter(
-              (it) =>
-                Number(it.active) !== 0 && it.name.toLowerCase().includes(q),
+              (it) => Number(it.active) !== 0 && itemSearchText(it, this.supplierSearchByItem).includes(q),
             );
       return base.filter(
         (it) => Number(it.active) !== 0 && this.isItemVisibleForRound(it.id, hid),
@@ -349,7 +352,16 @@ export function registerOrderAlpine(Alpine) {
       const links = await storage.getItemSupplierLinks();
       const byItem = groupLinksByItem(links);
       this.supplierIdsByItem = new Map();
+      this.supplierSearchByItem = new Map();
       for (const [itemId, itemLinks] of byItem.entries()) {
+        this.supplierSearchByItem.set(
+          Number(itemId),
+          itemLinks
+            .flatMap((l) => [l.supplier_label, l.supplier_sku])
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase(),
+        );
         const sorted = [...itemLinks].sort((a, b) => b.priority - a.priority);
         this.supplierIdsByItem.set(
           Number(itemId),
@@ -367,6 +379,7 @@ export function registerOrderAlpine(Alpine) {
       this.editDraft = {
         id: it.id,
         name: it.name ?? '',
+        alias: it.alias ?? '',
         unit: it.unit ?? '',
         location_id: String(it.location_id ?? ''),
         sort_order: String(it.sort_order ?? 0),
@@ -426,6 +439,7 @@ export function registerOrderAlpine(Alpine) {
         const data = await api.saveItem({
           id: this.editDraft.id,
           name: this.editDraft.name.trim(),
+          alias: String(this.editDraft.alias ?? '').trim(),
           unit: this.editDraft.unit.trim(),
           location_id: lid,
           sort_order: Number(this.editDraft.sort_order) || 0,
@@ -750,7 +764,7 @@ export function registerOrderAlpine(Alpine) {
           problem.push({
             entry: e,
             entryId: e.id,
-            itemLabel: item.name,
+            itemLabel: displayName(item),
             reason: 'Kein Lieferant zugeordnet – bitte manuell ergänzen',
           });
           continue;
@@ -759,7 +773,7 @@ export function registerOrderAlpine(Alpine) {
         if (!bySup.has(sid)) bySup.set(sid, []);
         bySup.get(sid).push({
           entryId: e.id,
-          label: item.name,
+          label: displayName(item),
           quantity: e.quantity,
           unit: item.unit,
           stockHint: formatStockHint(item),
@@ -1339,10 +1353,10 @@ export function registerOrderAlpine(Alpine) {
           continue;
         }
         if (!bySup.has(sid)) bySup.set(sid, []);
+        const link = itemLinks.find((l) => Number(l.supplier_id) === Number(sid));
         bySup.get(sid).push({
-          label: item.name,
+          ...supplierOrderLine(item, link),
           quantity: e.quantity,
-          unit: item.unit,
           sortOrder: Number(item.sort_order) || 0,
         });
       }

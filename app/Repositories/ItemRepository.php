@@ -53,10 +53,11 @@ final class ItemRepository
             $params[] = $supplierId;
         }
         if ($search !== null && trim($search) !== '') {
-            $sql .= ' AND (i.name LIKE ? OR i.unit LIKE ?)';
+            $sql .= ' AND (i.name LIKE ? OR i.alias LIKE ? OR i.unit LIKE ?
+                OR EXISTS (SELECT 1 FROM supplier_articles sa WHERE sa.item_id = i.id
+                    AND (sa.supplier_label LIKE ? OR sa.supplier_sku LIKE ? OR sa.ean LIKE ?)))';
             $t = '%' . trim($search) . '%';
-            $params[] = $t;
-            $params[] = $t;
+            array_push($params, $t, $t, $t, $t, $t, $t);
         }
         $sql .= ' ORDER BY l.sort_order ASC, i.sort_order ASC, i.name ASC';
         $stmt = $pdo->prepare($sql);
@@ -64,13 +65,15 @@ final class ItemRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $ids = array_map(static fn (array $r): int => (int) $r['id'], $rows);
         $byItem = $this->supplierLinksByItemIds($ids);
+        $articles = (new SupplierArticleRepository())->defaultsByItemIds($ids);
         foreach ($rows as &$row) {
-            $links = $byItem[(int) $row['id']] ?? [];
+            $iid = (int) $row['id'];
+            $links = $byItem[$iid] ?? [];
             $row['supplier_links'] = array_map(
                 static fn (array $l): array => [
                     'supplier_id' => $l['supplier_id'],
                     'priority' => $l['priority'],
-                ],
+                ] + self::articleFields($articles[$iid][$l['supplier_id']] ?? null),
                 $links
             );
             $row['supplier_names'] = array_map(static fn (array $l): string => $l['name'], $links);
@@ -78,6 +81,22 @@ final class ItemRepository
         unset($row);
 
         return $rows;
+    }
+
+    /**
+     * Felder des Standard-Lieferantenartikels für Payloads; fehlender Artikel = alles null.
+     *
+     * @param array<string, mixed>|null $article
+     * @return array{supplier_label:?string, supplier_sku:?string, pack_size:?float, pack_unit:?string, order_unit:?string}
+     */
+    public static function articleFields(?array $article): array
+    {
+        $out = [];
+        foreach (SupplierArticleRepository::EDIT_FIELDS as $f) {
+            $out[$f] = $article[$f] ?? null;
+        }
+
+        return $out;
     }
 
     /**
@@ -234,16 +253,47 @@ final class ItemRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Zuordnungen abgleichen statt neu anlegen: bestehende Zeilen behalten ihre ID,
+     * nur wirklich entfernte Lieferanten werden gelöscht.
+     *
+     * @param list<array{supplier_id:int|string, priority:int|string}> $pairs
+     */
     public function setSupplierLinks(int $itemId, array $pairs): void
     {
-        $pdo = Database::pdo();
-        $pdo->prepare('DELETE FROM item_supplier WHERE item_id = ?')->execute([$itemId]);
-        $ins = $pdo->prepare(
-            'INSERT INTO item_supplier (item_id, supplier_id, priority) VALUES (?, ?, ?)'
-        );
+        $wanted = [];
         foreach ($pairs as $row) {
-            $ins->execute([$itemId, (int) $row['supplier_id'], (int) $row['priority']]);
+            $sid = (int) $row['supplier_id'];
+            if ($sid > 0 && !isset($wanted[$sid])) {
+                $wanted[$sid] = (int) $row['priority'];
+            }
         }
+        $pdo = Database::pdo();
+        $current = [];
+        foreach ($this->supplierLinksForItem($itemId) as $l) {
+            $current[(int) $l['supplier_id']] = (int) $l['priority'];
+        }
+        $del = $pdo->prepare('DELETE FROM item_supplier WHERE item_id = ? AND supplier_id = ?');
+        foreach (array_diff_key($current, $wanted) as $sid => $_) {
+            $del->execute([$itemId, $sid]);
+        }
+        $upsert = $pdo->prepare(
+            'INSERT INTO item_supplier (item_id, supplier_id, priority) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE priority = VALUES(priority)'
+        );
+        foreach ($wanted as $sid => $priority) {
+            if (($current[$sid] ?? null) !== $priority) {
+                $upsert->execute([$itemId, $sid, $priority]);
+            }
+        }
+    }
+
+    /** Leerer Alias wird als NULL gespeichert. */
+    public function updateAlias(int $id, ?string $alias): void
+    {
+        $alias = $alias === null ? null : trim($alias);
+        Database::pdo()->prepare('UPDATE items SET alias = ? WHERE id = ?')
+            ->execute([$alias === '' ? null : mb_substr($alias, 0, 255), $id]);
     }
 
     /**

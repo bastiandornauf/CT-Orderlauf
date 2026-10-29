@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\Database;
+use App\Helpers\ItemDisplay;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\LocationRepository;
@@ -51,7 +52,7 @@ final class InventoryApiController
             : 'NULL AS valuation_price';
 
         $items = $pdo->query(
-            "SELECT i.id, i.name, i.unit, i.location_id, i.sort_order, {$priceCol}, i.active
+            "SELECT i.id, i.name, i.alias, i.unit, i.location_id, i.sort_order, {$priceCol}, i.active
              FROM items i
              JOIN locations l ON l.id = i.location_id
              WHERE i.active = 1 AND l.active = 1
@@ -63,6 +64,7 @@ final class InventoryApiController
             $row['location_id'] = (int) $row['location_id'];
             $row['sort_order'] = (int) ($row['sort_order'] ?? 0);
             $row['active'] = (int) ($row['active'] ?? 0);
+            $row['display_name'] = ItemDisplay::name($row);
             if ($row['valuation_price'] !== null && $row['valuation_price'] !== '') {
                 $row['valuation_price'] = round((float) $row['valuation_price'], 2);
             } else {

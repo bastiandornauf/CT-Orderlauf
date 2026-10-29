@@ -5,6 +5,7 @@ function emptyDraft() {
   return {
     id: 0,
     name: '',
+    alias: '',
     unit: '',
     location_id: '',
     sort_order: '0',
@@ -12,6 +13,43 @@ function emptyDraft() {
     max_stock: '',
     valuation_price: '',
     active: true,
+  };
+}
+
+function emptySupplierRow() {
+  return {
+    supplier_id: '',
+    priority: 0,
+    supplier_label: '',
+    supplier_sku: '',
+    pack_size: '',
+    pack_unit: '',
+    order_unit: '',
+  };
+}
+
+/** Lieferantenzeile aus Server-Daten → Formularzeile (Strings, Komma als Dezimaltrenner). */
+function supplierRowFromLink(l) {
+  return {
+    supplier_id: String(l.supplier_id ?? ''),
+    priority: Number(l.priority) || 0,
+    supplier_label: l.supplier_label ?? '',
+    supplier_sku: l.supplier_sku ?? '',
+    pack_size: l.pack_size != null && l.pack_size !== '' ? String(Number(l.pack_size)).replace('.', ',') : '',
+    pack_unit: l.pack_unit ?? '',
+    order_unit: l.order_unit ?? '',
+  };
+}
+
+function linkPayload(l) {
+  return {
+    supplier_id: Number(l.supplier_id) || 0,
+    priority: Number(l.priority) || 0,
+    supplier_label: l.supplier_label ?? null,
+    supplier_sku: l.supplier_sku ?? null,
+    pack_size: l.pack_size ?? null,
+    pack_unit: l.pack_unit ?? null,
+    order_unit: l.order_unit ?? null,
   };
 }
 
@@ -49,7 +87,7 @@ export function registerItemsAlpine(Alpine) {
     editError: '',
     editSaving: false,
     editDraft: emptyDraft(),
-    editSupplierRows: [{ supplier_id: '', priority: 0 }],
+    editSupplierRows: [emptySupplierRow()],
     init() {
       const raw = this.$el.dataset.itemsPage;
       if (!raw) return;
@@ -82,6 +120,7 @@ export function registerItemsAlpine(Alpine) {
       this.editDraft = {
         id: Number(item.id),
         name: item.name ?? '',
+        alias: item.alias ?? '',
         unit: item.unit ?? '',
         location_id: String(item.location_id ?? ''),
         sort_order: String(item.sort_order ?? 0),
@@ -93,12 +132,7 @@ export function registerItemsAlpine(Alpine) {
       const links = Array.isArray(item.supplier_links) ? item.supplier_links : [];
       const sorted = [...links].sort((a, b) => (Number(b.priority) || 0) - (Number(a.priority) || 0));
       this.editSupplierRows =
-        sorted.length === 0
-          ? [{ supplier_id: '', priority: 0 }]
-          : sorted.map((l) => ({
-              supplier_id: String(l.supplier_id ?? ''),
-              priority: Number(l.priority) || 0,
-            }));
+        sorted.length === 0 ? [emptySupplierRow()] : sorted.map(supplierRowFromLink);
       this.$nextTick(() => {
         dialog.showModal();
         const panel = dialog.querySelector('.item-quick-edit__panel');
@@ -112,7 +146,7 @@ export function registerItemsAlpine(Alpine) {
       this.editDraft = emptyDraft();
     },
     addEditSupplierRow() {
-      this.editSupplierRows.push({ supplier_id: '', priority: 0 });
+      this.editSupplierRows.push(emptySupplierRow());
     },
     removeEditSupplierRow(idx) {
       if (this.editSupplierRows.length <= 1) return;
@@ -133,15 +167,13 @@ export function registerItemsAlpine(Alpine) {
       try {
         const supplier_links = this.editSupplierRows
           .filter((r) => r.supplier_id && String(r.supplier_id).trim() !== '')
-          .map((r) => ({
-            supplier_id: Number(r.supplier_id),
-            priority: Number(r.priority) || 0,
-          }));
+          .map(linkPayload);
         const minStr = String(this.editDraft.min_stock ?? '').trim();
         const maxStr = String(this.editDraft.max_stock ?? '').trim();
         const data = await api.saveItem({
           id: this.editDraft.id,
           name: this.editDraft.name.trim(),
+          alias: String(this.editDraft.alias ?? '').trim(),
           unit: this.editDraft.unit.trim(),
           location_id: lid,
           sort_order: Number(this.editDraft.sort_order) || 0,
@@ -176,6 +208,7 @@ export function registerItemsAlpine(Alpine) {
       const nextPayload = {
         id,
         name: item.name ?? '',
+        alias: item.alias ?? '',
         unit: item.unit ?? '',
         location_id: Number(item.location_id) || 0,
         sort_order: Number(item.sort_order) || 0,
@@ -183,17 +216,19 @@ export function registerItemsAlpine(Alpine) {
         max_stock: item.max_stock ?? null,
         valuation_price: item.valuation_price ?? null,
         active: Number(item.active) !== 0 ? 1 : 0,
-        supplier_links: sorted.map((l) => ({
-          supplier_id: Number(l.supplier_id) || 0,
-          priority: Number(l.priority) || 0,
-        })),
+        supplier_links: sorted.map(linkPayload),
       };
       li.dataset.item = JSON.stringify(nextPayload);
 
-      const nameEl = li.querySelector('[data-item-name]');
+      const nameEl = li.querySelector('[data-item-display-name]');
+      const formalEl = li.querySelector('[data-item-formal-name]');
       const unitEl = li.querySelector('[data-item-unit]');
       const locEl = li.querySelector('[data-item-location]');
-      if (nameEl) nameEl.textContent = item.name ?? '';
+      if (nameEl) nameEl.textContent = item.display_name || item.name || '';
+      if (formalEl) {
+        formalEl.textContent = item.name ?? '';
+        formalEl.hidden = !String(item.alias ?? '').trim();
+      }
       if (unitEl) unitEl.textContent = item.unit ?? '';
       if (locEl) locEl.textContent = locName;
 

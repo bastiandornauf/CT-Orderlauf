@@ -188,6 +188,20 @@ export async function prepareReloadWouldEraseLocalProgress() {
 }
 
 /**
+ * Bestelldaten des Lieferantenartikels an einer Zuordnung (fehlend = null).
+ * Neue Felder an bestehenden Objekten brauchen kein DB_VERSION-Upgrade.
+ */
+function linkArticleFields(row) {
+  return {
+    supplier_label: row.supplier_label ?? null,
+    supplier_sku: row.supplier_sku ?? null,
+    order_unit: row.order_unit ?? null,
+    pack_size: row.pack_size ?? null,
+    pack_unit: row.pack_unit ?? null,
+  };
+}
+
+/**
  * Replace local DB with server snapshot for a target date.
  * @param {object} payload API /api/order/payload
  */
@@ -232,6 +246,8 @@ export async function savePreparedSnapshot(payload) {
     await putRow('items', {
       id: it.id,
       name: it.name,
+      alias: it.alias ?? null,
+      display_name: it.display_name || it.name,
       unit: it.unit,
       location_id: it.location_id,
       sort_order: it.sort_order ?? 0,
@@ -270,6 +286,7 @@ export async function savePreparedSnapshot(payload) {
       item_id: row.item_id,
       supplier_id: row.supplier_id,
       priority: row.priority,
+      ...linkArticleFields(row),
     })),
   );
 
@@ -406,6 +423,8 @@ export async function upsertItemRow(it) {
   await putRow('items', {
     id: Number(it.id),
     name: it.name,
+    alias: it.alias ?? null,
+    display_name: it.display_name || it.name,
     unit: it.unit ?? '',
     location_id: Number(it.location_id),
     sort_order: Number(it.sort_order) || 0,
@@ -441,6 +460,7 @@ export async function replaceItemSupplierLinks(itemId, links) {
             item_id: iid,
             supplier_id: Number(L.supplier_id),
             priority: Number(L.priority) || 0,
+            ...linkArticleFields(L),
           });
         }
       } catch (e) {

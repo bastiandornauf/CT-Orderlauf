@@ -80,7 +80,7 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
                 </div>
                 <div class="form-group items-filter-grid__full">
                     <label class="form-label" for="filter-q">Suche</label>
-                    <input class="input" id="filter-q" name="q" type="search" placeholder="Name oder Einheit …"
+                    <input class="input" id="filter-q" name="q" type="search" placeholder="Name, Alias, Art.-Nr. …"
                            value="<?= htmlspecialchars($filter_q ?? '', ENT_QUOTES, 'UTF-8') ?>"
                            autocomplete="off">
                 </div>
@@ -105,6 +105,7 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
             $itemPayload = [
                 'id' => (int) $it['id'],
                 'name' => (string) ($it['name'] ?? ''),
+                'alias' => (string) ($it['alias'] ?? ''),
                 'unit' => (string) ($it['unit'] ?? ''),
                 'location_id' => (int) ($it['location_id'] ?? 0),
                 'sort_order' => (int) ($it['sort_order'] ?? 0),
@@ -122,7 +123,8 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
             ?>
             <li class="card card--pad list-item" id="item-<?= (int) $it['id'] ?>" data-item-id="<?= (int) $it['id'] ?>" data-item="<?= $itemAttr ?>">
                 <div class="list-item__main">
-                    <strong data-item-name><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                    <strong data-item-display-name><?= htmlspecialchars(\App\Helpers\ItemDisplay::name($it), ENT_QUOTES, 'UTF-8') ?></strong>
+                    <span class="text-muted" data-item-formal-name <?= trim((string) ($it['alias'] ?? '')) === '' ? 'hidden' : '' ?>><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="text-muted" data-item-unit><?= htmlspecialchars($it['unit'], ENT_QUOTES, 'UTF-8') ?></span>
                     <span class="text-muted" data-item-location><?= htmlspecialchars($it['location_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($it['supplier_names']) && is_array($it['supplier_names'])): ?>
@@ -156,6 +158,10 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
             <div class="form-group">
                 <label class="form-label" for="ie-name">Name</label>
                 <input class="input" id="ie-name" x-ref="ieName" type="text" required x-model="editDraft.name">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="ie-alias">Alias (optional)</label>
+                <input class="input" id="ie-alias" type="text" placeholder="z. B. Pommes" x-model="editDraft.alias">
             </div>
             <div class="form-group">
                 <label class="form-label" for="ie-unit">Einheit</label>
@@ -210,6 +216,8 @@ $pageCfgAttr = htmlspecialchars((string) $pageCfgJson, ENT_QUOTES, 'UTF-8');
                             x-show="editSupplierRows.length > 1"
                             @click="removeEditSupplierRow(idx)"
                             title="Lieferant entfernen">&times;</button>
+                    <?php $articleFieldPrefix = 'ie-sa'; $articleFieldNamed = false;
+                    require __DIR__ . '/../../partials/supplier-article-fields.php'; ?>
                 </div>
             </template>
             <button type="button" class="button button--ghost button--small" @click="addEditSupplierRow()">+ Lieferant</button>

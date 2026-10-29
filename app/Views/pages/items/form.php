@@ -1,14 +1,21 @@
 <?php
 $item = $item ?? [];
 $linkRows = [];
+$emptyArticle = ['supplier_label' => '', 'supplier_sku' => '', 'pack_size' => '', 'pack_unit' => '', 'order_unit' => ''];
 foreach ($links ?? [] as $l) {
+    $packSize = $l['pack_size'] ?? '';
     $linkRows[] = [
         'supplier_id' => (string) (int) $l['supplier_id'],
         'priority' => (int) $l['priority'],
+        'supplier_label' => (string) ($l['supplier_label'] ?? ''),
+        'supplier_sku' => (string) ($l['supplier_sku'] ?? ''),
+        'pack_size' => is_numeric($packSize) ? str_replace('.', ',', (string) (0 + $packSize)) : (string) $packSize,
+        'pack_unit' => (string) ($l['pack_unit'] ?? ''),
+        'order_unit' => (string) ($l['order_unit'] ?? ''),
     ];
 }
 if ($linkRows === []) {
-    $linkRows = [['supplier_id' => '', 'priority' => 0]];
+    $linkRows = [['supplier_id' => '', 'priority' => 0] + $emptyArticle];
 }
 $supplierNamesMap = [];
 foreach ($suppliers ?? [] as $s) {
@@ -59,6 +66,11 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
         <div class="form-group">
             <label class="form-label" for="name">Name</label>
             <input class="input" id="name" name="name" required value="<?= htmlspecialchars($item['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="alias">Alias (optional)</label>
+            <input class="input" id="alias" name="alias" placeholder="z.&nbsp;B. Pommes" value="<?= htmlspecialchars((string) ($item['alias'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+            <p class="form-hint">Kurzer Name für Rundgang und Listen. Bestellungen nutzen weiter Name bzw. Lieferanten-Bezeichnung.</p>
         </div>
         <div class="form-group">
             <label class="form-label" for="unit">Einheit</label>
@@ -142,9 +154,10 @@ $formStateAttr = htmlspecialchars((string) $formStateJson, ENT_QUOTES, 'UTF-8');
                         <input class="input" type="number" :id="'supplier_priority_' + idx" :name="'supplier_priority[' + idx + ']'" x-model.number="row.priority">
                     </div>
                 </div>
+                <?php require __DIR__ . '/../../partials/supplier-article-fields.php'; ?>
             </div>
         </template>
-        <button type="button" class="button button--ghost button--small" @click="rows.push({ supplier_id: '', priority: 0 })">+ Lieferant</button>
+        <button type="button" class="button button--ghost button--small" @click="rows.push({ supplier_id: '', priority: 0, supplier_label: '', supplier_sku: '', pack_size: '', pack_unit: '', order_unit: '' })">+ Lieferant</button>
 
         <label class="checkbox">
             <input type="checkbox" name="active" <?= !isset($item['active']) || (int) $item['active'] ? 'checked' : '' ?>>

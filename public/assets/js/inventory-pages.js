@@ -5,6 +5,7 @@ import * as invRound from './inventory-round.js';
 import * as pendingSync from './pending-sync.js';
 import { buildInventoryCsv, downloadCsv } from './inventory-csv.js';
 import { showToast } from './toast.js';
+import { displayName, itemSearchText } from './item-display.js';
 
 function todayIso() {
   const d = new Date();
@@ -325,7 +326,7 @@ export function registerInventoryAlpine(Alpine) {
       const q = this.search.trim().toLowerCase();
       if (q !== '') {
         return this.allItems.filter((it) =>
-          `${it.name || ''} ${it.unit || ''}`.toLowerCase().includes(q),
+          `${itemSearchText(it)} ${it.unit || ''}`.toLowerCase().includes(q),
         );
       }
       if (this.items.length > 0) {
@@ -560,7 +561,7 @@ export function registerInventoryAlpine(Alpine) {
         .filter((i) => !countedIds.has(Number(i.id)))
         .map((i) => ({
           id: Number(i.id),
-          name: i.name,
+          name: displayName(i),
           unit: i.unit || '',
           location_name: locById.get(Number(i.location_id)) || '',
         }))

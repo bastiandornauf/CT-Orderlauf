@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\Csrf;
+use App\Helpers\Database;
+use App\Helpers\ItemDisplay;
+use App\Helpers\ItemSupplierInput;
 use App\Helpers\Response;
 use App\Helpers\ValuationPrice;
 use App\Helpers\Validator;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
+use App\Repositories\SupplierArticleRepository;
 
 final class ItemApiController
 {
@@ -26,6 +30,7 @@ final class ItemApiController
         }
 
         $name = trim((string) ($data['name'] ?? ''));
+        $alias = trim((string) ($data['alias'] ?? ''));
         $unit = trim((string) ($data['unit'] ?? ''));
         $locId = (int) ($data['location_id'] ?? 0);
         $valuationPrice = ValuationPrice::parse($data['valuation_price'] ?? null);
@@ -44,54 +49,21 @@ final class ItemApiController
             Response::jsonError('Artikel mit diesem Namen existiert bereits.', 409);
         }
 
-        $id = $items->create($name, $unit, $locId, null, null, true, 0, $valuationPrice);
-
-        $pairs = [];
-        $rawLinks = $data['supplier_links'] ?? null;
-        if (is_array($rawLinks)) {
-            foreach ($rawLinks as $row) {
-                if (!is_array($row)) {
-                    continue;
-                }
-                $sid = (int) ($row['supplier_id'] ?? 0);
-                if ($sid <= 0) {
-                    continue;
-                }
-                $pairs[] = [
-                    'supplier_id' => $sid,
-                    'priority' => (int) ($row['priority'] ?? 0),
-                ];
+        $supplierInput = ItemSupplierInput::parse(is_array($data['supplier_links'] ?? null) ? $data['supplier_links'] : []);
+        $id = self::inTransaction(static function () use ($items, $name, $alias, $unit, $locId, $valuationPrice, $supplierInput): int {
+            $id = $items->create($name, $unit, $locId, null, null, true, 0, $valuationPrice);
+            $items->updateAlias($id, $alias);
+            if ($supplierInput['pairs'] !== []) {
+                $items->setSupplierLinks($id, $supplierInput['pairs']);
             }
-        }
-        if ($pairs !== []) {
-            $items->setSupplierLinks($id, $pairs);
-        }
+            if ($supplierInput['articles'] !== null) {
+                (new SupplierArticleRepository())->saveDefaults($id, $supplierInput['articles']);
+            }
 
-        $saved = $items->find($id);
-        if ($saved === null) {
-            Response::jsonError('Artikel nach Anlegen nicht lesbar.', 500);
-        }
+            return $id;
+        });
 
-        $linkRows = $items->supplierLinksForItem($id);
-        $normLinks = [];
-        foreach ($linkRows as $l) {
-            $normLinks[] = [
-                'item_id' => (int) $l['item_id'],
-                'supplier_id' => (int) $l['supplier_id'],
-                'priority' => (int) $l['priority'],
-            ];
-        }
-
-        Response::jsonOk([
-            'item' => [
-                'id' => (int) $saved['id'],
-                'name' => (string) $saved['name'],
-                'unit' => (string) ($saved['unit'] ?? ''),
-                'location_id' => (int) $saved['location_id'],
-                'active' => (int) ($saved['active'] ?? 0),
-            ],
-            'item_supplier_links' => $normLinks,
-        ]);
+        self::respondWithItem($items, $id, 'Artikel nach Anlegen nicht lesbar.');
     }
 
     public function save(): void
@@ -136,46 +108,65 @@ final class ItemApiController
             Response::jsonError($err, 422);
         }
 
-        $items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
-
-        $pairs = [];
-        $rawLinks = $data['supplier_links'] ?? null;
-        if (is_array($rawLinks)) {
-            foreach ($rawLinks as $row) {
-                if (!is_array($row)) {
-                    continue;
-                }
-                $sid = (int) ($row['supplier_id'] ?? 0);
-                if ($sid <= 0) {
-                    continue;
-                }
-                $pairs[] = [
-                    'supplier_id' => $sid,
-                    'priority' => (int) ($row['priority'] ?? 0),
-                ];
+        $supplierInput = ItemSupplierInput::parse(is_array($data['supplier_links'] ?? null) ? $data['supplier_links'] : []);
+        self::inTransaction(static function () use ($items, $id, $data, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice, $supplierInput): void {
+            $items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
+            // Alias nur ändern, wenn mitgeschickt (ältere Clients kennen das Feld nicht)
+            if (array_key_exists('alias', $data)) {
+                $items->updateAlias($id, (string) ($data['alias'] ?? ''));
             }
-        }
-        $items->setSupplierLinks($id, $pairs);
+            $items->setSupplierLinks($id, $supplierInput['pairs']);
+            if ($supplierInput['articles'] !== null) {
+                (new SupplierArticleRepository())->saveDefaults($id, $supplierInput['articles']);
+            }
+        });
 
+        self::respondWithItem($items, $id, 'Artikel nach Speichern nicht lesbar.');
+    }
+
+    /**
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    private static function inTransaction(callable $fn): mixed
+    {
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            $result = $fn();
+            $pdo->commit();
+
+            return $result;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    private static function respondWithItem(ItemRepository $items, int $id, string $notFound): never
+    {
         $saved = $items->find($id);
         if ($saved === null) {
-            Response::jsonError('Artikel nach Speichern nicht lesbar.', 500);
+            Response::jsonError($notFound, 500);
         }
-
-        $linkRows = $items->supplierLinksForItem($id);
+        $articles = (new SupplierArticleRepository())->defaultsByItemIds([$id])[$id] ?? [];
         $normLinks = [];
-        foreach ($linkRows as $l) {
+        foreach ($items->supplierLinksForItem($id) as $l) {
+            $sid = (int) $l['supplier_id'];
             $normLinks[] = [
                 'item_id' => (int) $l['item_id'],
-                'supplier_id' => (int) $l['supplier_id'],
+                'supplier_id' => $sid,
                 'priority' => (int) $l['priority'],
-            ];
+            ] + ItemRepository::articleFields($articles[$sid] ?? null);
         }
 
         Response::jsonOk([
             'item' => [
                 'id' => (int) $saved['id'],
                 'name' => (string) $saved['name'],
+                'alias' => $saved['alias'] ?? null,
+                'display_name' => ItemDisplay::name($saved),
                 'unit' => (string) ($saved['unit'] ?? ''),
                 'location_id' => (int) $saved['location_id'],
                 'sort_order' => (int) ($saved['sort_order'] ?? 0),

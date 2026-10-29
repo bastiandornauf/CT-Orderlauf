@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\Csrf;
+use App\Helpers\Database;
+use App\Helpers\ItemSupplierInput;
 use App\Helpers\Response;
 use App\Helpers\ValuationPrice;
 use App\Helpers\Validator;
@@ -12,6 +14,7 @@ use App\Helpers\View;
 use App\Middleware\AuthMiddleware;
 use App\Repositories\ItemRepository;
 use App\Repositories\LocationRepository;
+use App\Repositories\SupplierArticleRepository;
 use App\Repositories\SupplierRepository;
 
 final class ItemController
@@ -83,7 +86,8 @@ final class ItemController
     public function __construct(
         private ItemRepository $items = new ItemRepository(),
         private LocationRepository $locations = new LocationRepository(),
-        private SupplierRepository $suppliers = new SupplierRepository()
+        private SupplierRepository $suppliers = new SupplierRepository(),
+        private SupplierArticleRepository $articles = new SupplierArticleRepository()
     ) {
     }
 
@@ -143,7 +147,7 @@ final class ItemController
             Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromGet()));
             return;
         }
-        $links = $id ? $this->items->supplierLinksWithNames($id) : [];
+        $links = $id ? $this->linksWithArticles($id) : [];
         $listFilter = self::parseListFilterFromGet();
         View::layout('layout', 'pages/items/form', [
             'title' => $id ? 'Artikel bearbeiten' : 'Artikel anlegen',
@@ -166,6 +170,7 @@ final class ItemController
         }
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $name = trim((string) ($_POST['name'] ?? ''));
+        $alias = trim((string) ($_POST['alias'] ?? ''));
         $unit = trim((string) ($_POST['unit'] ?? ''));
         $locId = (int) ($_POST['location_id'] ?? 0);
         $min = ($_POST['min_stock'] ?? '') === '' ? null : (int) $_POST['min_stock'];
@@ -182,6 +187,7 @@ final class ItemController
             $this->renderFormError(
                 $id,
                 $name,
+                $alias,
                 $unit,
                 $locId,
                 $min,
@@ -195,33 +201,59 @@ final class ItemController
             return;
         }
 
-        if ($id > 0) {
-            $this->items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
-        } else {
-            $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
-        }
-
-        $pairs = [];
-        if (!empty($_POST['supplier_id']) && is_array($_POST['supplier_id'])) {
-            foreach ($_POST['supplier_id'] as $i => $sid) {
-                $sid = (int) $sid;
-                if ($sid <= 0) {
-                    continue;
-                }
-                $pr = (int) ($_POST['supplier_priority'][$i] ?? 0);
-                $pairs[] = ['supplier_id' => $sid, 'priority' => $pr];
+        $supplierInput = ItemSupplierInput::parse(ItemSupplierInput::rowsFromPost($_POST));
+        $pdo = Database::pdo();
+        $pdo->beginTransaction();
+        try {
+            if ($id > 0) {
+                $this->items->update($id, $name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
+            } else {
+                $id = $this->items->create($name, $unit, $locId, $min, $max, $active, $sortOrder, $valuationPrice);
             }
+            $this->items->updateAlias($id, $alias);
+            $this->items->setSupplierLinks($id, $supplierInput['pairs']);
+            if ($supplierInput['articles'] !== null) {
+                $this->articles->saveDefaults($id, $supplierInput['articles']);
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
         }
-        $this->items->setSupplierLinks($id, $pairs);
 
         $_SESSION['flash_ok'] = 'Artikel gespeichert.';
         Response::redirect('/items' . self::buildItemsIndexQuery(self::parseListFilterFromPost()) . '#item-' . $id);
+    }
+
+    /** @return list<array<string, mixed>> Zuordnungen inkl. Standard-Lieferantenartikel */
+    private function linksWithArticles(int $itemId): array
+    {
+        $articles = $this->articles->defaultsByItemIds([$itemId])[$itemId] ?? [];
+
+        return array_map(
+            static fn (array $l): array => $l + ItemRepository::articleFields($articles[(int) $l['supplier_id']] ?? null),
+            $this->items->supplierLinksWithNames($itemId)
+        );
+    }
+
+    /**
+     * Eingaben nach Validierungsfehler wieder anzeigen.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function linksFromPost(): array
+    {
+        return array_values(array_filter(
+            ItemSupplierInput::rowsFromPost($_POST),
+            static fn (array $r): bool => (int) $r['supplier_id'] > 0
+        ));
     }
 
     /** @param array{loc:int, active:string, supplier:int, q:string} $listFilter */
     private function renderFormError(
         int $id,
         string $name,
+        string $alias,
         string $unit,
         int $locId,
         ?int $min,
@@ -237,6 +269,7 @@ final class ItemController
             'item' => [
                 'id' => $id ?: null,
                 'name' => $name,
+                'alias' => $alias,
                 'unit' => $unit,
                 'location_id' => $locId,
                 'min_stock' => $min,
@@ -247,7 +280,7 @@ final class ItemController
             ],
             'locations' => $this->locations->all(true),
             'suppliers' => $this->suppliers->all(true),
-            'links' => $id ? $this->items->supplierLinksWithNames($id) : [],
+            'links' => self::linksFromPost(),
             'list_filter' => $listFilter,
             'list_index_url' => '/items' . self::buildItemsIndexQuery($listFilter),
             'error' => $error,

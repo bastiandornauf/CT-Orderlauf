@@ -123,6 +123,8 @@ async function writeInventoryCatalogRows(locations, items) {
     await putRow('inventory_catalog_items', {
       id: Number(it.id),
       name: it.name,
+      alias: it.alias ?? null,
+      display_name: it.display_name || it.name,
       unit: it.unit ?? '',
       location_id: Number(it.location_id),
       sort_order: it.sort_order ?? 0,

@@ -61,7 +61,7 @@
                     'inventory-line--open': !isCounted(it.id)
                 }">
                 <div class="list-item__main">
-                    <strong x-text="it.name"></strong>
+                    <strong x-text="it.display_name || it.name"></strong>
                     <span class="inventory-unit" x-show="it.unit" x-text="it.unit"></span>
                     <span class="text-muted order-item-meta">
                         <span class="inventory-valuation-hint" x-show="valuationHint(it)" x-text="valuationHint(it)"></span>
@@ -84,7 +84,7 @@
                         <input class="input input--qty" type="text" inputmode="decimal"
                                :value="isCounted(it.id) ? (displayQty[it.id] || '') : (displayQty[it.id] || '')"
                                @blur="onQtyBlur(it.id, $event)"
-                               :aria-label="'Menge ' + it.name"
+                               :aria-label="'Menge ' + (it.display_name || it.name)"
                                placeholder="—">
                         <button type="button" class="qty-stepper__btn" @click="onQtyStep(it.id, 1)" aria-label="Plus">+</button>
                     </div>

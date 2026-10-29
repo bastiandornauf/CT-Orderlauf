@@ -50,17 +50,23 @@ CREATE TABLE IF NOT EXISTS supplier_delivery_days (
 CREATE TABLE IF NOT EXISTS items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    alias VARCHAR(255) NULL COMMENT 'interner Anzeigename; NULL/leer = name',
     unit VARCHAR(64) NOT NULL DEFAULT '',
+    base_unit VARCHAR(8) NULL COMMENT 'kg|l|stk – Vergleichs-/Inventureinheit',
+    unit_factor DECIMAL(12,4) NULL COMMENT 'base_unit je 1 unit; NULL = unbekannt',
     location_id INT UNSIGNED NOT NULL,
+    category VARCHAR(64) NULL COMMENT 'vorgesehen, noch ohne UI',
     sort_order INT NOT NULL DEFAULT 0,
     min_stock INT NULL,
     max_stock INT NULL,
     valuation_price DECIMAL(10,2) NULL COMMENT 'Bewertungspreis pro Einheit fuer Inventur',
     active TINYINT(1) NOT NULL DEFAULT 1,
+    merged_into_id INT UNSIGNED NULL COMMENT 'Artikel wurde in diesen zusammengeführt',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_items_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE RESTRICT,
     INDEX idx_items_location (location_id),
-    INDEX idx_items_name (name)
+    INDEX idx_items_name (name),
+    INDEX idx_items_alias (alias)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS item_supplier (
@@ -71,6 +77,30 @@ CREATE TABLE IF NOT EXISTS item_supplier (
     CONSTRAINT fk_is_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
     CONSTRAINT fk_is_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
     UNIQUE KEY uq_item_supplier (item_id, supplier_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Konkreter Artikel beim Lieferanten. Hängt an (item_id, supplier_id), nicht an
+-- item_supplier.id – ältere App-Versionen legen item_supplier beim Speichern neu an.
+CREATE TABLE IF NOT EXISTS supplier_articles (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_id INT UNSIGNED NOT NULL,
+    supplier_id INT UNSIGNED NOT NULL,
+    supplier_label VARCHAR(255) NULL COMMENT 'formelle Bestellbezeichnung; NULL = items.name',
+    supplier_sku VARCHAR(64) NULL,
+    ean VARCHAR(14) NULL,
+    brand VARCHAR(128) NULL,
+    pack_size DECIMAL(12,4) NULL,
+    pack_unit VARCHAR(8) NULL COMMENT 'kg|g|l|ml|stk',
+    order_unit VARCHAR(64) NULL COMMENT 'NULL = items.unit',
+    is_default TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'wird für Bestellungen bei diesem Lieferanten genutzt',
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    note VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_sa_item_supplier (item_id, supplier_id),
+    INDEX idx_sa_sku (supplier_id, supplier_sku),
+    CONSTRAINT fk_sa_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_sa_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Gemeinsame Sammlung neuer Artikel aus Freitext (Bestellung + Inventur)
