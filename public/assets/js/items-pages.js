@@ -88,7 +88,11 @@ export function registerItemsAlpine(Alpine) {
     editSaving: false,
     editDraft: emptyDraft(),
     editSupplierRows: [emptySupplierRow()],
+    rootEl: null,
     init() {
+      // $el zeigt in Event-Handlern auf das auslösende Element (z. B. das Dialog-Formular),
+      // daher die Seitenwurzel einmalig merken.
+      this.rootEl = this.$el;
       const raw = this.$el.dataset.itemsPage;
       if (!raw) return;
       try {
@@ -195,7 +199,7 @@ export function registerItemsAlpine(Alpine) {
     patchRow(item, links) {
       const id = Number(item?.id);
       if (!id) return;
-      const li = this.$el.querySelector(`[data-item-id="${id}"]`);
+      const li = this.rootEl?.querySelector(`[data-item-id="${id}"]`);
       if (!li) return;
 
       const locName = this.locationNameById[String(item.location_id)] || '';
