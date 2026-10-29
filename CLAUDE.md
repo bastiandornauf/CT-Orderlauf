@@ -9,14 +9,26 @@ Web-App für Küchen-/Lagerbestellungen und Inventur (PWA, offlinefähig). Über
 - Frontend: Alpine.js (ESM), Vanilla JS unter `public/assets/js/`, ein CSS (`public/assets/css/app.css`) – **kein Node-Build**
 - Offline: Bestellrunde/Inventur liegen nur clientseitig in IndexedDB; Service Worker `public/sw.js`
 - PDF über `lib/fpdf.php`
-- Keine automatisierten Tests vorhanden
+- Produktion: MariaDB 10.11 auf IONOS-Webspace; lokal ebenfalls `mariadb:10.11`
 
 ## Lokal starten
 
 ```bash
 docker compose up -d          # http://localhost:8080, Login admin / admin123
 docker compose down -v && docker compose up -d   # DB komplett zurücksetzen
+scripts/dev/load-prod-dump.sh ~/Backups/orderlauf/<export>.sql   # Prod-Kopie einspielen, Mailversand entschärft
 ```
+
+## Tests
+
+PHPUnit nur lokal (`require-dev`, kein Composer auf dem Mac – läuft über Docker):
+
+```bash
+docker run --rm -v "$PWD":/app -w /app composer:2 install   # einmalig / nach composer.json-Änderung
+docker compose exec web vendor/bin/phpunit
+```
+
+`vendor/` nie auf den Webspace laden. `config/bootstrap.php` nutzt `vendor/autoload.php`, falls vorhanden – deshalb ist `App\` in `composer.json` als PSR-4 eingetragen.
 
 Syntaxcheck ohne Docker: `php -l <datei>` (PHP 8.4 lokal installiert).
 

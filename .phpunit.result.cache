@@ -1,0 +1,1 @@
+{"version":2,"defects":[],"times":{"Tests\\Unit\\ValuationPriceTest::testParsesGermanDecimalComma":0.004,"Tests\\Unit\\ValuationPriceTest::testEmptyAndInvalidValuesAreUnknown":0}}

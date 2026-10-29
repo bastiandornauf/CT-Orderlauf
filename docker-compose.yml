@@ -18,7 +18,8 @@ services:
       DB_PASS: ct_secret
 
   db:
-    image: mysql:8.0
+    # Wie auf dem Webspace (IONOS): MariaDB 10.11
+    image: mariadb:10.11
     environment:
       MYSQL_DATABASE: ct_orderlauf
       MYSQL_USER: ct_user
@@ -27,7 +28,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       # schema.sql ist der vollstaendige, aktuelle Stand. Struktur-Migrationen
       # gehoeren hier deshalb NICHT hinein: ihre ALTER TABLE wuerden auf Spalten
       # treffen, die schema.sql schon angelegt hat, und der Init abbrechen.
@@ -41,10 +42,10 @@ services:
       - ./database/migrations/20260414_lachs_karton_grana_gehobelt.sql:/docker-entrypoint-initdb.d/06-migrate-lachs-grana.sql:ro
       - ./database/migrations/20260414_order_email_subject_template.sql:/docker-entrypoint-initdb.d/07-migrate-order-email-subject.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  mysql_data:
+  mariadb_data:
