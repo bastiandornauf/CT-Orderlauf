@@ -10,3 +10,6 @@
 .cursor/
 .phpunit.result.cache
 .phpunit.cache/
+
+# Daten-Migrationen mit Einkaufspreisen/Konditionen – Repo ist öffentlich, nie committen
+/database/private/
