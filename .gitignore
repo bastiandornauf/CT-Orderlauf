@@ -5,3 +5,6 @@
 .DS_Store
 .idea/
 .vscode/
+
+# Cursor (nicht mehr genutzt)
+.cursor/
