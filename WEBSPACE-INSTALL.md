@@ -217,7 +217,7 @@ Zusätzlich hochladen:
 1. **Vorher** frischen DB-Export ziehen.
 2. In phpMyAdmin ausführen: `database/migrations/20261103_inbox_messages.sql` (rein additiv).
 3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v60+**.
-4. Als Admin **Menü → Posteingang** öffnen, unten unter *Einstellungen Posteingang* die eigenen Adressen eintragen → **Jetzt abrufen**.
+4. Mit Stammdaten- oder Admin-Konto **Menü → Posteingang** öffnen, unten unter *Einstellungen Posteingang* die eigenen Adressen eintragen → **Jetzt abrufen**.
    - Beim ersten Abruf werden die Mails der letzten 30 Tage geholt, höchstens 30 auf einmal. Gibt es mehr, einfach noch einmal abrufen.
    - Fehlermeldungen (Anmeldung, Schreibrechte `storage/`) stehen oben auf der Seite.
 5. `storage/` gehört **nicht** ins Git und wird beim Hochladen nicht überschrieben (enthält die Anhänge).

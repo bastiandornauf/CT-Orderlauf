@@ -19,7 +19,7 @@ final class DashboardController
         $pdo = Database::pdo();
         $role = (string) ($_SESSION['role'] ?? '');
         $inboxCounts = null;
-        if (UserRole::isAdmin($role)) {
+        if (UserRole::canEditMasterData($role)) {
             try {
                 $inboxCounts = (new InboxRepository())->counts();
             } catch (\PDOException) {

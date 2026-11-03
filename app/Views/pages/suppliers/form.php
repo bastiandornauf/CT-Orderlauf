@@ -18,12 +18,6 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
             <input class="input" id="name" name="name" required
                    value="<?= htmlspecialchars($supplier['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
-        <div class="form-group" x-show="order_type === 'mail'" x-cloak>
-            <label class="form-label" for="email">E-Mail</label>
-            <input class="input" id="email" name="email" type="email"
-                   value="<?= htmlspecialchars($supplier['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-            <p class="form-hint">Für Bestellungen per E-Mail an diesen Lieferanten.</p>
-        </div>
         <div class="form-row">
             <div class="form-group grow">
                 <label class="form-label" for="street">Straße &amp; Hausnummer</label>
@@ -61,6 +55,13 @@ $xDataJson = htmlspecialchars(json_encode(['order_type' => $ot], JSON_HEX_TAG | 
                 <option value="mail">E-Mail</option>
                 <option value="webshop">Webshop (nur Liste)</option>
             </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="email">E-Mail<span x-show="order_type === 'webshop'" x-cloak> (optional)</span></label>
+            <input class="input" id="email" name="email" type="email"
+                   value="<?= htmlspecialchars($supplier['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+            <p class="form-hint" x-show="order_type === 'mail'">Für Bestellungen per E-Mail an diesen Lieferanten.</p>
+            <p class="form-hint" x-show="order_type === 'webshop'" x-cloak>Wird für Webshop-Bestellungen nicht genutzt. Nur eintragen, damit Antworten des Lieferanten im Posteingang erkannt werden.</p>
         </div>
         <div class="form-group" x-show="order_type === 'mail'" x-cloak>
             <label class="checkbox-label">

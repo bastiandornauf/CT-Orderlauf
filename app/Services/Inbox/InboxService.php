@@ -139,6 +139,28 @@ final class InboxService
         }
     }
 
+    /**
+     * Vorhandene Nachrichten nach den aktuellen Regeln neu einordnen (z. B. nach Änderung der eigenen Adressen).
+     * Neue Nachträge werden abgehakt; sonst bleibt der Status, wie er ist.
+     *
+     * @return int Anzahl geänderter Nachrichten
+     */
+    public function reclassify(): int
+    {
+        $classifier = $this->classifier();
+        $changed = 0;
+        foreach ($this->repo->list('alle', 100000) as $m) {
+            $c = $classifier->classify((string) $m['from_email'], (string) $m['subject']);
+            if ($c['kind'] === $m['kind'] && $c['supplier_id'] === $m['supplier_id']) {
+                continue;
+            }
+            $this->repo->setClassification($m['id'], $c['kind'], $c['supplier_id']);
+            $changed++;
+        }
+
+        return $changed;
+    }
+
     public function lastError(): string
     {
         return (string) $this->settings->get('inbox_last_error', '');

@@ -42,13 +42,13 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 
 - Nur sichtbar, wenn Sie dazu **berechtigt** sind: Links zu **Artikeln**, **Lieferanten**, **Lagerorten**. Zum Pflegen der Stammdaten; für den täglichen Bestelllauf nicht zwingend nötig.
 
-### Posteingang (nur Administratoren)
+### Posteingang (Stammdaten und Administratoren)
 
 - Sind im Versand-Postfach neue Mails, erscheint oben eine Karte, z. B. **„Antwort von Pütz · 2 offene Belege“** → **Ansehen**.
 
 ### Menü (☰)
 
-- Über **☰**: **Start**, **Inventur**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import / Export**, **Einstellungen**, **Posteingang** (Admin), **Mein Konto**, **Abmelden**.
+- Über **☰**: **Start**, **Inventur**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import / Export**, **Einstellungen**, **Posteingang**, **Mein Konto**, **Abmelden**.
 
 ---
 
@@ -210,7 +210,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 - **Sammelbearbeitung** (Artikelliste): Artikel anhaken → Aktion wählen: Einheit oder Lagerort setzen, Lieferant ergänzen, archivieren/aktivieren, zwei Artikel zusammenführen. In der Prüfung „Einheit uneinheitlich“ zusätzlich **Vorschlag übernehmen**.
 - **Pflegepaket einspielen:** Eine vorbereitete Datei (z. B. von Claude aus Rechnungsfotos erstellt) wählen → jede Änderung mit **bisher / neu** prüfen → angehakte übernehmen. Grundlage dafür: **Artikelstamm exportieren**. Ein zweites Einspielen derselben Datei ändert nichts.
 
-## 9b. Posteingang (Menü → Posteingang, nur Admin)
+## 9b. Posteingang (Menü → Posteingang, Stammdaten und Admin)
 
 Die App liest das Postfach mit, über das die Bestellungen verschickt werden (gleicher Zugang wie beim SMTP-Versand). Sie holt beim Öffnen der Startseite höchstens alle 10 Minuten ab, oder sofort mit **Jetzt abrufen**. Die Mails bleiben **unverändert im Postfach**: Die App liest nur mit, sie löscht und verschiebt nichts und markiert nichts als gelesen.
 
@@ -221,7 +221,7 @@ Die App liest das Postfach mit, über das die Bestellungen verschickt werden (gl
 | Eigene Adresse, sonst (Weiterleitung, Foto) | **Beleg** |
 | alle anderen | **Sonstiges** |
 
-- **Eigene Adressen** stehen unten unter *Einstellungen Posteingang*. Eine eigene Adresse, die bei einem Lieferanten nur als Platzhalter eingetragen ist (z. B. Webshop), zählt nicht als Lieferant.
+- **Eigene Adressen** stehen unten unter *Einstellungen Posteingang*. Beim Speichern werden alle schon abgeholten Nachrichten neu eingeordnet. Eine eigene Adresse, die bei einem Lieferanten nur als Platzhalter eingetragen ist (z. B. Webshop), zählt nicht als Lieferant.
 - Jede Nachricht lässt sich aufklappen (Text, Anhänge) und mit **Erledigt** abhaken. Ist sie falsch eingeordnet, die **Art** ändern.
 - **Belege einpflegen:** Rechnung oder Lieferschein-Foto von einer eigenen Adresse an das Versand-Postfach weiterleiten. Wenn Zeit ist: Tab **Belege → Offene Belege als ZIP** laden und Claude die Datei geben. Daraus entsteht ein Pflegepaket. Beim Einspielen werden die zugehörigen Belege automatisch abgehakt.
 

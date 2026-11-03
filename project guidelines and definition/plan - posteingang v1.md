@@ -9,7 +9,7 @@ Das IONOS-Postfach, über das Orderlauf Bestellungen verschickt, wird von der Ap
 1. **Lieferantenantworten** sollen auffallen (Hinweis auf der Startseite).
 2. **Weitergeleitete Belege** (Rechnungen, Lieferschein-Fotos) werden gesammelt, damit sie später gebündelt per Pflegepaket eingepflegt werden können.
 
-Nur für **Admins** sichtbar.
+Sichtbar für **Stammdaten** und **Admin** (wie Datenpflege und Preise), nicht für „Nur Bestellen“.
 
 ## Abruf
 

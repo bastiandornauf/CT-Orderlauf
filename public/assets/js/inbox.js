@@ -16,7 +16,7 @@ async function postJson(url, body) {
   return data;
 }
 
-/** Posteingang (nur Admin): Abruf, Erledigt/Art ändern */
+/** Posteingang (Stammdaten/Admin): Abruf, Erledigt/Art ändern */
 export function registerInboxAlpine(Alpine) {
   Alpine.data('inboxPage', () => ({
     busy: false,

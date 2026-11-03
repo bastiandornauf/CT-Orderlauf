@@ -14,14 +14,14 @@ use App\Services\Inbox\InboxClassifier;
 use App\Services\Inbox\InboxService;
 use App\Services\Inbox\ZipWriter;
 
-/** Posteingang des Versand-Postfachs – nur Admins (Rechnungen enthalten Konditionen). */
+/** Posteingang des Versand-Postfachs – Stammdaten + Admin (wie Datenpflege/Preise), nicht „Nur Bestellen“. */
 final class InboxController
 {
     private const FILTERS = ['neu', 'belege', 'alle'];
 
     public function index(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         $filter = in_array($_GET['f'] ?? '', self::FILTERS, true) ? (string) $_GET['f'] : 'neu';
         $service = new InboxService();
         $repo = new InboxRepository();
@@ -44,7 +44,7 @@ final class InboxController
     /** POST /api/posteingang/fetch {force?: bool} – gedrosselt, liefert die aktuellen Zahlen */
     public function fetch(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         $data = self::body();
         $result = (new InboxService())->fetch(!empty($data['force']));
         Response::json($result + ['counts' => (new InboxRepository())->counts()]);
@@ -53,7 +53,7 @@ final class InboxController
     /** POST /api/posteingang/update {id, status?: neu|erledigt, kind?: …} */
     public function update(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         $data = self::body();
         $id = (int) ($data['id'] ?? 0);
         $repo = new InboxRepository();
@@ -78,7 +78,7 @@ final class InboxController
     /** POST /posteingang/einstellungen – eigene Absenderadressen */
     public function saveSettings(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         if (!Csrf::validate($_POST['_csrf'] ?? null)) {
             Response::redirect('/posteingang');
         }
@@ -87,13 +87,14 @@ final class InboxController
         $settings->set('inbox_own_addresses', $addresses === [] ? null : implode(', ', $addresses));
         $host = trim((string) ($_POST['imap_host'] ?? ''));
         $settings->set('imap_host', $host === '' ? null : $host);
-        Response::redirect('/posteingang?saved=1');
+        $changed = (new InboxService())->reclassify();
+        Response::redirect('/posteingang?saved=1&neu_eingeordnet=' . $changed);
     }
 
     /** GET /posteingang/anhang?id=…&file=… */
     public function attachment(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         $id = (int) ($_GET['id'] ?? 0);
         $file = (string) ($_GET['file'] ?? '');
         $msg = (new InboxRepository())->find($id);
@@ -123,7 +124,7 @@ final class InboxController
     /** GET /posteingang/belege.zip – offene Belege + belege.json für die Auswertung */
     public function receiptsZip(): void
     {
-        AuthMiddleware::requireAdmin();
+        AuthMiddleware::requireEditor();
         $receipts = (new InboxRepository())->openReceipts();
         $zip = new ZipWriter();
         $index = [];

@@ -22,12 +22,15 @@ $tabs = [
     </div>
 
     <?php if (!empty($_GET['saved'])): ?>
-        <p class="toast toast--success" role="status">Gespeichert.</p>
+        <p class="toast toast--success" role="status">Gespeichert.<?php if ((int) ($_GET['neu_eingeordnet'] ?? 0) > 0): ?> <?= (int) $_GET['neu_eingeordnet'] ?> Nachricht(en) neu eingeordnet.<?php endif; ?></p>
     <?php endif; ?>
     <?php if (!$configured): ?>
         <p class="toast toast--warn">Erst unter <a href="/settings">Einstellungen → SMTP</a> Server, Benutzer und Passwort eintragen – der Posteingang nutzt denselben Zugang.</p>
     <?php elseif ($last_error !== ''): ?>
         <p class="toast toast--error u-pre-wrap" role="alert">Letzter Abruf fehlgeschlagen: <?= $h($last_error) ?></p>
+    <?php endif; ?>
+    <?php if ($own_addresses === ''): ?>
+        <p class="toast toast--warn">Noch keine eigenen Adressen eingetragen – deine Antworten und Weiterleitungen werden sonst falsch erkannt. <a href="#einstellungen">Jetzt eintragen</a></p>
     <?php endif; ?>
     <p class="text-muted inbox__meta">
         <?= $h($mailbox) ?><?= $last_fetch ? ' · zuletzt abgerufen ' . $h(\App\Services\Inbox\InboxService::now('d.m. H:i', $last_fetch)) : ' · noch nie abgerufen' ?>
@@ -105,7 +108,7 @@ $tabs = [
         <?php endforeach; ?>
     </ul>
 
-    <details class="card card--pad inbox__settings">
+    <details class="card card--pad inbox__settings" id="einstellungen"<?= $own_addresses === '' ? ' open' : '' ?>>
         <summary class="settings-subsection__summary">Einstellungen Posteingang</summary>
         <form method="post" action="/posteingang/einstellungen" class="form-stack">
             <?= \App\Helpers\Csrf::field() ?>
@@ -113,7 +116,7 @@ $tabs = [
                 <label class="form-label" for="inbox_own_addresses">Eigene Adressen (Weiterleitungen = Beleg)</label>
                 <textarea class="textarea" id="inbox_own_addresses" name="inbox_own_addresses" rows="3"
                           spellcheck="false" placeholder="eine Adresse pro Zeile"><?= $h($own_addresses) ?></textarea>
-                <p class="form-hint">Antworten von hier (Betreff „Re:“/„AW:“) gelten als Nachtrag und werden ausgeblendet.</p>
+                <p class="form-hint">Antworten von hier (Betreff „Re:“/„AW:“) gelten als Nachtrag und werden ausgeblendet. Beim Speichern werden alle vorhandenen Nachrichten neu eingeordnet.</p>
             </div>
             <div class="form-group">
                 <label class="form-label" for="imap_host">IMAP-Server</label>

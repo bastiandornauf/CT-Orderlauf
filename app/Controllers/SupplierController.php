@@ -78,7 +78,7 @@ final class SupplierController
             ? array_map('intval', $_POST['weekdays']) : [];
 
         $err = Validator::required(['name' => $name], 'name');
-        if ($type === 'mail') {
+        if ($type === 'mail' || $email !== null) {
             $err = $err ?? Validator::email($email);
         }
         if ($err) {

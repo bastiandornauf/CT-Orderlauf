@@ -150,6 +150,16 @@ final class InboxRepository
         return $st->rowCount() > 0;
     }
 
+    public function setClassification(int $id, string $kind, ?int $supplierId): void
+    {
+        $this->pdo->prepare(
+            "UPDATE inbox_messages SET kind = ?, supplier_id = ?,
+                status = IF(? = 'nachtrag', 'erledigt', status),
+                done_at = IF(? = 'nachtrag', COALESCE(done_at, NOW()), done_at)
+             WHERE id = ?"
+        )->execute([$kind, $supplierId, $kind, $kind, $id]);
+    }
+
     /**
      * Belege nach dem Einspielen eines Pflegepakets abhaken.
      *
