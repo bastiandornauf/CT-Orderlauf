@@ -11,6 +11,7 @@ use App\Helpers\Units;
 use App\Repositories\InboxRepository;
 use App\Repositories\ItemRepository;
 use App\Repositories\MaintenanceLogRepository;
+use App\Repositories\PendingItemRepository;
 use App\Repositories\PriceRepository;
 use App\Repositories\SupplierArticleRepository;
 use PDO;
@@ -35,7 +36,13 @@ use PDO;
  *     {"op": "alias", "item_id": 180, "alias": "Oliven schwarz"},
  *     {"op": "name", "item_id": 180, "name": "…"},
  *     {"op": "unit", "item_id": 180, "unit": "Dose"},
- *     {"op": "unit_factor", "item_id": 180, "unit_factor": "4,25", "base_unit": "kg"}
+ *     {"op": "unit_factor", "item_id": 180, "unit_factor": "4,25", "base_unit": "kg"},
+ *     {"op": "suggest", "name": "Kabeljau Loin MSC (TK)", "unit": "Karton (5 kg)", "supplier": "Transgourmet",
+ *      "location": "TK", "quantity": "1",                // fehlender Artikel → Artikel-Vorschläge (ohne item_id)
+ *      "article": {"supplier_label": "MSC Paz.Kab.Loin180-200g TK5k", "supplier_sku": "657372"},
+ *      "price": {"amount": "21,096", "per_unit": "kg", "price_type": "purchase", "source": "invoice"}},
+ *     {"op": "suggest", "pending_id": 31, "supplier": "Transgourmet", "article": {…}, "price": {…}}
+ *                                                       // vorhandenen Vorschlag (frei bestellt) mit Beleg verknüpfen
  *   ]
  * }
  * „item_name“ ist optional und dient nur der Kontrolle: weicht er ab, warnt die Vorschau.
@@ -44,7 +51,7 @@ use PDO;
 final class MaintenancePackageService
 {
     public const FORMAT = 'orderlauf-pflegepaket';
-    public const OPS = ['price', 'article', 'link', 'alias', 'name', 'unit', 'unit_factor'];
+    public const OPS = ['price', 'article', 'link', 'alias', 'name', 'unit', 'unit_factor', 'suggest'];
 
     private PDO $pdo;
     /** @var array<string, int> Lieferantenname (klein) → ID */
@@ -222,6 +229,9 @@ final class MaintenancePackageService
         if (!in_array($op, self::OPS, true)) {
             throw new \InvalidArgumentException("Unbekannte Änderung „{$op}“.");
         }
+        if ($op === 'suggest') {
+            return $this->evalSuggest($c) + ['message' => ''];
+        }
         $item = $this->item($c);
         $warn = [];
         if (isset($c['item_name']) && trim((string) $c['item_name']) !== ''
@@ -245,6 +255,154 @@ final class MaintenancePackageService
         }
 
         return $row + ['message' => ''];
+    }
+
+    /**
+     * Fehlender Artikel → Artikel-Vorschläge (angelegt wird er erst dort vom User).
+     * Mit „pending_id“: vorhandenen Vorschlag (z. B. frei bestellt „5 kg TK Kabeljau“) mit den Beleg-Daten verknüpfen.
+     * Optional „article“ (Bezeichnung, Art.-Nr., Gebinde) und „price“ – werden beim Übernehmen zu Bestelldaten/Preis.
+     */
+    private function evalSuggest(array $c): array
+    {
+        $sid = $this->supplierId($c);
+        $receipt = $this->receipt($c, $sid);
+        $receiptText = $receipt !== null ? self::receiptText($receipt) : '';
+        $pendingId = (int) ($c['pending_id'] ?? 0);
+
+        if ($pendingId > 0) {
+            $p = (new PendingItemRepository())->find($pendingId);
+            if ($p === null || $p['status'] !== 'open') {
+                throw new \InvalidArgumentException("Artikel-Vorschlag #{$pendingId} ist nicht (mehr) offen.");
+            }
+            if ($receipt === null) {
+                throw new \InvalidArgumentException('Zum Verknüpfen „article“ oder „price“ angeben.');
+            }
+            $base = ['op' => 'suggest', 'item' => '„' . $p['name'] . '“ (Vorschlag #' . $pendingId . ')',
+                'supplier' => $this->supplierNames[$sid], 'field' => 'Lieferschein-Daten',
+                'old' => self::receiptText(is_string($p['receipt'] ?? null) ? (json_decode($p['receipt'], true) ?: []) : [])];
+            if (self::sameReceipt($p['receipt'] ?? null, $receipt)) {
+                return $base + ['new' => $receiptText, 'status' => 'same', 'message' => 'schon verknüpft'];
+            }
+
+            return $base + ['new' => $receiptText, 'status' => 'warn',
+                'message' => 'Zuordnung prüfen: frei bestellt „' . $p['name'] . '“ = ' . ($receipt['supplier_label'] ?? 'Beleg-Artikel')];
+        }
+
+        $name = (string) preg_replace('/\s+/u', ' ', self::required($c, 'name'));
+        $locId = $this->locationId($c);
+        $base = ['op' => 'suggest', 'item' => $name, 'supplier' => $this->supplierNames[$sid], 'field' => 'Artikel-Vorschlag', 'old' => ''];
+        $new = trim(implode(' · ', array_filter([
+            trim((string) ($c['unit'] ?? '')),
+            $locId !== null ? 'Lager ' . $this->locationName($locId) : '',
+            $receiptText,
+        ])));
+
+        $stmt = $this->pdo->prepare('SELECT id, name FROM items WHERE active = 1 AND merged_into_id IS NULL AND (LOWER(name) = ? OR LOWER(alias) = ?) LIMIT 1');
+        $lower = mb_strtolower($name);
+        $stmt->execute([$lower, $lower]);
+        if ($hit = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            return $base + ['new' => $new, 'status' => 'error', 'message' => 'Artikel gibt es schon (#' . $hit['id'] . ') – stattdessen Preis/Bestelldaten zuordnen.'];
+        }
+        $stmt = $this->pdo->prepare('SELECT status, receipt FROM pending_items WHERE dedupe_key = ?');
+        $stmt->execute([PendingItemRepository::dedupeKey($name)]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($existing !== null && $existing['status'] === 'open' && ($receipt === null || self::sameReceipt($existing['receipt'], $receipt))) {
+            return $base + ['new' => $new, 'status' => 'same', 'message' => 'schon in Artikel-Vorschlägen'];
+        }
+
+        return $base + ['new' => $new !== '' ? $new : 'neu', 'status' => 'change',
+            'message' => match (true) {
+                $existing !== null && $existing['status'] === 'open' => 'Vorschlag gibt es schon – Beleg-Daten werden ergänzt',
+                $existing !== null => 'war verworfen – kommt zurück',
+                default => '',
+            }];
+    }
+
+    /** @return array<string, mixed>|null Beleg-Daten für einen Vorschlag (null = keine) */
+    private function receipt(array $c, int $sid): ?array
+    {
+        $article = is_array($c['article'] ?? null) ? $c['article'] : [];
+        $r = ['supplier_id' => $sid, 'supplier' => $this->supplierNames[$sid]];
+        foreach (SupplierArticleRepository::EDIT_FIELDS as $f) {
+            $v = trim((string) ($article[$f] ?? ''));
+            if ($v !== '') {
+                $r[$f] = mb_substr($v, 0, 255);
+            }
+        }
+        if (isset($r['pack_size']) !== isset($r['pack_unit'])) {
+            throw new \InvalidArgumentException('Gebinde nur mit pack_size und pack_unit zusammen.');
+        }
+        if (isset($r['pack_size']) && Money::parse($r['pack_size']) === null) {
+            throw new \InvalidArgumentException('pack_size ungültig.');
+        }
+        if (is_array($c['price'] ?? null)) {
+            [$p] = $this->priceRecord($c['price'] + array_intersect_key($c, array_flip(['price_date', 'document_ref', 'supplier'])), []);
+            $r['price'] = [
+                'price_type' => $p['price_type'], 'amount' => Money::formatDe($p['amount'], 4), 'per_qty' => Money::formatDe($p['per_qty'], 4),
+                'per_unit' => $p['per_unit'], 'source' => $p['source'], 'price_date' => $p['price_date'],
+                'document_ref' => $p['document_ref'], 'note' => $p['note'], 'is_net' => $p['is_net'],
+            ];
+        }
+        foreach (['document_ref', 'price_date'] as $f) {
+            if (trim((string) ($c[$f] ?? '')) !== '') {
+                $r[$f] = trim((string) $c[$f]);
+            }
+        }
+
+        return count($r) > 2 + (isset($r['document_ref']) ? 1 : 0) + (isset($r['price_date']) ? 1 : 0) ? $r : null;
+    }
+
+    private static function receiptText(array $r): string
+    {
+        if ($r === []) {
+            return '';
+        }
+        $price = '';
+        if (is_array($r['price'] ?? null)) {
+            $p = $r['price'];
+            $per = $p['per_unit'] === 'order' ? 'Einheit' : (Units::BASE_LABELS[$p['per_unit']] ?? $p['per_unit']);
+            $qty = rtrim(rtrim((string) $p['per_qty'], '0'), ',');
+            $price = rtrim(rtrim((string) $p['amount'], '0'), ',') . ' €/' . ($qty !== '1' ? $qty . ' ' : '') . $per;
+        }
+
+        return implode(' · ', array_filter([
+            (string) ($r['supplier_label'] ?? ''),
+            isset($r['supplier_sku']) ? 'Art.-Nr. ' . $r['supplier_sku'] : '',
+            isset($r['pack_size']) ? $r['pack_size'] . ' ' . $r['pack_unit'] : '',
+            $price,
+            (string) ($r['document_ref'] ?? ''),
+        ]));
+    }
+
+    private static function sameReceipt(mixed $stored, array $receipt): bool
+    {
+        $old = is_string($stored) ? json_decode($stored, true) : (is_array($stored) ? $stored : null);
+
+        return is_array($old) && json_encode($old) === json_encode($receipt);
+    }
+
+    private function locationId(array $c): ?int
+    {
+        $l = $c['location'] ?? null;
+        if ($l === null || trim((string) $l) === '') {
+            return null;
+        }
+        $stmt = $this->pdo->prepare('SELECT id FROM locations WHERE id = ? OR LOWER(name) = ? LIMIT 1');
+        $stmt->execute([ctype_digit((string) $l) ? (int) $l : 0, mb_strtolower(trim((string) $l))]);
+        $id = $stmt->fetchColumn();
+        if ($id === false) {
+            throw new \InvalidArgumentException('Lagerort „' . $l . '“ unbekannt.');
+        }
+
+        return (int) $id;
+    }
+
+    private function locationName(int $id): string
+    {
+        $stmt = $this->pdo->prepare('SELECT name FROM locations WHERE id = ?');
+        $stmt->execute([$id]);
+
+        return (string) $stmt->fetchColumn();
     }
 
     private static function required(array $c, string $key): string
@@ -417,6 +575,28 @@ final class MaintenancePackageService
 
     private function write(array $c, ?int $userId): void
     {
+        if ($c['op'] === 'suggest') {
+            $pending = new PendingItemRepository();
+            $sid = $this->supplierId($c);
+            $receipt = $this->receipt($c, $sid);
+            $pendingId = (int) ($c['pending_id'] ?? 0);
+            if ($pendingId <= 0) {
+                $pending->record([
+                    'name' => (string) $c['name'],
+                    'unit' => (string) ($c['unit'] ?? ''),
+                    'quantity' => (string) ($c['quantity'] ?? ''),
+                    'location_id' => $this->locationId($c),
+                    'supplier_id' => $sid,
+                    'source' => 'order',
+                ], $userId);
+                $pendingId = (int) $pending->idByName((string) $c['name']);
+            }
+            if ($receipt !== null && $pendingId > 0) {
+                $pending->setReceipt($pendingId, $receipt, isset($c['unit']) ? (string) $c['unit'] : null);
+            }
+
+            return;
+        }
         $items = new ItemRepository();
         $id = (int) $c['item_id'];
         switch ($c['op']) {

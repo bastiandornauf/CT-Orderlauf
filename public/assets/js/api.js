@@ -215,3 +215,22 @@ export async function downloadSupplierPdf(body) {
   }
   return res.blob();
 }
+
+/**
+ * Datierten Preis anlegen (Editor). Doppelte Einträge erkennt der Server.
+ * @param {{ item_id:number, supplier_id:number, price_type:string, amount:string, per_qty?:string, per_unit?:string,
+ *           source?:string, price_date:string, document_ref?:string|null, note?:string|null, is_net?:boolean }} body
+ */
+export async function addPrice(body) {
+  const res = await fetch('/api/prices/add', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ ...body, _csrf: csrfToken() }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Preis speichern fehlgeschlagen');
+  }
+  return data;
+}

@@ -62,6 +62,12 @@ foreach ($suppliers ?? [] as $sup) {
                           x-text="' · Zuletzt: ' + formatSeen(ni.lastSeenAt)"></span>
                     <span x-show="ni.lastSeenByName" x-text="' · von ' + ni.lastSeenByName"></span>
                 </p>
+                <div class="pending-receipt" x-show="ni.receipt" x-cloak>
+                    <strong>Lt. Beleg<span x-show="ni.receipt?.document_ref" x-text="' ' + (ni.receipt?.document_ref || '')"></span>:</strong>
+                    <span x-text="receiptText(ni.receipt)"></span>
+                    <p class="form-hint" x-show="ni.receipt && Number(ni.supplier_id) !== Number(ni.receipt.supplier_id)"
+                       x-text="'Wird nur übernommen, wenn Lieferant ' + (ni.receipt?.supplier || '') + ' gewählt ist.'"></p>
+                </div>
                 <div class="form-group">
                     <label class="form-label" :for="'ni-name-' + ni.key">Bezeichnung</label>
                     <input class="input" :id="'ni-name-' + ni.key" x-model="ni.name" :disabled="!canTransfer || ni.busy">

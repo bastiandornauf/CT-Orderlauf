@@ -85,6 +85,7 @@ final class PendingItemApiController
                 'first_seen_at' => (string) $r['first_seen_at'],
                 'last_seen_at' => (string) $r['last_seen_at'],
                 'last_seen_by_name' => (string) ($r['last_seen_by_name'] ?? ''),
+                'receipt' => is_string($r['receipt'] ?? null) ? json_decode($r['receipt'], true) : null,
             ];
         }
         Response::jsonOk(['items' => $rows]);

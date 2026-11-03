@@ -107,6 +107,35 @@ final class PendingItemRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Beleg-Daten an einen Vorschlag hängen (überschreibt frühere); Lieferant/Einheit nur ergänzen, wenn leer.
+     *
+     * @param array<string, mixed> $receipt
+     */
+    public function setReceipt(int $id, array $receipt, ?string $unit = null): void
+    {
+        Database::pdo()->prepare(
+            "UPDATE pending_items SET receipt = ?,
+                supplier_id = COALESCE(supplier_id, ?),
+                unit = IF(unit = '' AND ? <> '', ?, unit)
+             WHERE id = ?"
+        )->execute([
+            json_encode($receipt, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            (int) ($receipt['supplier_id'] ?? 0) ?: null,
+            (string) $unit, (string) $unit,
+            $id,
+        ]);
+    }
+
+    public function idByName(string $name): ?int
+    {
+        $stmt = Database::pdo()->prepare('SELECT id FROM pending_items WHERE dedupe_key = ?');
+        $stmt->execute([self::dedupeKey($name)]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
+    }
+
     public function countOpen(): int
     {
         $stmt = Database::pdo()->prepare('SELECT COUNT(*) FROM pending_items WHERE status = ?');

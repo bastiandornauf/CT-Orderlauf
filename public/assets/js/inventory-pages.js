@@ -51,6 +51,7 @@ async function collectPendingFreeItems() {
       location_id: r.location_id != null ? Number(r.location_id) : null,
       supplier_id: r.supplier_id != null ? Number(r.supplier_id) : null,
       supplier_label: r.supplier_name || '',
+      receipt: r.receipt && typeof r.receipt === 'object' ? r.receipt : null,
       busy: false,
     };
   });
@@ -859,12 +860,30 @@ export function registerInventoryAlpine(Alpine) {
       try {
         const body = { name, unit: entry.unit || '', location_id: locId };
         const sid = Number(entry.supplier_id);
+        // Beleg-Daten (aus Pflegepaket) nur, wenn der gewählte Lieferant zum Beleg passt
+        const receipt = entry.receipt && Number(entry.receipt.supplier_id) === sid ? entry.receipt : null;
         if (sid > 0) {
-          body.supplier_links = [{ supplier_id: sid, priority: 10 }];
+          const link = { supplier_id: sid, priority: 10 };
+          if (receipt) {
+            for (const f of ['supplier_label', 'supplier_sku', 'pack_size', 'pack_unit', 'order_unit']) {
+              if (receipt[f]) link[f] = receipt[f];
+            }
+          }
+          body.supplier_links = [link];
         }
-        await api.createItem(body);
+        const created = await api.createItem(body);
+        let priceNote = '';
+        const itemId = Number(created?.item?.id);
+        if (receipt?.price && itemId > 0) {
+          try {
+            await api.addPrice({ item_id: itemId, supplier_id: sid, ...receipt.price });
+            priceNote = ' mit Preis aus Beleg';
+          } catch (e) {
+            priceNote = ` – Preis nicht übernommen: ${e?.message || 'Fehler'}`;
+          }
+        }
         await api.resolvePendingItem(entry.pendingId, 'transferred');
-        showToast(`„${name}" als Artikel angelegt.`, 3500);
+        showToast(`„${name}" als Artikel angelegt${priceNote}.`, 4500);
         await this.loadNewItems();
         return true;
       } catch (e) {
@@ -872,6 +891,18 @@ export function registerInventoryAlpine(Alpine) {
         showToast(e?.message || 'Anlegen fehlgeschlagen', 6000, 'error');
         return false;
       }
+    },
+    /** Beleg-Daten kurz: Bezeichnung · Art.-Nr. · Gebinde · Preis */
+    receiptText(r) {
+      if (!r) return '';
+      const parts = [r.supplier_label, r.supplier_sku ? `Art.-Nr. ${r.supplier_sku}` : '', r.pack_size ? `${r.pack_size} ${r.pack_unit || ''}`.trim() : ''];
+      if (r.price) {
+        const trim = (v) => String(v ?? '').replace(/,?0+$/, '');
+        const per = r.price.per_unit === 'order' ? 'Einheit' : r.price.per_unit === 'stk' ? 'Stück' : r.price.per_unit;
+        const qty = trim(r.price.per_qty);
+        parts.push(`${trim(r.price.amount)} €/${qty && qty !== '1' ? `${qty} ` : ''}${per}`);
+      }
+      return parts.filter(Boolean).join(' · ');
     },
     async transferAll() {
       if (!this.canTransfer || this.bulkBusy) return;

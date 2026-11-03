@@ -80,6 +80,13 @@ final class MaintenancePackageController
             'items' => $q('SELECT id, name, alias, unit, base_unit, unit_factor, location_id, active, merged_into_id FROM items ORDER BY id'),
             'item_supplier' => $q('SELECT item_id, supplier_id, priority FROM item_supplier ORDER BY item_id, priority DESC'),
             'supplier_articles' => $articles,
+            // Offene Artikel-Vorschläge (Freitext aus Bestellung/Inventur) – Belege dagegen abgleichen
+            'pending_items' => $q("SELECT p.id, p.name, p.unit, p.last_quantity, s.name AS supplier, l.name AS location,
+                                          p.seen_count, p.last_seen_at
+                                   FROM pending_items p
+                                   LEFT JOIN suppliers s ON s.id = p.supplier_id
+                                   LEFT JOIN locations l ON l.id = p.location_id
+                                   WHERE p.status = 'open' ORDER BY p.seen_count DESC, p.last_seen_at DESC"),
         ];
         header('Content-Type: application/json; charset=utf-8');
         header('Content-Disposition: attachment; filename="orderlauf-stammdaten-' . date('Y-m-d') . '.json"');

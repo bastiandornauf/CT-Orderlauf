@@ -71,7 +71,7 @@ $tabs = [
                         </span>
                         <span class="inbox__subject"><?= $h($m['subject']) ?></span>
                         <?php if ($m['attachments'] !== []): ?>
-                            <span class="text-muted inbox__att-count"><?= count($m['attachments']) ?> Anhang<?= count($m['attachments']) > 1 ? 'e' : '' ?></span>
+                            <span class="text-muted inbox__att-count"><?= count($m['attachments']) ?> <?= count($m['attachments']) > 1 ? 'Anhänge' : 'Anhang' ?></span>
                         <?php endif; ?>
                     </summary>
                     <div class="inbox__body">

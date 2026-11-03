@@ -224,6 +224,13 @@ Zusätzlich hochladen:
 
 ---
 
+### Beleg-Daten an Artikel-Vorschlägen (Deploy-Check)
+
+1. In phpMyAdmin ausführen: `database/migrations/20261104_pending_items_receipt.sql` (rein additiv).
+2. Code hochladen (`app/`, `public/`), `public/sw.js` mit Cache **v62+**.
+
+---
+
 ## 9. Backup
 
 Regelmäßig **MySQL-Dump** der Datenbank und eine Kopie von **`.env`** (ohne im öffentlichen Git zu committen) aufbewahren.

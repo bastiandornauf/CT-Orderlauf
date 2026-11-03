@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS pending_items (
     last_seen_by INT UNSIGNED NULL,
     status VARCHAR(16) NOT NULL DEFAULT 'open' COMMENT 'open|dismissed',
     dismissed_at DATETIME NULL,
+    receipt JSON NULL COMMENT 'Lieferschein-/Rechnungsdaten aus Pflegepaket: Lieferant, Bezeichnung, Art.-Nr., Gebinde, Preis',
     UNIQUE KEY uq_pending_items_key (dedupe_key),
     INDEX idx_pending_items_status (status),
     CONSTRAINT fk_pending_items_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,

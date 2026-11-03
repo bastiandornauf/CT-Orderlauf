@@ -71,7 +71,7 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Zahl oder Beschri
 - Bei jedem Artikel die **Menge** eintragen (leer lassen = nicht bestellen).
 - Angezeigt wird der **Alias** (kurzer Name, z. B. „Pommes“), falls hinterlegt. Die **Suche** findet auch den vollen Namen, die Bezeichnung beim Lieferanten und die Art.-Nr.
 - Unter dem Artikel steht dezent der **letzte bekannte Preis** je Lieferant, z. B. „Pütz 24,80 €/Karton · 2,48 €/kg · 03.10.26“. Fehlt ein Preis, steht dort „Preis unbekannt“ – nie 0,00 €.
-- An den Lieferanten geht immer dessen **Bezeichnung** (und Art.-Nr., falls hinterlegt) – nie der Alias.
+- In der Bestellmail steht je Artikel zuerst **Ihre Bezeichnung** (Alias, sonst Name) mit Menge und Einheit, darunter eingerückt die **Bezeichnung des Lieferanten** und die **Art.-Nr.** als Referenz (nur wenn hinterlegt und abweichend). Im PDF steht weiterhin nur die Lieferanten-Bezeichnung.
 - **Freier Artikel**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jeder freie Artikel landet zusätzlich in den **Artikel-Vorschlägen**. Findet die **Suche** nichts Passendes, übernimmt **„… als freien Artikel erfassen"** den Suchbegriff direkt als Bezeichnung.
 - Wenn Sie fertig sind: **Weiter zur Kontrolle** (o. ä.) – die Runde wird als **bereit zur Kontrolle** markiert.
 
@@ -208,7 +208,7 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 - **Mögliche Dubletten:** Vorschläge mit Begründung. **Vergleichen** öffnet die Gegenüberstellung, **Getrennt lassen** blendet das Paar dauerhaft aus, **Später** stellt es zurück.
 - **Zusammenführen:** Sie wählen, welcher Artikel bleibt und welche Werte gelten. Lieferanten, Bestelldaten und Preise wandern mit; der andere Artikel wird **stillgelegt, nicht gelöscht**. Es gibt **keinen Rückgängig-Knopf** – vorher genau prüfen. Der Vorher-Stand wird protokolliert.
 - **Sammelbearbeitung** (Artikelliste): Artikel anhaken → Aktion wählen: Einheit oder Lagerort setzen, Lieferant ergänzen, archivieren/aktivieren, zwei Artikel zusammenführen. In der Prüfung „Einheit uneinheitlich“ zusätzlich **Vorschlag übernehmen**.
-- **Pflegepaket einspielen:** Eine vorbereitete Datei (z. B. von Claude aus Rechnungsfotos erstellt) wählen → jede Änderung mit **bisher / neu** prüfen → angehakte übernehmen. Grundlage dafür: **Artikelstamm exportieren**. Ein zweites Einspielen derselben Datei ändert nichts.
+- **Pflegepaket einspielen:** Eine vorbereitete Datei (z. B. von Claude aus Rechnungsfotos erstellt) wählen → jede Änderung mit **bisher / neu** prüfen → angehakte übernehmen. Grundlage dafür: **Artikelstamm exportieren**. Ein zweites Einspielen derselben Datei ändert nichts. Fehlende Artikel kann ein Paket als **Artikel-Vorschlag** eintragen – auch passend zu einem frei bestellten Artikel. Der Vorschlag zeigt dann **„Lt. Beleg: …“** (Bezeichnung, Art.-Nr., Preis); beim **Übernehmen** legt die App den Artikel gleich mit diesen Bestelldaten und dem Einkaufspreis an, sofern derselbe Lieferant gewählt ist.
 
 ## 9b. Posteingang (Menü → Posteingang, Stammdaten und Admin)
 

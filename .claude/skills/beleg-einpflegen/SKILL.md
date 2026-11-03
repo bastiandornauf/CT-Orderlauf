@@ -52,8 +52,14 @@ Reihenfolge der Sicherheit:
 1. **Art.-Nr.** des Lieferanten stimmt mit `supplier_articles.supplier_sku` überein → sicher.
 2. **Bestellbezeichnung** (`supplier_label`) desselben Lieferanten stimmt (fast) überein → sicher.
 3. Name/Alias ähnlich und Einheit/Gebinde plausibel → **prüfen**, dem User vorlegen.
-4. Kein Treffer → unter „nicht in Orderlauf“ auflisten. Nicht alles gehört in Orderlauf (andere Abteilung, seltene
-   Bestellungen) – keine Artikel anlegen, nur fragen, ob einzelne aufgenommen werden sollen (das macht der User in der App).
+4. Kein Treffer → zuerst mit `pending_items` im Export abgleichen (offene **Artikel-Vorschläge** aus Bestellung/Inventur –
+   dort Notiertes ist meist genau das, was jetzt geliefert wurde). Sonst unter „nicht in Orderlauf“ auflisten und fragen,
+   was wiederkehrend ist. Nicht alles gehört in Orderlauf (Veranstaltungen, Einmaliges, andere Abteilung).
+   Wiederkehrendes → `suggest`-Zeile mit `article` und `price` (landet in *Artikel-Vorschläge*; beim Übernehmen
+   legt die App den Artikel gleich mit Bestelldaten und Einkaufspreis an). Keine Artikel direkt anlegen.
+   **Frei bestellt und jetzt geliefert:** Passt eine Lieferschein-Position zu einem offenen Vorschlag (z. B. frei
+   bestellt „5kg TK Kabeljau“, geliefert „MSC Paz.Kab.Loin…“), `suggest` mit `pending_id` statt `name` – die Vorschau
+   zeigt die Zuordnung als „prüfen“. Auch unsichere Treffer so vorschlagen und im Ergebnis nennen; der User entscheidet.
 
 Ist der Lieferant dem Artikel noch nicht zugeordnet, aber klar richtig: zuerst eine `link`-Änderung
 (Priorität **unter** dem bisherigen Hauptlieferanten, der bisherige bleibt Prio-Lieferant), dann Preis/Bestelldaten.
@@ -94,6 +100,19 @@ Stammen die Belege aus dem Posteingang-ZIP: `"inbox_message_ids": [12, 13]` auf 
 mitgeben. Beim Einspielen werden diese Belege im Posteingang abgehakt.
 
 `source.supplier`, `source.document_ref` und `source.date` gelten als Standard für alle Zeilen ohne eigene Angabe.
+Fehlender, wiederkehrender Artikel (kein `item_id`):
+
+```json
+{ "op": "suggest", "name": "Kabeljau-Loin MSC 180-200 g (TK)", "unit": "Karton (5 kg)", "supplier": "Transgourmet",
+  "location": "TK", "quantity": "1",
+  "article": { "supplier_label": "MSC Paz.Kab.Loin180-200g TK5k", "supplier_sku": "657372", "pack_size": "5", "pack_unit": "kg" },
+  "price": { "amount": "21,096", "per_unit": "kg", "price_type": "purchase", "source": "invoice" } }
+```
+
+Mit vorhandenem Vorschlag verknüpfen: `"pending_id": 31` statt `name`/`unit`/`location` (ID aus `pending_items` im Export).
+Lagerort als Name aus dem Export (`locations`). Gibt es den Artikel schon (Name/Alias), meldet die Vorschau einen Fehler.
+`price_date`/`document_ref` kommen aus `source`.
+
 Weitere Änderungsarten: `alias`, `name`, `unit` (`{ "op": "unit", "item_id": …, "unit": "Karton" }`),
 `unit_factor` (`"unit_factor": "5", "base_unit": "kg|l|stk"`). Beträge als Text mit Komma oder Punkt.
 `per_unit`: `order` = je Bestelleinheit des Artikels, sonst `kg|g|l|ml|stk`; `per_qty` = Menge dieser Basis (Standard 1).
