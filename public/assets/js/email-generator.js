@@ -1,15 +1,30 @@
 const DEFAULT_ORDER_SUBJECT = 'Bestellung {{COMPANY}} {{TARGET_DATE}}';
 
+const norm = (v) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+
 /**
- * @param {{ label: string, quantity: string, unit?: string }} l
+ * Bestellzeile für die Mail:
+ *   - 4x Tagliatelle, frisch (Beutel)
+ *     Le Monelle Tagliatelle frisch 1kg fresco uovo · Art.-Nr. 2600037
+ * Erste Zeile: eigene Bezeichnung (was gebraucht wird), zweite: Artikel des Lieferanten als Referenz.
+ * Ältere Zeilen ohne `own` (nur `label`) bleiben einzeilig wie bisher.
+ * @param {{ label: string, quantity: string, unit?: string, own?: string, supplierLabel?: string, sku?: string }} l
  */
 export function formatCatalogMailLine(l) {
   const q = String(l.quantity ?? '').trim();
-  const label = String(l.label ?? '').trim();
   const unit = String(l.unit ?? '').trim();
-  if (!label) return '';
-  if (unit) return `- ${q}x ${label} (${unit})\n`;
-  return `- ${q}x ${label}\n`;
+  const own = String(l.own ?? '').trim();
+  const main = own || String(l.label ?? '').trim();
+  if (!main) return '';
+  let line = `- ${q}x ${main}${unit ? ` (${unit})` : ''}\n`;
+  if (!own) return line;
+  const supplierLabel = String(l.supplierLabel ?? '').trim();
+  const sku = String(l.sku ?? '').trim();
+  const ref = [];
+  if (supplierLabel && norm(supplierLabel) !== norm(own)) ref.push(supplierLabel);
+  if (sku) ref.push(`Art.-Nr. ${sku}`);
+  if (ref.length) line += `   ${ref.join(' · ')}\n`;
+  return line;
 }
 
 /**

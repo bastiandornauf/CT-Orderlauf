@@ -23,16 +23,21 @@ export function itemSearchText(item, supplierSearchByItem) {
 
 /**
  * Bezeichnung und Einheit, wie sie an den Lieferanten gehen.
- * Nie der Alias – nur Lieferanten-Bezeichnung oder Standardbezeichnung.
+ * `label` (kurz, für PDF): Lieferanten-Bezeichnung oder Standardbezeichnung, nie der Alias.
+ * Für die Mail zusätzlich die eigene Bezeichnung (Anzeigename) und – als Referenz – Lieferanten-Bezeichnung/Art.-Nr.
  * @param {object} item
  * @param {object} [link] Zuordnung inkl. Bestelldaten (supplier_label, supplier_sku, order_unit)
- * @returns {{ label: string, unit: string }}
+ * @returns {{ label: string, unit: string, own: string, supplierLabel: string, sku: string }}
  */
 export function supplierOrderLine(item, link) {
-  const formal = String(link?.supplier_label ?? '').trim() || item?.name || '';
+  const supplierLabel = String(link?.supplier_label ?? '').trim();
+  const formal = supplierLabel || item?.name || '';
   const sku = String(link?.supplier_sku ?? '').trim();
   return {
     label: sku ? `${formal} – Art.-Nr. ${sku}` : formal,
     unit: String(link?.order_unit ?? '').trim() || item?.unit || '',
+    own: displayName(item),
+    supplierLabel,
+    sku,
   };
 }
