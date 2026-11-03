@@ -7,6 +7,7 @@ Kurzfassung der zuletzt besprochenen Verbesserungen ohne aktuellen Implementieru
 - [ ] **Frontend:** Kurze Sperre / Entprellung gegen Doppelklick beim Senden
 - [ ] **Server:** Empfänger `to` gegen Lieferanten-Stammdaten prüfen
 - [ ] **Versand:** Message-ID / Sende-Log dauerhaft speichern
+- [ ] **Bestellung:** „Bestellung bis"-Erinnerung je Lieferant (Bestellschluss), z. B. Hinweis auf der Startseite oder Push – vorsichtig dosieren, soll nicht nerven
 
 ## Deploy-Checkliste
 

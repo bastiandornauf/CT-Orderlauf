@@ -13,6 +13,7 @@ use App\Controllers\DevUiController;
 use App\Controllers\ExportController;
 use App\Controllers\HelpController;
 use App\Controllers\ImportController;
+use App\Controllers\InboxController;
 use App\Controllers\InventoryApiController;
 use App\Controllers\InventoryController;
 use App\Controllers\ItemApiController;
@@ -56,6 +57,9 @@ return [
         '/admin/users/new' => [AdminUsersController::class, 'form'],
         '/admin/users/edit' => [AdminUsersController::class, 'form'],
         '/import' => [ImportController::class, 'index'],
+        '/posteingang' => [InboxController::class, 'index'],
+        '/posteingang/anhang' => [InboxController::class, 'attachment'],
+        '/posteingang/belege.zip' => [InboxController::class, 'receiptsZip'],
         '/order/prepare' => [OrderController::class, 'prepare'],
         '/order/round' => [OrderController::class, 'round'],
         '/order/review' => [OrderController::class, 'review'],
@@ -102,5 +106,8 @@ return [
         '/api/pflege/paket/apply' => [MaintenancePackageController::class, 'apply'],
         '/api/prices/add' => [PriceApiController::class, 'add'],
         '/api/prices/delete' => [PriceApiController::class, 'delete'],
+        '/posteingang/einstellungen' => [InboxController::class, 'saveSettings'],
+        '/api/posteingang/fetch' => [InboxController::class, 'fetch'],
+        '/api/posteingang/update' => [InboxController::class, 'update'],
     ],
 ];

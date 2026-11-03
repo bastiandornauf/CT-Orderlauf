@@ -9,6 +9,16 @@ if ($loggedIn) {
 $_role = (string) ($_SESSION['role'] ?? '');
 $_canEditMaster = \App\Helpers\UserRole::canEditMasterData($_role);
 $_isAdmin = \App\Helpers\UserRole::isAdmin($_role);
+$_inboxNew = 0;
+if ($loggedIn && $_isAdmin) {
+    try {
+        $_inboxNew = (int) \App\Helpers\Database::pdo()
+            ->query("SELECT COUNT(*) FROM inbox_messages WHERE status = 'neu' AND kind IN ('lieferant', 'sonstiges')")
+            ->fetchColumn();
+    } catch (\PDOException) {
+        $_inboxNew = 0;   // Migration noch nicht eingespielt
+    }
+}
 
 $navPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $navPath = rtrim($navPath, '/') ?: '/';
@@ -75,6 +85,7 @@ $navActive = static function (string $prefix, bool $exact = false) use ($navPath
                     <a href="/settings" class="app-nav__link<?= $navActive('/settings') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Einstellungen</a>
                     <?php endif; ?>
                     <?php if ($_isAdmin): ?>
+                    <a href="/posteingang" class="app-nav__link<?= $navActive('/posteingang') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Posteingang<?php if ($_inboxNew > 0): ?><span class="app-nav__badge"><?= $_inboxNew ?></span><?php endif; ?></a>
                     <a href="/admin/users" class="app-nav__link<?= $navActive('/admin/users') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Benutzer</a>
                     <?php endif; ?>
                     <a href="/help" class="app-nav__link<?= $navActive('/help') ? ' app-nav__link--active' : '' ?>" @click="closeNavLater()">Hilfe</a>

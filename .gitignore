@@ -13,3 +13,6 @@
 
 # Daten-Migrationen mit Einkaufspreisen/Konditionen – Repo ist öffentlich, nie committen
 /database/private/
+
+# Posteingang: Anhänge (Rechnungen, Lieferscheine) – nie committen
+/storage/

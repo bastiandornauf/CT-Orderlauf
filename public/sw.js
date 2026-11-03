@@ -1,5 +1,5 @@
 /* global self, caches, fetch */
-const CACHE = 'ct-orderlauf-assets-v59';
+const CACHE = 'ct-orderlauf-assets-v60';
 const PRECACHE = [
   '/assets/css/app.css',
   '/assets/js/main.js',
@@ -20,6 +20,7 @@ const PRECACHE = [
   '/assets/js/item-display.js',
   '/assets/js/prices.js',
   '/assets/js/maintenance.js',
+  '/assets/js/inbox.js',
   '/manifest.json',
   '/assets/icons/icon.svg',
 ];

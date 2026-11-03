@@ -19,7 +19,7 @@ Zum Abhaken beim Hoster oder im Paketvergleich.
 | **HTTPS** | **Empfohlen / faktisch nötig für PWA** | Service Worker und moderne Cookies: Produktion unter TLS. |
 | **Composer** | **Nicht nötig** auf dem Server | Autoload über `app/` (siehe `config/bootstrap.php`). |
 | **SSH / Cron** | **Nicht nötig** | Reiner FTP/SFTP-Upload reicht; Cronjobs werden nicht verwendet. |
-| **Schreibrechte** | **Kein uploads-Ordner nötig** | App schreibt standardmäßig nicht ins Dateisystem (außer du erweiterst sie). |
+| **Schreibrechte** | **Projektordner beschreibbar** (nur für den Posteingang) | Der Posteingang legt Mail-Anhänge unter `storage/inbox/` ab (neben `app/`, nicht unter `public/`). Sonst schreibt die App nichts ins Dateisystem. |
 | **Speicher / Limits** | **Übliche Shared-Hosting-Werte** | Sehr große CSV-Imports können an `upload_max_filesize` / `post_max_size` / `max_execution_time` stoßen – bei Bedarf im Panel erhöhen. |
 
 **Kurz in einem Satz:** PHP **8.2+** mit **`pdo_mysql`** und **`mbstring`**, **MySQL/MariaDB**, Webserver mit **Rewrite** und **Document Root auf `public/`**, idealerweise **HTTPS**.
@@ -111,7 +111,7 @@ Typisch auf Linux-Webspaces:
 - Dateien: **`644`**
 - **`.env`:** wenn möglich **`600`** (nur dein FTP/SFTP-User darf lesen)
 
-Die App schreibt standardmäßig **nichts** ins Projektverzeichnis; ein beschreibbares `uploads/`-Verzeichnis ist für den Basis-Betrieb nicht nötig.
+Die App schreibt nur für den **Posteingang** ins Projektverzeichnis: `storage/inbox/` (wird beim ersten Abruf angelegt, samt `storage/.htaccess` mit „Require all denied“). Klappt das nicht, den Ordner `storage/` per SFTP anlegen und für PHP beschreibbar machen (meist `755` reicht, sonst `775`).
 
 ---
 
@@ -211,6 +211,18 @@ Zusätzlich hochladen:
 3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v59+**. **Kein** `vendor/`.
 
 **Schnelltest:** Artikel bearbeiten → unter einem Lieferanten „Bestelldaten“ aufklappen, Bezeichnung eintragen, speichern, erneut öffnen. Dort „Preis eintragen“ → Preis erscheint; neue Bestellrunde starten → Preiszeile unter dem Artikel.
+
+### Posteingang (Deploy-Check)
+
+1. **Vorher** frischen DB-Export ziehen.
+2. In phpMyAdmin ausführen: `database/migrations/20261103_inbox_messages.sql` (rein additiv).
+3. Code hochladen (`app/`, `config/`, `public/`), `public/sw.js` mit Cache **v60+**.
+4. Als Admin **Menü → Posteingang** öffnen, unten unter *Einstellungen Posteingang* die eigenen Adressen eintragen → **Jetzt abrufen**.
+   - Beim ersten Abruf werden die Mails der letzten 30 Tage geholt, höchstens 30 auf einmal. Gibt es mehr, einfach noch einmal abrufen.
+   - Fehlermeldungen (Anmeldung, Schreibrechte `storage/`) stehen oben auf der Seite.
+5. `storage/` gehört **nicht** ins Git und wird beim Hochladen nicht überschrieben (enthält die Anhänge).
+
+---
 
 ## 9. Backup
 

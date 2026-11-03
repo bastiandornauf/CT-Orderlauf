@@ -15,7 +15,7 @@
     </div>
 
     <p class="toast toast--error" x-show="error" x-text="error" role="alert"></p>
-    <p class="toast toast--success" x-show="result" x-text="result ? result.applied + ' übernommen, ' + result.skipped + ' waren schon so.' : ''"></p>
+    <p class="toast toast--success" x-show="result" x-text="result ? result.applied + ' übernommen, ' + result.skipped + ' waren schon so.' + (result.receipts_done ? ' ' + result.receipts_done + ' Beleg(e) im Posteingang abgehakt.' : '') : ''"></p>
 
     <template x-if="rows.length > 0">
         <div>

@@ -42,9 +42,13 @@ Zusätzlich gibt es einen eigenen Ablauf **Inventur** (monatliche Bestandszählu
 
 - Nur sichtbar, wenn Sie dazu **berechtigt** sind: Links zu **Artikeln**, **Lieferanten**, **Lagerorten**. Zum Pflegen der Stammdaten; für den täglichen Bestelllauf nicht zwingend nötig.
 
+### Posteingang (nur Administratoren)
+
+- Sind im Versand-Postfach neue Mails, erscheint oben eine Karte, z. B. **„Antwort von Pütz · 2 offene Belege“** → **Ansehen**.
+
 ### Menü (☰)
 
-- Über **☰**: **Start**, **Inventur**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import / Export**, **Einstellungen**, **Mein Konto**, **Abmelden**.
+- Über **☰**: **Start**, **Inventur**, ggf. **Lagerorte**, **Lieferanten**, **Artikel**, **Artikel-Vorschläge**, **Import / Export**, **Einstellungen**, **Posteingang** (Admin), **Mein Konto**, **Abmelden**.
 
 ---
 
@@ -68,7 +72,7 @@ Oben auf den Bestellseiten sehen Sie die **Schritte 1 bis 4**. Zahl oder Beschri
 - Angezeigt wird der **Alias** (kurzer Name, z. B. „Pommes“), falls hinterlegt. Die **Suche** findet auch den vollen Namen, die Bezeichnung beim Lieferanten und die Art.-Nr.
 - Unter dem Artikel steht dezent der **letzte bekannte Preis** je Lieferant, z. B. „Pütz 24,80 €/Karton · 2,48 €/kg · 03.10.26“. Fehlt ein Preis, steht dort „Preis unbekannt“ – nie 0,00 €.
 - An den Lieferanten geht immer dessen **Bezeichnung** (und Art.-Nr., falls hinterlegt) – nie der Alias.
-- **Freier Artikel**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jeder freie Artikel landet zusätzlich in den **Artikel-Vorschlägen**.
+- **Freier Artikel**: Bezeichnung, Menge und optional **Gebinde/Einheit** (z. B. Kiste, Bund, kg); Lieferant kann im Rundgang oder **später in der Kontrolle** gewählt werden. Jeder freie Artikel landet zusätzlich in den **Artikel-Vorschlägen**. Findet die **Suche** nichts Passendes, übernimmt **„… als freien Artikel erfassen"** den Suchbegriff direkt als Bezeichnung.
 - Wenn Sie fertig sind: **Weiter zur Kontrolle** (o. ä.) – die Runde wird als **bereit zur Kontrolle** markiert.
 
 *Tipp:* Kurz **offline** arbeiten geht; zum **Laden** einer neuen Runde oder **Synchronisieren** mit geänderten Stammdaten sind Sie **online** nötig.
@@ -205,6 +209,21 @@ Die Liste ist ein **dauerhafter, gemeinsamer Sammler** auf dem Server: Einträge
 - **Zusammenführen:** Sie wählen, welcher Artikel bleibt und welche Werte gelten. Lieferanten, Bestelldaten und Preise wandern mit; der andere Artikel wird **stillgelegt, nicht gelöscht**. Es gibt **keinen Rückgängig-Knopf** – vorher genau prüfen. Der Vorher-Stand wird protokolliert.
 - **Sammelbearbeitung** (Artikelliste): Artikel anhaken → Aktion wählen: Einheit oder Lagerort setzen, Lieferant ergänzen, archivieren/aktivieren, zwei Artikel zusammenführen. In der Prüfung „Einheit uneinheitlich“ zusätzlich **Vorschlag übernehmen**.
 - **Pflegepaket einspielen:** Eine vorbereitete Datei (z. B. von Claude aus Rechnungsfotos erstellt) wählen → jede Änderung mit **bisher / neu** prüfen → angehakte übernehmen. Grundlage dafür: **Artikelstamm exportieren**. Ein zweites Einspielen derselben Datei ändert nichts.
+
+## 9b. Posteingang (Menü → Posteingang, nur Admin)
+
+Die App liest das Postfach mit, über das die Bestellungen verschickt werden (gleicher Zugang wie beim SMTP-Versand). Sie holt beim Öffnen der Startseite höchstens alle 10 Minuten ab, oder sofort mit **Jetzt abrufen**. Die Mails bleiben **unverändert im Postfach**: Die App liest nur mit, sie löscht und verschiebt nichts und markiert nichts als gelesen.
+
+| Absender | Einordnung |
+|---|---|
+| Lieferanten-Adresse aus den Stammdaten | **Lieferant**: Hinweis auf der Startseite und Zahl im Menü |
+| Eigene Adresse, Betreff „Re:“/„AW:“ | **Nachtrag** (eigene Antwort an alle): wird ausgeblendet |
+| Eigene Adresse, sonst (Weiterleitung, Foto) | **Beleg** |
+| alle anderen | **Sonstiges** |
+
+- **Eigene Adressen** stehen unten unter *Einstellungen Posteingang*. Eine eigene Adresse, die bei einem Lieferanten nur als Platzhalter eingetragen ist (z. B. Webshop), zählt nicht als Lieferant.
+- Jede Nachricht lässt sich aufklappen (Text, Anhänge) und mit **Erledigt** abhaken. Ist sie falsch eingeordnet, die **Art** ändern.
+- **Belege einpflegen:** Rechnung oder Lieferschein-Foto von einer eigenen Adresse an das Versand-Postfach weiterleiten. Wenn Zeit ist: Tab **Belege → Offene Belege als ZIP** laden und Claude die Datei geben. Daraus entsteht ein Pflegepaket. Beim Einspielen werden die zugehörigen Belege automatisch abgehakt.
 
 ---
 

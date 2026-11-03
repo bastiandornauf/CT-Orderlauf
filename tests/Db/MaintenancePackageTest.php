@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Db;
 
+use App\Repositories\InboxRepository;
 use App\Repositories\ItemRepository;
 use App\Repositories\PriceRepository;
 use App\Repositories\SupplierArticleRepository;
@@ -54,7 +55,7 @@ final class MaintenancePackageTest extends DbTestCase
         $pkg = $this->package($id);
 
         $first = $svc->apply($pkg, [0, 1, 2, 3, 4], null);
-        self::assertSame(['applied' => 5, 'skipped' => 0], $first);
+        self::assertSame(['applied' => 5, 'skipped' => 0, 'receipts_done' => 0], $first);
         self::assertSame('Oliven', (new ItemRepository())->find($id)['alias']);
         self::assertSame('12345', (new SupplierArticleRepository())->defaultsByItemIds([$id])[$id][2]['supplier_sku']);
         $history = (new PriceRepository())->historyForItem($id);
@@ -62,8 +63,31 @@ final class MaintenancePackageTest extends DbTestCase
         self::assertSame(['purchase', 'known'], array_column(array_reverse($history), 'price_type'));
 
         self::assertSame(['same', 'same', 'same', 'same', 'same'], array_column($svc->preview($pkg), 'status'));
-        self::assertSame(['applied' => 0, 'skipped' => 5], $svc->apply($pkg, [0, 1, 2, 3, 4], null));
+        self::assertSame(['applied' => 0, 'skipped' => 5, 'receipts_done' => 0], $svc->apply($pkg, [0, 1, 2, 3, 4], null));
         self::assertCount(2, (new PriceRepository())->historyForItem($id));
+    }
+
+    public function testApplyMarksInboxReceiptsDone(): void
+    {
+        $repo = new InboxRepository();
+        $row = static fn (int $uid, string $kind): array => [
+            'imap_uid' => $uid, 'imap_uidvalidity' => 1, 'message_id' => "<{$uid}@x>", 'received_at' => '2026-11-03 10:00:00',
+            'from_email' => 'ich@example.de', 'from_name' => '', 'subject' => 'WG: Rechnung', 'body_text' => '',
+            'kind' => $kind, 'supplier_id' => null, 'status' => 'neu',
+        ];
+        $beleg = $repo->insert($row(1, 'beleg'));
+        $other = $repo->insert($row(2, 'beleg'));
+        $reply = $repo->insert($row(3, 'lieferant'));
+
+        $pkg = $this->package($this->item());
+        $pkg['inbox_message_ids'] = [$beleg, $reply];
+        $result = (new MaintenancePackageService())->apply($pkg, [4], null);
+
+        self::assertSame(1, $result['receipts_done']);
+        self::assertSame('erledigt', $repo->find($beleg)['status']);
+        self::assertSame('neu', $repo->find($other)['status']);
+        self::assertSame('neu', $repo->find($reply)['status']);   // nur Belege werden abgehakt
+        self::assertSame(['lieferant' => 1, 'sonstiges' => 0, 'belege' => 1, 'suppliers' => ['ich@example.de']], $repo->counts());
     }
 
     public function testInvalidRowStopsTheWholePackage(): void

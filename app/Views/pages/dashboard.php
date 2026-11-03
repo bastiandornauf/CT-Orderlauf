@@ -25,6 +25,16 @@
         </div>
     </div>
 
+    <?php if ($inboxCounts !== null): ?>
+    <div class="card card--pad dashboard-inbox" x-data="dashboardInbox"
+         data-counts="<?= htmlspecialchars(json_encode($inboxCounts, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+         x-show="visible" x-cloak>
+        <h2 class="section-header">Posteingang</h2>
+        <p x-text="headline"></p>
+        <a :href="href" class="button button--secondary button--block">Ansehen</a>
+    </div>
+    <?php endif; ?>
+
     <div id="bestellen" class="card card--pad dashboard-prepare">
         <h2 class="section-header">Neue Bestellung</h2>
 

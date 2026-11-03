@@ -8,6 +8,7 @@ use App\Helpers\Database;
 use App\Helpers\ItemDisplay;
 use App\Helpers\Money;
 use App\Helpers\Units;
+use App\Repositories\InboxRepository;
 use App\Repositories\ItemRepository;
 use App\Repositories\MaintenanceLogRepository;
 use App\Repositories\PriceRepository;
@@ -38,6 +39,7 @@ use PDO;
  *   ]
  * }
  * „item_name“ ist optional und dient nur der Kontrolle: weicht er ab, warnt die Vorschau.
+ * „inbox_message_ids“ (optional, Liste): Belege aus dem Posteingang, die beim Einspielen abgehakt werden.
  */
 final class MaintenancePackageService
 {
@@ -110,7 +112,7 @@ final class MaintenancePackageService
      * Übernimmt die ausgewählten Änderungen in einer Transaktion.
      *
      * @param list<int> $selected Indizes aus der Vorschau
-     * @return array{applied:int, skipped:int}
+     * @return array{applied:int, skipped:int, receipts_done:int}
      */
     public function apply(array $pkg, array $selected, ?int $userId): array
     {
@@ -140,10 +142,19 @@ final class MaintenancePackageService
                 }
                 $applied[] = ['index' => $i] + $row;
             }
+            $receiptsDone = 0;
+            if (is_array($pkg['inbox_message_ids'] ?? null) && $pkg['inbox_message_ids'] !== []) {
+                try {
+                    $receiptsDone = (new InboxRepository())->markReceiptsDone($pkg['inbox_message_ids']);
+                } catch (\PDOException) {
+                    $receiptsDone = 0;   // Posteingang-Migration noch nicht eingespielt
+                }
+            }
             (new MaintenanceLogRepository())->log('package_applied', null, [
                 'title' => (string) ($pkg['title'] ?? ''),
                 'source' => $pkg['source'] ?? null,
                 'applied' => $applied,
+                'inbox_message_ids' => $pkg['inbox_message_ids'] ?? null,
             ], $userId);
             $this->pdo->commit();
         } catch (\Throwable $e) {
@@ -151,7 +162,7 @@ final class MaintenancePackageService
             throw $e;
         }
 
-        return ['applied' => count($applied), 'skipped' => $skipped];
+        return ['applied' => count($applied), 'skipped' => $skipped, 'receipts_done' => $receiptsDone];
     }
 
     /** Standardwerte aus „source“ für Preiszeilen */
