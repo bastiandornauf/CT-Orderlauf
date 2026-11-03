@@ -609,6 +609,18 @@ export function registerOrderAlpine(Alpine) {
       await orch.saveCatalogQuantity(itemId, val, '');
       await this.reloadEntries();
     },
+    searchToFree() {
+      const label = String(this.search || '').trim();
+      if (!label) return;
+      this.freeLabel = label;
+      this.search = '';
+      this.$nextTick(() => {
+        const qty = document.getElementById('free-qty');
+        if (!qty) return;
+        qty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        qty.focus();
+      });
+    },
     async addFree() {
       if (!String(this.freeLabel || '').trim() || !String(this.freeQty || '').trim()) {
         showToast('Bezeichnung und Menge angeben.', 2500, 'warn');

@@ -111,9 +111,14 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
         </button>
     </div>
 
-    <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'search'" x-cloak>
-        Kein Artikel gefunden für „<span x-text="search"></span>"
-    </p>
+    <div class="round-search__empty" x-show="roundReady && search.trim() !== ''" x-cloak>
+        <p x-show="emptyRoundKind === 'search'">
+            Kein Artikel gefunden für „<span x-text="search"></span>"
+        </p>
+        <button type="button" class="button button--secondary" @click="searchToFree()">
+            „<span x-text="search.trim()"></span>" als freien Artikel erfassen
+        </button>
+    </div>
     <p class="round-search__empty" x-show="roundReady && emptyRoundKind === 'no-loc'" x-cloak>
         Keine Lagerorte geladen. Bestellung neu beginnen.
     </p>
