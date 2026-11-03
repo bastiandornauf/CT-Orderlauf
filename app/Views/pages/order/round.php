@@ -166,8 +166,12 @@ $canEditMaster = UserRole::canEditMasterData((string) ($_SESSION['role'] ?? ''))
             @click="if ($event.target === $refs.quickEditDialog) closeQuickEdit()"
             @close="editError = ''">
         <form class="item-quick-edit__panel form-stack" @submit.prevent="submitQuickEdit()">
-            <h2 id="item-quick-edit-title" class="section-header">Artikel bearbeiten</h2>
+            <h2 id="item-quick-edit-title" class="section-header">Artikel bearbeiten <span class="settings-section__sub">Kurzfassung</span></h2>
             <p class="text-muted u-m-0">Änderungen werden auf dem Server gespeichert und lokal übernommen.</p>
+            <p class="form-hint u-m-0">
+                Bestelldaten (Art.-Nr., Bezeichnung beim Lieferanten), Inhalt je Einheit, Bewertungspreis und Preise
+                <a :href="'/items?q=' + encodeURIComponent(editDraft.name || '')" target="_blank" rel="noopener">in der Artikelliste</a>.
+            </p>
             <p class="toast toast--error" x-show="editError" x-text="editError"></p>
 
             <div class="form-group">
