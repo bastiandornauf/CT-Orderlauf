@@ -117,6 +117,24 @@ final class MaintenancePackageTest extends DbTestCase
         self::assertSame('error', $rows[0]['status']);
     }
 
+    public function testPricePreviewShowsTrendOnSameBasis(): void
+    {
+        $id = $this->item();
+        $svc = new MaintenancePackageService();
+        $row = static fn (string $amount, string $unit = 'order', string $date = '2026-10-20'): array => ['op' => 'price', 'item_id' => $id,
+            'supplier' => 'Pütz', 'price_type' => 'purchase', 'amount' => $amount, 'per_unit' => $unit, 'price_date' => $date];
+        $svc->apply(['format' => 'orderlauf-pflegepaket', 'version' => 1, 'changes' => [$row('20,00')]], [0], null);
+
+        $rows = $svc->preview(['format' => 'orderlauf-pflegepaket', 'version' => 1, 'changes' => [
+            $row('22,00', 'order', '2026-10-21'), $row('18,50', 'order', '2026-10-21'), $row('30,00', 'kg', '2026-10-21'), $row('20,00', 'order', '2026-10-21'),
+        ]]);
+
+        self::assertSame(['dir' => 'up', 'pct' => '+10 %'], $rows[0]['trend']);
+        self::assertSame(['dir' => 'down', 'pct' => '−7,5 %'], $rows[1]['trend']);
+        self::assertNull($rows[2]['trend']);   // andere Preisbasis
+        self::assertNull($rows[3]['trend']);   // gleicher Preis
+    }
+
     public function testWrongItemNameWarns(): void
     {
         $id = $this->item();

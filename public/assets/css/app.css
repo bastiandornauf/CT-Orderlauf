@@ -3422,6 +3422,18 @@ a.order-stepper__item:focus-visible {
   background: color-mix(in srgb, var(--color-warn) 8%, transparent);
 }
 
+.price-trend {
+  white-space: nowrap;
+  font-weight: 600;
+  margin-left: var(--space-1);
+}
+.price-trend--up {
+  color: var(--color-danger);
+}
+.price-trend--down {
+  color: var(--color-ok);
+}
+
 .package-msg {
   display: block;
   margin-top: var(--space-1);

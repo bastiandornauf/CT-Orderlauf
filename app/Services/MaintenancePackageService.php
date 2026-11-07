@@ -478,6 +478,7 @@ final class MaintenancePackageService
         $articleId = $this->defaultArticleId((int) $item['id'], $sid);
         $exists = false;
         $old = '';
+        $trend = null;
         if ($articleId !== null) {
             $key = PriceRepository::dedupeKey(['supplier_article_id' => $articleId] + $p);
             $stmt = $this->pdo->prepare('SELECT 1 FROM supplier_article_prices WHERE dedupe_key = ?');
@@ -487,7 +488,14 @@ final class MaintenancePackageService
                 WHERE supplier_article_id = ? AND price_type = ? ORDER BY price_date DESC, id DESC LIMIT 1');
             $last->execute([$articleId, $p['price_type']]);
             if ($r = $last->fetch(PDO::FETCH_ASSOC)) {
-                $old = Money::formatDe(Money::fromDb($r['amount'])) . ' € (' . date('d.m.y', strtotime($r['price_date'])) . ')';
+                $oldAmount = Money::fromDb($r['amount']);
+                $old = Money::formatDe($oldAmount) . ' € (' . date('d.m.y', strtotime($r['price_date'])) . ')';
+                // Tendenz nur bei gleicher Preisbasis (z. B. nicht €/kg gegen €/Karton)
+                if ($oldAmount && $r['per_unit'] === $p['per_unit'] && Money::fromDb($r['per_qty']) === $p['per_qty'] && $oldAmount !== $p['amount']) {
+                    $pct = round(($p['amount'] - $oldAmount) / $oldAmount * 100, 1);
+                    $trend = $pct == 0 ? null : ['dir' => $pct > 0 ? 'up' : 'down',
+                        'pct' => ($pct > 0 ? '+' : '−') . str_replace('.', ',', (string) abs($pct)) . ' %'];
+                }
             }
         }
         $per = $p['per_unit'] === 'order' ? (trim((string) $item['unit']) ?: 'Einheit') : (Units::BASE_LABELS[$p['per_unit']] ?? $p['per_unit']);
@@ -501,6 +509,7 @@ final class MaintenancePackageService
             'new' => $new,
             'status' => $exists ? 'same' : 'change',
             'message' => $exists ? 'schon vorhanden' : '',
+            'trend' => $trend,
         ];
     }
 

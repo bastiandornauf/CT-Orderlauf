@@ -41,7 +41,12 @@
                                 <td x-text="r.supplier"></td>
                                 <td x-text="r.field"></td>
                                 <td class="text-muted" x-text="r.old || '—'"></td>
-                                <td x-text="r.new"></td>
+                                <td>
+                                    <span x-text="r.new"></span>
+                                    <span class="price-trend" :class="r.trend ? 'price-trend--' + r.trend.dir : ''" x-show="r.trend"
+                                          :title="r.trend && (r.trend.dir === 'up' ? 'teurer' : 'günstiger')"
+                                          x-text="r.trend ? (r.trend.dir === 'up' ? '▲ ' : '▼ ') + r.trend.pct : ''"></span>
+                                </td>
                                 <td>
                                     <span class="status-badge" :class="{ 'status-badge--ok': r.status === 'change', 'status-badge--warn': r.status === 'warn' || r.status === 'error' }"
                                           x-text="statusLabel(r.status)"></span>
